@@ -2048,6 +2048,17 @@ function switchBIPTab(bipId,tab){
 // ═══════════════════════════════════════════════════════
 function renderBehaviorTab(){
   if(!DB.bips)DB.bips=[];
+  // TX must have session started to log BIP data
+  const _isTX=currentUser&&currentUser.role==='therapist';
+  const _ss=getSessState();
+  const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
+  if(_isTX&&!_sessStarted){
+    return '<div class="card" style="text-align:center;padding:40px 20px">'
+      +'<div style="font-size:3rem;margin-bottom:16px">⏸</div>'
+      +'<h2 style="margin-bottom:10px;color:#dc2626">Session Not Started</h2>'
+      +'<p style="color:var(--muted);margin-bottom:20px">Start a session before logging behavior data.<br>Use the <strong>▶ Start Session</strong> button above.</p>'
+      +'</div>';
+  }
   const bips=DB.bips.filter(b=>b.clientId===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
   const addBipBtn=currentUser.role==='supervisor'?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
@@ -2234,6 +2245,7 @@ function logBIP(bipId){
   DB.behaviors.push(entry);sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:entry.notes||null,tx_id:entry.txId||null,tx_name:entry.txName||null});
   toast('Logged '+esc(bip.name)+' ('+bipFnLabel(fn)+')');
   render();
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{const _b=DB.bips.find(b=>b.id===bipId);if(_b)drawBIPChart(_b);}));
 }
 
 // ═══════════════════════════════════════════════════════
