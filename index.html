@@ -218,7 +218,7 @@ function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
 function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:b.supNote||null,created_date:b.createdDate||null};}
-function rowToBIP(r){return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',functions:r.functions||[],description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:r.sup_note||'',createdDate:r.created_date||''};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:r.sup_note||'',createdDate:r.created_date||''};}
 
 function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',notes:s.notes||null,lesson_data:s.lessonData||[],bip_data:s.bipData||[],abc_data:s.abcData||[]};}
 function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
@@ -230,12 +230,14 @@ function rowToUser(r){return{id:r.id,name:r.name,username:r.username,password:r.
 async function loadFromSupabase(){
   showSyncStatus('loading');
   try{
-    const [users,clients,lessons,bips,sessions]=await Promise.all([
+    const [users,clients,lessons,bips,sessions,behaviors]=await Promise.all([
       sbFetch('users','GET',null,'select=*'),
       sbFetch('clients','GET',null,'select=*'),
       sbFetch('lessons','GET',null,'select=*'),
       sbFetch('bips','GET',null,'select=*'),
-      sbFetch('sessions','GET',null,'select=*&order=date.asc')
+      sbFetch('sessions','GET',null,'select=*&order=date.asc'),
+      sbFetch('behaviors','GET',null,'select=*&order=date.asc'),
+      sbFetch('behaviors','GET',null,'select=*&order=date.asc')
     ]);
     if(!clients)throw new Error('Failed to load');
     DB.users=(users||[]).map(rowToUser);
@@ -243,6 +245,7 @@ async function loadFromSupabase(){
     DB.lessons=(lessons||[]).map(rowToLesson);
     DB.bips=(bips||[]).map(rowToBIP);
     DB.sessions=(sessions||[]).map(rowToSession);
+    DB.behaviors=(behaviors||[]).map(r=>({id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:r.notes,txId:r.tx_id,txName:r.tx_name}));
     // Seed default users if empty
     if(!DB.users.length){
       const def=defaultData();
@@ -296,6 +299,7 @@ async function flushSave(){
       ...DB.clients.map(c=>sbUpsert('clients',clientToRow(c))),
       ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
+      ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count||null,duration:b.duration||null,avg_duration:b.avgDuration||null,rate:b.rate||null,notes:b.notes||null,tx_id:b.txId||null,tx_name:b.txName||null})),
     ]);
     hideSyncStatus();
   }catch(e){
@@ -2022,7 +2026,7 @@ function renderBehaviorTab(){
 
   const bipCards=bips.map(bip=>{
     const allMeas=bipMeasList(bip);
-    const allFns=(bip.functions&&bip.functions.length)?bip.functions:['unknown'];
+    const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
     const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
     const editBipBtn=currentUser.role==='supervisor'?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button>':'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
@@ -2175,7 +2179,7 @@ function logBIP(bipId){
   const date=(document.getElementById('bxd_'+bipId)||{}).value||new Date().toISOString().slice(0,10);
   const notes=((document.getElementById('bxn_'+bipId)||{}).value||'').trim();
   const allMeas=bipMeasList(bip);
-  const allFns=(bip.functions&&bip.functions.length)?bip.functions:['unknown'];
+  const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
   const fnEl=document.getElementById('bxfn_'+bipId);
   const fn=fnEl?fnEl.value:(allFns[0]||'unknown');
   const entry={id:uid(),clientId:selectedClientId,bipId,date,function:fn,txId:currentUser.id,txName:currentUser.name,notes};
@@ -2214,7 +2218,7 @@ function saveBIPField(bipId,field,value){
 // ═══════════════════════════════════════════════════════
 function drawBIPChart(bip){
   const allMeas=bipMeasList(bip);
-  const allFns=(bip.functions&&bip.functions.length)?bip.functions:['unknown'];
+  const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
   const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
   if(logs.length<2)return;
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
