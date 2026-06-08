@@ -244,27 +244,40 @@ function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clie
 async function loadFromSupabase(){
   showSyncStatus('loading');
   try{
-    const [users,clients,lessons,bips,sessions,behaviors]=await Promise.all([
-      sbFetch('users','GET',null,'select=*'),
-      sbFetch('clients','GET',null,'select=*'),
-      sbFetch('lessons','GET',null,'select=*'),
-      sbFetch('bips','GET',null,'select=*'),
-      sbFetch('sessions','GET',null,'select=*&order=date.asc'),
-      sbFetch('behaviors','GET',null,'select=*&order=date.asc').catch(()=>[])
-    ]);
-    if(!clients)throw new Error('Failed to load');
-    DB.users=(users||[]).map(rowToUser);
-    DB.clients=(clients||[]).map(rowToClient);
-    DB.lessons=(lessons||[]).map(rowToLesson);
-    DB.bips=(bips||[]).map(rowToBIP);
-    DB.sessions=(sessions||[]).map(rowToSession);
-    DB.behaviors=(behaviors||[]).map(r=>({id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:r.notes,txId:r.tx_id,txName:r.tx_name}));
-    // Seed default users if empty
+    // Fetch each table independently so one failure doesn't block login
+    const safe=async(table,params)=>{try{const r=await sbFetch(table,'GET',null,params);return Array.isArray(r)?r:[];}catch(e){console.warn('Load failed:',table,e);return [];}};
+    const users   = await safe('users','select=*');
+    const clients  = await safe('clients','select=*');
+    const lessons  = await safe('lessons','select=*');
+    const bips    = await safe('bips','select=*');
+    const sessions = await safe('sessions','select=*&order=date.asc');
+    const behaviors= await safe('behaviors','select=*&order=date.asc');
+
+    console.log('Loaded — users:',users.length,'clients:',clients.length,'lessons:',lessons.length);
+
+    DB.users   = users.map(rowToUser);
+    DB.clients  = clients.map(rowToClient);
+    DB.lessons  = lessons.map(rowToLesson);
+    DB.bips    = bips.map(rowToBIP);
+    DB.sessions = sessions.map(rowToSession);
+    DB.behaviors= behaviors.map(r=>({id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:r.notes,txId:r.tx_id,txName:r.tx_name}));
+
+    // Seed default users if none exist
     if(!DB.users.length){
       const def=defaultData();
       await Promise.all(def.users.map(u=>sbUpsert('users',userToRow(u))));
       DB.users=def.users;
+      console.log('Seeded default users');
     }
+    hideSyncStatus();
+    return true;
+  }catch(e){
+    console.error('loadFromSupabase fatal:',e);
+    showSyncStatus('error');
+    return false;
+  }
+}
+
     hideSyncStatus();
     return true;
   }catch(e){
@@ -720,13 +733,21 @@ async function doLogin(){
   if(btn){btn.textContent='Loading...';btn.disabled=true;}
   // Load from Supabase first
   const ok=await loadFromSupabase();
+  console.log('loadFromSupabase returned:',ok,'users:',DB.users.length);
   if(!ok){
     if(btn){btn.textContent='Log In';btn.disabled=false;}
-    document.getElementById('l-err').textContent='Connection error — check internet';
+    document.getElementById('l-err').textContent='Connection error — check internet and try again';
+    document.getElementById('l-err').style.display='block';
+    return;
+  }
+  if(!DB.users.length){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    document.getElementById('l-err').textContent='No users found in database — check Supabase setup';
     document.getElementById('l-err').style.display='block';
     return;
   }
   const user=DB.users.find(x=>x.username===u&&x.password===p);
+  console.log('Login attempt — username:',u,'match:',!!user,'all users:',DB.users.map(x=>x.username));
   if(!user){
     if(btn){btn.textContent='Log In';btn.disabled=false;}
     document.getElementById('l-err').textContent='Invalid username or password';
