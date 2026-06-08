@@ -2583,22 +2583,34 @@ function renderReport(){
 function renderAdmin(){
   const userRows=DB.users.map(u=>{
     const ac=u.assignedClients||[];
-    const clientOpts=DB.clients.map(c=>'<option value="'+c.id+'"'+(ac.includes(c.id)?' selected':'')+'>'+esc(c.name)+'</option>').join('');
-    const assignCtrl=u.role==='therapist'?
-      '<select multiple id="ac_'+u.id+'" style="font-size:.78rem;min-width:160px;max-height:80px" onchange="saveAssignment(\''+u.id+'\')">'+clientOpts+'</select>':
-      '<span style="font-size:.78rem;color:var(--muted)">All clients</span>';
-    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='supervisor'?'green':'blue')+'">'+u.role+'</span></td><td>'+assignCtrl+'</td><td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+u.id+'\')">✕</button></td></tr>';
+    const opts=DB.clients.map(c=>'<option value="'+c.id+'"'+(ac.includes(c.id)?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+    const uid_safe=u.id.replace(/[^a-z0-9]/gi,'_');
+    const ctrl=u.role==='therapist'?
+      '<select multiple id="asgn_'+uid_safe+'" style="font-size:.78rem;min-width:160px;max-height:80px" onchange="saveAssign(this,&quot;'+u.id+'&quot;)">'+opts+'</select>':
+      '<span style="font-size:.78rem;color:var(--muted)">All (supervisor)</span>';
+    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='supervisor'?'green':'blue')+'">'+u.role+'</span></td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" onclick="deleteUser(&quot;'+u.id+'&quot;)">✕</button></td></tr>';
   }).join('');
-  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+
-    '<div class="card"><h3 style="margin-bottom:12px">Add User</h3><div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div><div class="fg"><label>Username<input id="au-u" type="text"></label></div><div class="fg"><label>Password<input id="au-p" type="password"><span style="font-size:.7rem;color:#ef4444;display:block;margin-top:2px">⚠ Use a simple PIN, not a personal password.</span></label></div><div class="fg-sm"><label>Role<select id="au-r"><option value="therapist">Therapist</option><option value="supervisor">Supervisor</option></select></label></div><div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'+
-    '<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Therapists only see clients assigned to them. Hold Ctrl/Cmd to select multiple.</p><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'+
-    '<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3><div id="storage-bar" style="margin-bottom:12px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="exportDB()">⬇ Export Backup</button><label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label><button class="btn btn-danger btn-sm" onclick="if(confirm(\'Reset?\'))resetData()">⚠ Reset</button></div></div>';
+  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
+    +'<div class="card"><h3 style="margin-bottom:12px">Add User</h3>'
+    +'<div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
+    +'<div class="fg"><label>Username<input id="au-u" type="text"></label></div>'
+    +'<div class="fg"><label>Password<input id="au-p" type="password"></label></div>'
+    +'<div class="fg-sm"><label>Role<select id="au-r"><option value="therapist">Therapist</option><option value="supervisor">Supervisor</option></select></label></div>'
+    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
+    +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Therapists only see assigned clients. Hold Ctrl/Cmd to multi-select.</p>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
+    +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
+    +'<div id="storage-bar" style="margin-bottom:12px"></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn btn-outline" onclick="exportDB()">⬇ Export</button>'
+    +'<label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
+    +'<button class="btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
+    +'</div></div>';
 }
-function saveAssignment(userId){
+function saveAssign(sel,userId){
   const u=DB.users.find(x=>x.id===userId);
-  if(!u)return;
-  const sel=document.getElementById('ac_'+userId);
-  if(!sel)return;
+  if(!u||!sel)return;
   u.assignedClients=Array.from(sel.selectedOptions).map(o=>o.value);
   sbSaveUser(u);
   toast('Access saved ✓');
