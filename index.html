@@ -1541,8 +1541,9 @@ function drawLessonChart(lesson,sd,target){
   const existing=Chart.getChart(canvas);if(existing)existing.destroy();
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
+  const _dateCount={};
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
-const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:null);if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
+const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:null);if(v!=null){_dateCount[s.date]=(_dateCount[s.date]||0)+1;const _dc=_dateCount[s.date];const _lbl=fmtDateShort(s.date)+(_dc>1?' #'+_dc:'')+'\n'+s.txName.split(' ')[0];labels.push(_lbl);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
   if(!labels.length){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">📊 No session data yet for this target.</p>';return;}
   if(wrapEl)wrapEl.style.border='1px solid #29ABE2';
   const isRating=target.dataType==='rating';
@@ -2250,7 +2251,7 @@ function drawBIPChart(bip){
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
   const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
-  if(logs.length<2)return;
+  if(logs.length<1)return;
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#dc2626',duration:'#1a9fd4',rate:'#d97706'};
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
@@ -2265,17 +2266,14 @@ function drawBIPChart(bip){
     const existing=Chart.getChart(canvas);if(existing)existing.destroy();
 
     // one dataset per function
-    const allDates=[...new Set(logs.map(b=>b.date))].sort();
-    const labels=allDates.map(d=>fmtDateShort(d));
-    const datasets=allFns.map(fn=>{
+    // Use individual log entries as points (not aggregated by date)
+    const fnLogs=allFns.map(fn=>logs.filter(b=>b.function===fn||(allFns.length===1&&!b.function)));
+    const maxLen=Math.max(...fnLogs.map(l=>l.length),1);
+    const labels=logs.map((b,i)=>{const cnt=logs.slice(0,i+1).filter(l=>l.date===b.date).length;return fmtDateShort(b.date)+(cnt>1?' #'+cnt:'');});
+    const datasets=allFns.map((fn,fi)=>{
       const color=bipFnColor(fn);
-      const data=allDates.map(d=>{
-        const entries=logs.filter(b=>b.date===d&&(b.function===fn||(!b.function&&fn===allFns[0])));
-        if(!entries.length)return null;
-        const vals=entries.map(b=>bipValForMeas(b,meas)).filter(v=>v!=null);
-        return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10:null;
-      });
-      return{label:bipFnLabel(fn),data,borderColor:color,backgroundColor:'transparent',tension:.3,fill:false,pointRadius:4,borderWidth:2,spanGaps:true};
+      const fData=logs.map(b=>(b.function===fn||(allFns.length===1&&!b.function))?bipValForMeas(b,meas):null);
+      return{label:bipFnLabel(fn),data:fData,borderColor:color,backgroundColor:'transparent',tension:.3,fill:false,pointRadius:4,borderWidth:2,spanGaps:true};
     });
 
     // goal line
