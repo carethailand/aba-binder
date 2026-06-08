@@ -238,7 +238,7 @@ function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s
 function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
 
 function userToRow(u){return{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,assigned_clients:u.assignedClients||[]};}
-function rowToUser(r){return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:r.assigned_clients||[]};}
+function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clients:(typeof r.assigned_clients==='string'&&r.assigned_clients?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:ac};}
 
 // ── Load all data from Supabase ──
 async function loadFromSupabase(){
@@ -758,7 +758,9 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 
 // ── ROUTING ──
 function showView(v){currentView=v;render();}
-function selectClient(id){selectedClientId=id;selectedTab='checklist';showView('client');}
+function selectClient(id){
+  if(currentUser&&currentUser.role==='therapist'&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
+selectedClientId=id;selectedTab='checklist';showView('client');}
 function setTab(t){selectedTab=t;render();}
 function render(){
   const app=document.getElementById('app');
@@ -814,7 +816,13 @@ function render(){
 
 // ── CLIENT LIST ──
 function renderClientList(){
-  const cards=DB.clients.map(c=>{
+  const visibleClients=currentUser&&currentUser.role==='therapist'
+    ?DB.clients.filter(c=>(currentUser.assignedClients||[]).includes(c.id))
+    :DB.clients;
+  if(currentUser&&currentUser.role==='therapist'&&visibleClients.length===0){
+    return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
+  }
+  const cards=visibleClients.map(c=>{
     const n=DB.lessons.filter(l=>l.clientId===c.id).length;
     const last=DB.sessions.filter(s=>s.clientId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const flags=countFlags(c.id);
@@ -2562,8 +2570,27 @@ function renderReport(){
 // ADMIN
 // ════════════════════════════════════════════════
 function renderAdmin(){
-  const users=DB.users.map(u=>'<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='supervisor'?'green':'blue')+'">'+u.role+'</span></td><td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+u.id+'\')">Remove</button></td></tr>').join('');
-  return '<h2 style="margin-bottom:16px">⚙ Admin</h2><div class="card"><h2>Add User</h2><div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div><div class="fg"><label>Username<input id="au-u" type="text"></label></div><div class="fg"><label>Password<input id="au-p" type="password"><span style="font-size:.7rem;color:#ef4444;display:block;margin-top:2px">⚠ Stored locally — use a simple PIN, not a personal password.</span></label></div><div class="fg-sm"><label>Role<select id="au-r"><option value="therapist">Therapist</option><option value="supervisor">Supervisor</option></select></label></div><div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div><div class="card"><h2>Users</h2><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th></th></tr></thead><tbody>'+users+'</tbody></table></div><div class="card"><h2>Data &amp; Storage</h2><div id="storage-bar" style="margin-bottom:12px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="exportDB()">⬇ Export Backup</button><label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label><button class="btn btn-danger btn-sm" onclick="if(confirm(\'Reset?\'))resetData()">⚠ Reset</button></div><p style="font-size:.78rem;color:var(--muted);margin-top:8px">Tip: Export a backup monthly. Browser storage ~5 MB limit.</p></div>';
+  const userRows=DB.users.map(u=>{
+    const ac=u.assignedClients||[];
+    const clientOpts=DB.clients.map(c=>'<option value="'+c.id+'"'+(ac.includes(c.id)?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+    const assignCtrl=u.role==='therapist'?
+      '<select multiple id="ac_'+u.id+'" style="font-size:.78rem;min-width:160px;max-height:80px" onchange="saveAssignment(\''+u.id+'\')">'+clientOpts+'</select>':
+      '<span style="font-size:.78rem;color:var(--muted)">All clients</span>';
+    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='supervisor'?'green':'blue')+'">'+u.role+'</span></td><td>'+assignCtrl+'</td><td><button class="btn btn-danger btn-sm" onclick="deleteUser(\''+u.id+'\')">✕</button></td></tr>';
+  }).join('');
+  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+
+    '<div class="card"><h3 style="margin-bottom:12px">Add User</h3><div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div><div class="fg"><label>Username<input id="au-u" type="text"></label></div><div class="fg"><label>Password<input id="au-p" type="password"><span style="font-size:.7rem;color:#ef4444;display:block;margin-top:2px">⚠ Use a simple PIN, not a personal password.</span></label></div><div class="fg-sm"><label>Role<select id="au-r"><option value="therapist">Therapist</option><option value="supervisor">Supervisor</option></select></label></div><div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'+
+    '<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Therapists only see clients assigned to them. Hold Ctrl/Cmd to select multiple.</p><div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'+
+    '<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3><div id="storage-bar" style="margin-bottom:12px"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="exportDB()">⬇ Export Backup</button><label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label><button class="btn btn-danger btn-sm" onclick="if(confirm(\'Reset?\'))resetData()">⚠ Reset</button></div></div>';
+}
+function saveAssignment(userId){
+  const u=DB.users.find(x=>x.id===userId);
+  if(!u)return;
+  const sel=document.getElementById('ac_'+userId);
+  if(!sel)return;
+  u.assignedClients=Array.from(sel.selectedOptions).map(o=>o.value);
+  sbSaveUser(u);
+  toast('Access saved ✓');
 }
 function renderStorageBar(){
   try{
