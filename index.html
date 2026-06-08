@@ -278,16 +278,6 @@ async function loadFromSupabase(){
   }
 }
 
-    hideSyncStatus();
-    return true;
-  }catch(e){
-    console.error('Load error',e);
-    showSyncStatus('error');
-    return false;
-  }
-}
-
-// ── Save individual records (called instead of full saveData) ──
 async function sbSaveClient(cObj){
   await sbUpsert('clients',clientToRow(cObj));
   hideSyncStatus();
