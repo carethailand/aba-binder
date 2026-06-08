@@ -1039,6 +1039,15 @@ function renderTargetSessionEntry(lesson,sd,target){
       html+='<button class="cpi-btn" style="width:auto;padding:4px 10px;height:auto;line-height:1.4;font-size:.8rem;text-align:center" data-id="rt_'+id+'" data-val="'+v+'" onclick="toggleRating(this)"><strong>'+v+'</strong>'+(lbl?'<br><span style="font-size:.7rem;font-weight:400">'+esc(lbl)+'</span>':'')+'</button>';
     }
     html+='</div>';
+  } else if(target.dataType==='tally'){
+    const goalTxt=target.tallyGoal?(` — goal: ${target.tallyGoal}`+(target.tallyPeriod?` per ${target.tallyPeriod} min`:'')):''
+    html+='<div style="margin-top:6px">';
+    html+='<label style="font-size:.82rem;color:var(--muted)">Count observed'+goalTxt+'</label>';
+    html+='<div style="display:flex;align-items:center;gap:8px;margin-top:4px">';
+    html+='<button class="cpi-btn minus" style="font-size:1.2rem;width:36px;height:36px" onclick="adjustTally(\'dec_'+id+'\',\'tally_'+id+'\')">−</button>';
+    html+='<input type="number" id="tally_'+id+'" min="0" value="0" style="width:70px;font-size:1.3rem;font-weight:700;text-align:center;border:2px solid var(--primary);border-radius:8px;padding:4px">';
+    html+='<button class="cpi-btn plus" style="font-size:1.2rem;width:36px;height:36px" onclick="adjustTally(\'inc_'+id+'\',\'tally_'+id+'\')">\+</button>';
+    html+='</div></div>';
   }
 
   html+='</div>';
@@ -1099,8 +1108,9 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   });
   if(!labels.length)return;
   const isRating=target.dataType==='rating';
-  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):100;
-  const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):lesson.masteryRule.pct||80;
+  const isTally=target.dataType==='tally';
+  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:100;
+  const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?(target.tallyGoal||null):lesson.masteryRule.pct||80;
   // phase change lines
   const sgStepChanges=(target.dtStepChanges||[]).filter(c=>c.date);
   const sgPhaseLines=sgStepChanges.map(c=>{
@@ -1192,6 +1202,7 @@ function toggleCPI(btn){
   document.querySelectorAll('.cpi-btn[data-id="'+id+'"]').forEach(b=>b.classList.remove('sel'));
   btn.classList.add('sel');
 }
+function adjustTally(action,inputId){const el=document.getElementById(inputId);if(!el)return;let v=parseInt(el.value)||0;if(action.startsWith('inc'))v++;else if(action.startsWith('dec')&&v>0)v--;el.value=v;}
 function toggleRating(btn){
   const id=btn.dataset.id;
   document.querySelectorAll('.cpi-btn[data-id="'+id+'"]').forEach(b=>{b.classList.remove('rating-sel');b.style.background='';b.style.color='';b.style.borderColor='';});
@@ -1285,6 +1296,12 @@ function saveSession(){
                 }
               }
             }
+          }
+          } else if(target.dataType==='tally'){
+            const tallyEl=document.getElementById('tally_'+id);
+            const tallyVal=tallyEl?parseInt(tallyEl.value):NaN;
+            if(!isNaN(tallyVal)){entry.count=tallyVal;entry.pct=null;}
+            else{entry._skipped=true;}
           }
           const naEl=document.getElementById('na_'+id);
           if(naEl&&naEl.checked){
@@ -1499,8 +1516,9 @@ function renderLessonCard(lesson){
         chainInfo='<p style="font-size:.77rem;background:#fffbeb;color:#92400e;padding:3px 8px;border-radius:5px;margin-bottom:6px">'+t.chainingMode.toUpperCase()+' &nbsp;|&nbsp; 📍 Step '+(ci+1)+'/'+t.taSteps.length+' &nbsp;|&nbsp; ✓ '+mCount+' mastered</p>';
       }
       let ratingInfo='';
+      if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':'blue')+'">'+t.dataType+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div></div>';
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+t.dataType+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div></div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
@@ -1541,14 +1559,14 @@ function drawLessonChart(lesson,sd,target){
   const existing=Chart.getChart(canvas);if(existing)existing.destroy();
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
-  const _dateCount={};
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
-const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:null);if(v!=null){_dateCount[s.date]=(_dateCount[s.date]||0)+1;const _dc=_dateCount[s.date];const _lbl=fmtDateShort(s.date)+(_dc>1?' #'+_dc:'')+'\n'+s.txName.split(' ')[0];labels.push(_lbl);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
+const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?t.count:null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
   if(!labels.length){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">📊 No session data yet for this target.</p>';return;}
   if(wrapEl)wrapEl.style.border='1px solid #29ABE2';
   const isRating=target.dataType==='rating';
-  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):100;
-  const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):lesson.masteryRule.pct||80;
+  const isTally=target.dataType==='tally';
+  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:100;
+  const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?(target.tallyGoal||null):lesson.masteryRule.pct||80;
   // Phase change lines: find indices where dtStepChanges happened
   const stepChanges=(target.dtStepChanges||[]).filter(c=>c.date);
   const phaseLines=stepChanges.map(c=>{
@@ -1666,7 +1684,7 @@ function showAddLesson(){
   '<label style="margin-top:8px">Response<textarea id="nl-r" rows="2"></textarea></label>'+
   '<hr style="margin:12px 0"><h4 style="margin-bottom:10px">First Target</h4>'+
   '<label>Target name<input id="nl-tname" type="text" placeholder="e.g. Target 1"></label>'+
-  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option></select></label></div><div class="fg-sm"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
+  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option><option value="tally">Tally (raw count)</option></select></label></div><div class="fg-sm" id="nl-trials-wrap"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
   '<div id="nl-ta-wrap" style="display:none"><label>Chaining mode<select id="nl-chain"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:8px">Steps (one per line)<textarea id="nl-steps" rows="5"></textarea></label></div>'+
   '<div id="nl-rating-wrap" style="display:none"><div style="background:#f8fafc;border-radius:8px;padding:12px;margin-top:8px"><p style="font-size:.82rem;font-weight:600;margin-bottom:8px">Rating labels (1–5):</p>'+
   [1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:6px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="nl-rl'+i+'" placeholder="e.g. '+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+
@@ -1675,7 +1693,7 @@ function showAddLesson(){
   '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveNewLesson()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 function toggleDTField(){document.getElementById('nl-dt-wrap').style.display=document.getElementById('nl-style').value==='NET'?'none':'';}
-function toggleTAFields(){const v=document.getElementById('nl-dtype').value;document.getElementById('nl-ta-wrap').style.display=v==='ta'?'':'none';document.getElementById('nl-rating-wrap').style.display=v==='rating'?'':'none';}
+function toggleTAFields(){const v=document.getElementById('nl-dtype').value;document.getElementById('nl-ta-wrap').style.display=v==='ta'?'':'none';document.getElementById('nl-rating-wrap').style.display=v==='rating'?'':'none';const _tw=document.getElementById('nl-trials-wrap');if(_tw)_tw.style.display=v==='tally'?'none':'';const _tlw=document.getElementById('nl-tally-wrap');if(_tlw)_tlw.style.display=v==='tally'?'':'none';}
 
 function saveNewLesson(){
   const name=document.getElementById('nl-name').value.trim();if(!name){alert('Name required');return;}
@@ -1684,13 +1702,15 @@ function saveNewLesson(){
   const taSteps=dtype==='ta'?document.getElementById('nl-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
   const chain=dtype==='ta'?(document.getElementById('nl-chain').value||'total'):'total';
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('nl-rl1').value||'1',2:document.getElementById('nl-rl2').value||'2',3:document.getElementById('nl-rl3').value||'3',4:document.getElementById('nl-rl4').value||'4',5:document.getElementById('nl-rl5').value||'5'}}:null;
+  const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('nl-tally-goal').value)||null):null;
+  const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('nl-tally-period').value)||null):null;
   const snote=document.getElementById('nl-snote').value.trim();
   DB.lessons.push({
     id:uid(),clientId:selectedClientId,name,teachingStyle:style,
     phase:'acquisition',maintenanceSchedule:'',dtStepIndex:0,dtStepRecords:{},
     masteryRule:{pct:parseInt(document.getElementById('nl-pct').value)||80,sessions:parseInt(document.getElementById('nl-sess').value)||3,therapists:parseInt(document.getElementById('nl-tx').value)||2},
     sds:[{id:uid(),sd:document.getElementById('nl-sd').value.trim(),response:document.getElementById('nl-r').value.trim(),teachingStyle:style,
-      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,status:'in_progress',introducedDate:new Date().toISOString().slice(0,10),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
+      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'in_progress',introducedDate:new Date().toISOString().slice(0,10),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
     supNotes:snote?[{date:new Date().toISOString().slice(0,10),author:currentUser.id,text:snote}]:[]
   });
   saveData();render();
@@ -1723,10 +1743,11 @@ function addTarget(lId,sId){
     +'<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">SD: <strong>'+esc(sd.sd)+'</strong></p>'
     +'<label>Target name<input id="at-n" type="text" placeholder="e.g. 2-step instruction"></label>'
     +'<div class="form-row" style="margin-top:8px">'
-    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(\'at-ta\').style.display=v===\'ta\'?\'\':\'none\';document.getElementById(\'at-rt\').style.display=v===\'rating\'?\'\':\'none\';"><option value="percent">% Correct</option><option value="ta">Task Analysis</option><option value="rating">Rating Scale</option></select></label></div>'
+    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(\'at-ta\').style.display=v===\'ta\'?\'\':\'none\';document.getElementById(\'at-rt\').style.display=v==='rating'?'':'none';var _tw=document.getElementById('at-tr-wrap');if(_tw)_tw.style.display=v==='tally'?'none':'';var _tlw=document.getElementById('at-tally');if(_tlw)_tlw.style.display=v==='tally'?'':'none';"><option value="percent">% Correct</option><option value="ta">Task Analysis</option><option value="rating">Rating Scale</option><option value="tally">Tally (raw count)</option></select></label></div>'
     +'<div class="fg-sm"><label>Trials<input id="at-tr" type="number" value="10"></label></div></div>'
     +'<div id="at-ta" style="display:none"><label>Chain mode<select id="at-cm"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:6px">Steps (one per line)<textarea id="at-st" rows="4"></textarea></label></div>'
     +'<div id="at-rt" style="display:none">'+[1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:4px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="at-rl'+i+'" placeholder="'+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+'</div>'
+    +'<div id="at-tally" style="display:none"><div class="form-row" style="margin-top:6px"><div class="fg-sm"><label>Goal count<input id="at-tally-goal" type="number" min="1" placeholder="e.g. 30"></label></div><div class="fg-sm"><label>Per (min)<input id="at-tally-period" type="number" min="1" placeholder="e.g. 60"></label></div></div></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-green" onclick="saveAddTarget(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
@@ -1736,7 +1757,9 @@ function saveAddTarget(lId,sId){
   const dtype=document.getElementById('at-dt').value;
   const taSteps=dtype==='ta'?document.getElementById('at-st').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('at-rl1').value||'1',2:document.getElementById('at-rl2').value||'2',3:document.getElementById('at-rl3').value||'3',4:document.getElementById('at-rl4').value||'4',5:document.getElementById('at-rl5').value||'5'}}:null;
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
+  const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
+  const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
   sd.targets.push(newT);
   sbSaveLesson(l);closeModal();render();
 }
@@ -1748,7 +1771,7 @@ function addSDTarget(lId){
   '<label>Add to SD<select id="at-sd"><option value="new">➕ New SD</option>'+l.sds.map((s,i)=>'<option value="'+s.id+'">Existing SD'+(i+1)+': '+esc(s.sd.slice(0,40))+'</option>').join('')+'</select></label>'+
   '<div id="at-new-wrap"><hr style="margin:10px 0"><label>SD text<textarea id="at-sd-t" rows="2"></textarea></label><label style="margin-top:8px">Response<textarea id="at-r-t" rows="2"></textarea></label><label style="margin-top:8px">Teaching Style<select id="at-ts"><option value="DTT">DTT — Discrete Trial Training</option><option value="NET">NET — Natural Environment Teaching</option></select></label></div>'+
   '<hr style="margin:10px 0"><label>Target name<input id="at-n" type="text"></label>'+
-  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(\'at-ta\').style.display=v===\'ta\'?\'\':\'none\';document.getElementById(\'at-rt\').style.display=v===\'rating\'?\'\':\'none\';"><option value="percent">% Correct</option><option value="ta">Task Analysis</option><option value="rating">Rating Scale</option></select></label><div class="fg-sm"><label>Trials<input id="at-tr" type="number" value="10"></label></div></div>'+
+  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(\'at-ta\').style.display=v===\'ta\'?\'\':\'none\';document.getElementById(\'at-rt\').style.display=v==='rating'?'':'none';var _tw2=document.getElementById('at-tr-wrap');if(_tw2)_tw2.style.display=v==='tally'?'none':'';var _tlw2=document.getElementById('at-tally');if(_tlw2)_tlw2.style.display=v==='tally'?'':'none';"><option value="percent">% Correct</option><option value="ta">Task Analysis</option><option value="rating">Rating Scale</option><option value="tally">Tally (raw count)</option></select></label><div class="fg-sm"><label>Trials<input id="at-tr" type="number" value="10"></label></div></div>'+
   '<div id="at-ta" style="display:none"><label>Chain mode<select id="at-cm"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:6px">Steps (one per line)<textarea id="at-st" rows="4"></textarea></label></div>'+
   '<div id="at-rt" style="display:none">'+[1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:4px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="at-rl'+i+'" placeholder="'+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+'</div>'+
   '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveAddSDTarget(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
@@ -1760,7 +1783,9 @@ function saveAddSDTarget(lId){
   const dtype=document.getElementById('at-dt').value;
   const taSteps=dtype==='ta'?document.getElementById('at-st').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('at-rl1').value||'1',2:document.getElementById('at-rl2').value||'2',3:document.getElementById('at-rl3').value||'3',4:document.getElementById('at-rl4').value||'4',5:document.getElementById('at-rl5').value||'5'}}:null;
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
+  const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
+  const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
   const atTs=(document.getElementById('at-ts')||{}).value||'DTT';
   if(sdSel==='new'){l.sds.push({id:uid(),sd:document.getElementById('at-sd-t').value.trim(),response:document.getElementById('at-r-t').value.trim(),teachingStyle:atTs,targets:[newT]});}
   else{l.sds.find(s=>s.id===sdSel).targets.push(newT);}
@@ -2281,7 +2306,7 @@ function drawBIPChart(bip){
     // Use individual log entries as points (not aggregated by date)
     const fnLogs=allFns.map(fn=>logs.filter(b=>b.function===fn||(allFns.length===1&&!b.function)));
     const maxLen=Math.max(...fnLogs.map(l=>l.length),1);
-    const labels=logs.map((b,i)=>{const cnt=logs.slice(0,i+1).filter(l=>l.date===b.date).length;return fmtDateShort(b.date)+(cnt>1?' #'+cnt:'');});
+    const labels=logs.map(b=>fmtDateShort(b.date)+'\n'+(b.txName?b.txName.split(' ')[0]:''));
     const datasets=allFns.map((fn,fi)=>{
       const color=bipFnColor(fn);
       const fData=logs.map(b=>(b.function===fn||(allFns.length===1&&!b.function))?bipValForMeas(b,meas):null);
