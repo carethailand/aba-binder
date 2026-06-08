@@ -217,9 +217,11 @@ async function sbFetch(table,method='GET',body=null,params=''){
 }
 async function sbUpsert(table,body){
   const url=SUPABASE_URL+'/rest/v1/'+table;
-  const r=await fetch(url,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(body)});
-  if(!r.ok){const t=await r.text();console.error('sbUpsert error',table,r.status,t);return null;}
-  return r.json();
+  try{
+    const r=await fetch(url,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(body)});
+    if(!r.ok){const t=await r.text();console.error('sbUpsert error',table,r.status,t);toast('⚠ Save error ('+table+'): '+r.status+' — '+t.slice(0,80),5000);return null;}
+    return r.json();
+  }catch(e){console.error('sbUpsert fetch failed',table,e);toast('⚠ Network error saving '+table,4000);return null;}
 }
 
 // ── Map DB <-> Supabase ──
