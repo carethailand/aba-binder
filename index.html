@@ -283,8 +283,8 @@ async function sbSaveLesson(lObj){
 async function sbSaveBIP(bObj){
   await sbUpsert('bips',bipToRow(bObj));
 }
-async function sbSaveSession(sObj){
-  await sbUpsert('sessions',sessionToRow(sObj));
+async function sbSaveSession(rowObj){
+  await sbUpsert('sessions',rowObj);
 }
 async function sbSaveUser(uObj){
   await sbUpsert('users',userToRow(uObj));
@@ -298,9 +298,9 @@ async function deleteRecord(table,id){
 let _saveQueue={};
 let _saveTimer=null;
 function saveData(){
-  // Mark all as dirty and debounce
+  // Immediate save — no debounce risk
   _saveTimer&&clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(flushSave,800);
+  _saveTimer=setTimeout(flushSave,300);
 }
 async function flushSave(){
   showSyncStatus('saving');
@@ -322,7 +322,7 @@ async function flushSave(){
 // Sessions are large — save individually, not bulk
 async function saveSessionRecord(s){
   showSyncStatus('saving');
-  await sbUpsert('sessions',sessionToRow(s));
+  await sbUpsert('sessions',s);
   hideSyncStatus();
 }
 
@@ -823,7 +823,7 @@ function renderClientList(){
 }
 function countFlags(cid){return DB.lessons.filter(l=>l.clientId===cid).reduce((s,l)=>s+l.sds.reduce((s2,sd)=>s2+sd.targets.filter(t=>t.status==='flagged').length,0),0);}
 function showAddClient(){modal('<h3 style="margin-bottom:14px">Add Client</h3><label>Name<input id="nc-n" type="text"></label><label style="margin-top:10px">DOB<input id="nc-d" type="date"></label><label style="margin-top:10px">Diagnosis<input id="nc-dx" type="text" value="ASD"></label><div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="addNewClient()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
-function addNewClient(){const name=document.getElementById('nc-n').value.trim();if(!name)return;const nc={id:uid(),name,dob:document.getElementById('nc-d').value,diagnosis:document.getElementById('nc-dx').value,supervisor:currentUser.id,notes:[],reinforcers:[]};DB.clients.push(nc);saveData();render();}
+function addNewClient(){const name=document.getElementById('nc-n').value.trim();if(!name)return;const nc={id:uid(),name,dob:document.getElementById('nc-d').value,diagnosis:document.getElementById('nc-dx').value,supervisor:currentUser.id,notes:[],reinforcers:[]};DB.clients.push(nc);sbSaveClient(nc);render();}
 
 // ── CLIENT VIEW ──
 function renderClientView(){
@@ -1321,8 +1321,10 @@ function saveSession(){
   const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',notes:txNotes,lessonData};
   DB.sessions.push(newSess);
   clearSessState();
-  saveData();
+  // Save session immediately to Supabase
   sbSaveSession(sessionToRow(newSess));
+  // Also flush any pending lesson/bip changes
+  flushSave();
   // flash checklist checkmarks before re-render
   lessonData.forEach(ld=>{
     (ld.targets||[]).filter(t=>t.dataType!=='maintenance').forEach(t=>{
@@ -1733,7 +1735,7 @@ function saveAddTarget(lId,sId){
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('at-rl1').value||'1',2:document.getElementById('at-rl2').value||'2',3:document.getElementById('at-rl3').value||'3',4:document.getElementById('at-rl4').value||'4',5:document.getElementById('at-rl5').value||'5'}}:null;
   const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
   sd.targets.push(newT);
-  saveData();closeModal();render();
+  sbSaveLesson(l);closeModal();render();
 }
 
 // ── Add SD/Target ──
@@ -1878,7 +1880,7 @@ function saveEditTarget(lId,sId,tId){
       }
     }
   }
-  saveData();render();
+  sbSaveLesson(l);render();
 }
 function addLessonNote(lId){
   modal('<h3 style="margin-bottom:12px">Supervisor Note</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
@@ -2226,7 +2228,7 @@ function logBIP(bipId){
     const occurrences=entry.count||parseInt(cntEl&&cntEl.value)||1;
     entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*10)/10:0;
   }
-  DB.behaviors.push(entry);saveData();
+  DB.behaviors.push(entry);sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:entry.notes||null,tx_id:entry.txId||null,tx_name:entry.txName||null});
   toast('Logged '+esc(bip.name)+' ('+bipFnLabel(fn)+')');
   render();
 }
@@ -2485,7 +2487,7 @@ function deleteReinforcer(idx){
   saveData();render();
 }
 
-function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:document.getElementById('note-d').value,author:currentUser.id,authorName:currentUser.name,type:currentUser.role==='supervisor'?'supervisor':'therapist',text});saveData();toast('Saved ✓');render();}
+function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:document.getElementById('note-d').value,author:currentUser.id,authorName:currentUser.name,type:currentUser.role==='supervisor'?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -2537,7 +2539,7 @@ function renderStorageBar(){
 }
 setTimeout(renderStorageBar,50);
 
-function saveUser(){const n=document.getElementById('au-n').value.trim(),u=document.getElementById('au-u').value.trim(),p=document.getElementById('au-p').value;if(!n||!u||!p){alert('All fields required');return;}if(DB.users.find(x=>x.username===u)){alert('Username taken');return;}DB.users.push({id:uid(),name:n,username:u,password:p,role:document.getElementById('au-r').value});saveData();toast('Added ✓');render();}
+function saveUser(){const n=document.getElementById('au-n').value.trim(),u=document.getElementById('au-u').value.trim(),p=document.getElementById('au-p').value;if(!n||!u||!p){alert('All fields required');return;}if(DB.users.find(x=>x.username===u)){alert('Username taken');return;}const _nu={id:uid(),name:n,username:u,password:p,role:document.getElementById('au-r').value,assignedClients:[]};DB.users.push(_nu);sbSaveUser(_nu);toast('Added ✓');render();}
 function deleteUser(id){
   if(id===currentUser.id){alert("Can't remove yourself");return;}
   modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Remove User?</h3><p style="color:var(--muted);margin-bottom:16px">This cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();DB.users=DB.users.filter(u=>u.id!==\''+id+'\');saveData();render()">Remove</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
