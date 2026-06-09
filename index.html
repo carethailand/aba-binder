@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-E -->
+<!-- BUILD v2026-06-10-F -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-E</title>
+<title>CARE Client Binder v2026-06-10-F</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -1923,6 +1923,10 @@ function addTarget(lId,sId){
     +'<div id="at-ta" style="display:none"><label>Chain mode<select id="at-cm"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:6px">Steps (one per line)<textarea id="at-st" rows="4"></textarea></label></div>'
     +'<div id="at-rt" style="display:none">'+[1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:4px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="at-rl'+i+'" placeholder="'+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+'</div>'
     +'<div id="at-tally" style="display:none"><div class="form-row" style="margin-top:6px"><div class="fg-sm"><label>Goal count<input id="at-tally-goal" type="number" min="1" placeholder="e.g. 30"></label></div><div class="fg-sm"><label>Per (min)<input id="at-tally-period" type="number" min="1" placeholder="e.g. 60"></label></div></div></div>'
+    +'<div style="margin-top:10px">'
+    +'<label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — for DTT step tracking)</span></label>'
+    +'<textarea id="at-tsteps" rows="4" placeholder="e.g.\nMassed Trials\nExpanded Trials\nRandom Rotation\nGeneralization" style="font-size:.82rem"></textarea>'
+    +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-green" onclick="saveAddTarget(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
