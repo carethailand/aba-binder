@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-I -->
+<!-- BUILD v2026-06-09-J -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-I</title>
+<title>CARE Client Binder v2026-06-09-J</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -952,13 +952,30 @@ function renderClientView(){
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
   if(selectedTab==='checklist')return renderProgramChecklist();
-  if(selectedTab==='lessons')return renderLessonsView();
-  if(selectedTab==='maintenance')return renderMaintenanceTab();
+  // Lock Program Edit and Maintenance for supervisor until session started
+  const isSup=currentUser&&currentUser.role==='supervisor';
+  const supStarted=isSup&&getSupState().started;
+  if(selectedTab==='lessons'){
+    if(isSup&&!supStarted)return renderSupLocked('📋 Program Edit');
+    return renderLessonsView();
+  }
+  if(selectedTab==='maintenance'){
+    if(isSup&&!supStarted)return renderSupLocked('🔁 Maintenance');
+    return renderMaintenanceTab();
+  }
   if(selectedTab==='behavior')return renderBehaviorTab();
   if(selectedTab==='abc')return renderABCTab();
   if(selectedTab==='notes')return renderNotesTab();
   if(selectedTab==='report')return renderReport();
   return '';
+}
+function renderSupLocked(tabName){
+  return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:320px;gap:16px">'
+    +'<div style="font-size:3rem">🔒</div>'
+    +'<h3 style="margin:0;color:var(--muted)">'+tabName+' is locked</h3>'
+    +'<p style="color:var(--muted);font-size:.9rem;text-align:center;max-width:320px">Start a supervision session from the Checklist tab to unlock editing.</p>'
+    +'<button class="btn btn-primary" onclick="selectedTab=\'checklist\';render()">Go to Checklist</button>'
+    +'</div>';
 }
 
 // ════════════════════════════════════════════════
