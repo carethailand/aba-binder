@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-J -->
+<!-- BUILD v2026-06-09-K -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-J</title>
+<title>CARE Client Binder v2026-06-09-K</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -162,6 +162,14 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 #sess-sticky .ss-val{font-size:.85rem;font-weight:700;color:#1e293b;}
 #sess-sticky input,#sess-sticky select{padding:3px 7px;font-size:.82rem;border-radius:5px;border:1px solid #d1d5db;width:auto;}
 @media print{#nav,.tabs,.no-print,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}}
+
+/* ── Session-locked read-only mode ── */
+.session-locked input,
+.session-locked textarea,
+.session-locked select{pointer-events:none;opacity:.55;background:#f8fafc;}
+.session-locked button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
+.session-locked .no-session-banner{display:flex;}
+.no-session-banner{display:none;align-items:center;gap:8px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#92400e;}
 </style>
 </head>
 <body>
@@ -947,22 +955,18 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1px solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content">'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isSessionActive()?'':' class="session-locked"')+'><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+}
+function isSessionActive(){
+  if(!currentUser)return false;
+  const isSup=currentUser.role==='supervisor';
+  return isSup?!!getSupState().started:!!getSessState().started;
 }
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
   if(selectedTab==='checklist')return renderProgramChecklist();
-  // Lock Program Edit and Maintenance for supervisor until session started
-  const isSup=currentUser&&currentUser.role==='supervisor';
-  const supStarted=isSup&&getSupState().started;
-  if(selectedTab==='lessons'){
-    if(isSup&&!supStarted)return renderSupLocked('📋 Program Edit');
-    return renderLessonsView();
-  }
-  if(selectedTab==='maintenance'){
-    if(isSup&&!supStarted)return renderSupLocked('🔁 Maintenance');
-    return renderMaintenanceTab();
-  }
+  if(selectedTab==='lessons')return renderLessonsView();
+  if(selectedTab==='maintenance')return renderMaintenanceTab();
   if(selectedTab==='behavior')return renderBehaviorTab();
   if(selectedTab==='abc')return renderABCTab();
   if(selectedTab==='notes')return renderNotesTab();
