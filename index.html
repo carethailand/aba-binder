@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-S -->
+<!-- BUILD v2026-06-09-T -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-S</title>
+<title>CARE Client Binder v2026-06-09-T</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -2619,14 +2619,14 @@ function renderAdmin(){
   const userRows=DB.users.map(u=>{
     const ac=u.assignedClients||[];
     const uid_safe=u.id.replace(/[^a-z0-9]/gi,'_');
-    const ctrl=['junior','senior','therapist'].includes(u.role)?
+    const ctrl=['junior','senior','therapist','supervisor'].includes(u.role)?
       '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:260px">'+
       DB.clients.map(c=>{
         const on=ac.includes(c.id);
         return '<span style="cursor:pointer;padding:2px 8px;border-radius:12px;font-size:.75rem;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+'" data-uid="'+u.id+'" data-cid="'+c.id+'" onclick="toggleAssign(this)">'+esc(c.name)+'</span>';
       }).join('')+
       '</div>':
-      '<span style="font-size:.78rem;color:var(--muted)">All ('+(u.role==='admin'?'admin':u.role==='director'?'director':'supervisor')+')</span>';
+      '<span style="font-size:.78rem;color:var(--muted)">All ('+u.role+')</span>';
     return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td>'+'<select class="role-select" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','therapist','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+r+'</option>').join('')+'</select>'+'</td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" data-uid="'+u.id+'" onclick="deleteUser(this.dataset.uid)">✕</button></td></tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
