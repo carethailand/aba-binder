@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-O -->
+<!-- BUILD v2026-06-09-P -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-O</title>
+<title>CARE Client Binder v2026-06-09-P</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -2621,8 +2621,8 @@ function renderAdmin(){
         return '<span style="cursor:pointer;padding:2px 8px;border-radius:12px;font-size:.75rem;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+'" data-uid="'+u.id+'" data-cid="'+c.id+'" onclick="toggleAssign(this)">'+esc(c.name)+'</span>';
       }).join('')+
       '</div>':
-      '<span style="font-size:.78rem;color:var(--muted)">All (supervisor)</span>';
-    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='supervisor'?'green':'blue')+'">'+u.role+'</span></td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" data-uid="'+u.id+'" onclick="deleteUser(this.dataset.uid)">✕</button></td></tr>';
+      '<span style="font-size:.78rem;color:var(--muted)">All ('+(u.role==='admin'?'admin':u.role==='director'?'director':'supervisor')+')</span>';
+    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='director'?'green':u.role==='supervisor'?'green':u.role==='admin'?'orange':u.role==='senior'?'blue':'gray')+'">'+u.role+'</span></td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" data-uid="'+u.id+'" onclick="deleteUser(this.dataset.uid)">✕</button></td></tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
     +'<div class="card"><h3 style="margin-bottom:12px">Add User</h3>'
@@ -2632,7 +2632,7 @@ function renderAdmin(){
     +'<div class="fg-sm"><label>Role<select id="au-r"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label></div>'
     +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
     +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Therapists only see assigned clients. Hold Ctrl/Cmd to multi-select.</p>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
     +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
