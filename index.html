@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-P -->
+<!-- BUILD v2026-06-09-R -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-P</title>
+<title>CARE Client Binder v2026-06-09-R</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -179,6 +179,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-mode .view-only-banner{display:flex;}
 .view-only-mode .no-session-banner{display:none!important;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#9d174d;}
+
+.role-select{font-size:.78rem;padding:2px 6px;border-radius:6px;border:1px solid var(--border);}
 </style>
 </head>
 <body>
@@ -772,7 +774,7 @@ async function doLogin(){
   document.getElementById('login-screen').style.display='none';
   document.getElementById('nav').style.display='flex';
   document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
-  document.getElementById('btn-admin').style.display=user.role==='supervisor'?'':'none';
+  document.getElementById('btn-admin').style.display=['supervisor','director','admin'].includes(user.role)?'':'none';
   document.getElementById('app').style.display='block';
   showView('clients');
 }
@@ -963,11 +965,12 @@ function renderClientView(){
     stickyBar=supBar;
   }
   // TX notification badge
-  const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1px solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"')+'><div class="view-only-banner">👁 View only — you are not assigned to this client</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"')+'><div class="view-only-banner">👁️ View only — not assigned to this client / admin</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
+  if(currentUser.role==='admin')return true;
   if(currentUser.role!=='supervisor')return false;
   const ac=currentUser.assignedClients||[];
   return !ac.includes(selectedClientId);
@@ -2622,7 +2625,7 @@ function renderAdmin(){
       }).join('')+
       '</div>':
       '<span style="font-size:.78rem;color:var(--muted)">All ('+(u.role==='admin'?'admin':u.role==='director'?'director':'supervisor')+')</span>';
-    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td><span class="badge badge-'+(u.role==='director'?'green':u.role==='supervisor'?'green':u.role==='admin'?'orange':u.role==='senior'?'blue':'gray')+'">'+u.role+'</span></td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" data-uid="'+u.id+'" onclick="deleteUser(this.dataset.uid)">✕</button></td></tr>';
+    return '<tr><td>'+esc(u.name)+'</td><td>'+esc(u.username)+'</td><td>'+'<select class="role-select" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','therapist','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+r+'</option>').join('')+'</select>'+'</td><td>'+ctrl+'</td><td><button class="btn btn-danger btn-sm" data-uid="'+u.id+'" onclick="deleteUser(this.dataset.uid)">✕</button></td></tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
     +'<div class="card"><h3 style="margin-bottom:12px">Add User</h3>'
@@ -2641,6 +2644,14 @@ function renderAdmin(){
     +'<label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
     +'<button class="btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
     +'</div></div>';
+}
+function changeRole(userId, newRole){
+  const u=DB.users.find(x=>x.id===userId);
+  if(!u)return;
+  u.role=newRole;
+  sbSaveUser(u);
+  toast('Role updated ✓');
+  render();
 }
 function toggleAssign(chip){
   const userId=chip.dataset.uid;
