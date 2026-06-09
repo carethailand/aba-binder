@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-C -->
+<!-- BUILD v2026-06-10-D -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-C</title>
+<title>CARE Client Binder v2026-06-10-D</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -1666,12 +1666,12 @@ function renderLessonCard(lesson){
     const tHtml=sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').map(t=>{
       const isFlagged=t.status==='flagged';
       const chartId='lch_'+lesson.id+'_'+sd.id+'_'+t.id;
-      const confirmBtns=isFlagged?(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-xs no-print" onclick="confirmMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✓ Mastered</button> <button class="btn btn-xs btn-outline no-print" onclick="rejectMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">Keep active</button>':'<span style=\"font-size:.8rem;color:#d97706\">⚑ Awaiting supervisor review</span>'):'';
+      const confirmBtns=isFlagged?(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-xs no-print unlock-exempt" onclick="confirmMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✓ Mastered</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="rejectMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">Keep active</button>':'<span style=\"font-size:.8rem;color:#d97706\">⚑ Awaiting supervisor review</span>'):'';
       const isTHold=t.status==='on_hold';
       const isTMast=t.status==='mastered';
       const editBtn=currentUser.role!=='supervisor'?''
         :'<button class="btn btn-xs btn-outline no-print" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
-        +(!isTMast&&!isTHold&&(t.teachingSteps&&t.teachingSteps.length)?'<button class="btn btn-xs no-print" style="padding:2px 7px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd" onclick="showMeetCriteria(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">🎯 Meet Criteria</button>':'')
+        +(!isTMast&&!isTHold&&(t.teachingSteps&&t.teachingSteps.length)?'<button class="btn btn-xs no-print unlock-exempt" style="padding:2px 7px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd" onclick="showMeetCriteria(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">🎯 Meet Criteria</button>':'')
         +(['supervisor','director'].includes(currentUser.role)&&!isTMast&&!isTHold
           ?'<button class="btn btn-xs btn-green no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',\'mastered\')" title="Mark mastered">✓ Mastered</button>'
           :(['supervisor','director'].includes(currentUser.role)&&isTMast?'<button class="btn btn-xs btn-outline no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',' + '\'in_progress\')" title="Un-master">↩ Reopen</button>':'')
