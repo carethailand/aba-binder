@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-K -->
+<!-- BUILD v2026-06-09-L -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-K</title>
+<title>CARE Client Binder v2026-06-09-L</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -987,13 +987,7 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 function renderSessionEntry(){
   const ss_check=getSessState();
-  if(!ss_check.started){
-    return '<div class="card" style="text-align:center;padding:40px 20px">'
-      +'<div style="font-size:3rem;margin-bottom:16px">⏸</div>'
-      +'<h2 style="margin-bottom:10px;color:#dc2626">Session Not Started</h2>'
-      +'<p style="color:var(--muted);margin-bottom:20px">You must start a session before entering data.<br>Use the <strong>▶ Start Session</strong> button in the bar above.</p>'
-      +'</div>';
-  }
+
   const today=new Date().toISOString().slice(0,10);
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
@@ -2123,13 +2117,7 @@ function renderBehaviorTab(){
   const _isTX=currentUser&&currentUser.role==='therapist';
   const _ss=getSessState();
   const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
-  if(_isTX&&!_sessStarted){
-    return '<div class="card" style="text-align:center;padding:40px 20px">'
-      +'<div style="font-size:3rem;margin-bottom:16px">⏸</div>'
-      +'<h2 style="margin-bottom:10px;color:#dc2626">Session Not Started</h2>'
-      +'<p style="color:var(--muted);margin-bottom:20px">Start a session before logging behavior data.<br>Use the <strong>▶ Start Session</strong> button above.</p>'
-      +'</div>';
-  }
+  
   const bips=DB.bips.filter(b=>b.clientId===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
   const addBipBtn=currentUser.role==='supervisor'?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
