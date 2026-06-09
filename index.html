@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-K -->
+<!-- BUILD v2026-06-10-L -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-K</title>
+<title>CARE Client Binder v2026-06-10-L</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -1964,7 +1964,8 @@ function saveAddSDTarget(lId){
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('at-rl1').value||'1',2:document.getElementById('at-rl2').value||'2',3:document.getElementById('at-rl3').value||'3',4:document.getElementById('at-rl4').value||'4',5:document.getElementById('at-rl5').value||'5'}}:null;
   const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
   const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
+  const teachingSteps=(document.getElementById('at-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[]};
   const atTs=(document.getElementById('at-ts')||{}).value||'DTT';
   if(sdSel==='new'){l.sds.push({id:uid(),sd:document.getElementById('at-sd-t').value.trim(),response:document.getElementById('at-r-t').value.trim(),teachingStyle:atTs,targets:[newT]});}
   else{l.sds.find(s=>s.id===sdSel).targets.push(newT);}
