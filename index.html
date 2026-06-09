@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-W -->
+<!-- BUILD v2026-06-09-Y -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-W</title>
+<title>CARE Client Binder v2026-06-09-Y</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -225,6 +225,18 @@ const STORE_KEY='aba_v4';
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
 
+// Keepalive: ping Supabase once every 24h so the free-tier project never pauses
+(function keepAlive(){
+  const INTERVAL=24*60*60*1000;
+  function ping(){
+    fetch(SUPABASE_URL+'/rest/v1/users?limit=1',{
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}
+    }).catch(()=>{});
+  }
+  ping();
+  setInterval(ping,INTERVAL);
+})();
+
 // ── Supabase REST helper ──
 async function sbFetch(table,method='GET',body=null,params=''){
   const url=SUPABASE_URL+'/rest/v1/'+table+(params?'?'+params:'');
@@ -371,6 +383,81 @@ function hideSyncStatus(){
   if(el){el.style.opacity='0';setTimeout(()=>{if(el.style.opacity==='0')el.textContent='';},600);}
 }
 
+
+// ── Archive / Restore ────────────────────────────────────────────────────────
+async function archiveSessions(){
+  const monthEl=document.getElementById('archive-month');
+  if(!monthEl||!monthEl.value){alert('Please select a month to archive up to.');return;}
+  const cutoff=monthEl.value; // e.g. "2026-03"
+  const cutoffEnd=cutoff+'-31'; // sessions with date <= this are archived
+
+  const archSessions=DB.sessions.filter(s=>s.date<=cutoffEnd);
+  const archBehaviors=DB.behaviors.filter(b=>b.date<=cutoffEnd);
+
+  if(!archSessions.length&&!archBehaviors.length){
+    alert('No session data found up to '+cutoff+'.');return;
+  }
+
+  if(!confirm('Archive '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records up to end of '+cutoff+'?\nThis will remove them from the database after downloading.'))return;
+
+  // Download archive file
+  const archive={
+    archivedAt:new Date().toISOString(),
+    archiveUpTo:cutoff,
+    sessions:archSessions,
+    behaviors:archBehaviors
+  };
+  const b=new Blob([JSON.stringify(archive,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(b);
+  a.download='archive_'+cutoff+'.json';
+  a.click();
+
+  // Delete from Supabase
+  for(const s of archSessions){
+    await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
+  }
+  for(const bx of archBehaviors){
+    await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
+  }
+
+  // Update local DB
+  DB.sessions=DB.sessions.filter(s=>s.date>cutoffEnd);
+  DB.behaviors=DB.behaviors.filter(b=>b.date>cutoffEnd);
+
+  toast('Archived '+archSessions.length+' sessions ✓');
+  render();
+}
+
+async function restoreArchive(file){
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const arc=JSON.parse(e.target.result);
+      const sessions=arc.sessions||[];
+      const behaviors=arc.behaviors||[];
+      if(!sessions.length&&!behaviors.length){alert('No session data found in file.');return;}
+      if(!confirm('Load '+sessions.length+' sessions and '+behaviors.length+' behavior records from archive '+arc.archiveUpTo+'?\nThis will merge into current data.'))return;
+
+      // Merge — skip duplicates
+      const existIds=new Set(DB.sessions.map(s=>s.id));
+      const newSess=sessions.filter(s=>!existIds.has(s.id));
+      const existBxIds=new Set(DB.behaviors.map(b=>b.id));
+      const newBx=behaviors.filter(b=>!existBxIds.has(b.id));
+
+      // Save to Supabase
+      for(const s of newSess) await sbUpsert('sessions',sessionToRow(s));
+      for(const bx of newBx) await sbUpsert('behaviors',{id:bx.id,client_id:bx.clientId,bip_id:bx.bipId,date:bx.date,func:bx.function,count:bx.count,duration:bx.duration,avg_duration:bx.avgDuration,rate:bx.rate,notes:bx.notes,tx_id:bx.txId,tx_name:bx.txName});
+
+      DB.sessions=[...DB.sessions,...newSess].sort((a,b)=>a.date.localeCompare(b.date));
+      DB.behaviors=[...DB.behaviors,...newBx].sort((a,b)=>a.date.localeCompare(b.date));
+
+      toast('Restored '+newSess.length+' sessions ✓');
+      render();
+    }catch(x){alert('Invalid archive file.');}
+  };
+  r.readAsText(file);
+}
 function exportDB(){const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='aba_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 function importDB(file){const r=new FileReader();r.onload=async e=>{try{const imp=JSON.parse(e.target.result);DB=imp;await flushSave();toast('Imported & synced!');render();}catch(x){alert('Invalid file.');}};r.readAsText(file);}
 
@@ -378,6 +465,7 @@ let DB={users:[],clients:[],lessons:[],bips:[],sessions:[],behaviors:[],abcData:
 let currentUser=null;
 let currentView='clients';
 let selectedClientId=null;
+let graphDays=90; // date filter for graphs: 30/60/90/0=all
 let selectedTab='checklist';
 // ── Session-in-progress state (persisted in sessionStorage so it survives tab switches) ──
 const SESS_KEY='aba_sess_'+location.pathname;
@@ -969,7 +1057,7 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"')+'><div class="view-only-banner">👁️ View only — not assigned to this client / admin</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:6px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph range:</span>'+'<button class="btn btn-sm '+(graphDays===30?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphDays=30;render()">30 days</button>'+'<button class="btn btn-sm '+(graphDays===60?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphDays=60;render()">60 days</button>'+'<button class="btn btn-sm '+(graphDays===90?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphDays=90;render()">90 days</button>'+'<button class="btn btn-sm '+(graphDays===0?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphDays=0;render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"')+'><div class="view-only-banner">👁️ View only — not assigned to this client / admin</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
@@ -1156,7 +1244,8 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   const canvas=document.getElementById(canvasId);
   if(!canvas)return;
   const existingSess=Chart.getChart(canvas);if(existingSess)existingSess.destroy();
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
+  const _cutoff=graphDays?new Date(Date.now()-graphDays*864e5).toISOString().slice(0,10):'0000-00-00';
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.date>=_cutoff).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],rawDates=[];
   sessions.forEach(s=>{
     s.lessonData&&s.lessonData.forEach(ld=>{
@@ -1618,7 +1707,8 @@ function drawLessonChart(lesson,sd,target){
   canvas.width=_w||document.getElementById('app').offsetWidth||400;
   canvas.height=140;
   const existing=Chart.getChart(canvas);if(existing)existing.destroy();
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
+  const _cutoff=graphDays?new Date(Date.now()-graphDays*864e5).toISOString().slice(0,10):'0000-00-00';
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.date>=_cutoff).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
 const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?t.count:null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
@@ -2149,7 +2239,7 @@ function renderBehaviorTab(){
   const bipCards=bips.map(bip=>{
     const allMeas=bipMeasList(bip);
     const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
-    const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
+    const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(!graphDays||b.date>=new Date(Date.now()-graphDays*864e5).toISOString().slice(0,10))).sort((a,b)=>a.date.localeCompare(b.date));
     const editBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button>':'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
     const lastEntry=logs.length?logs[logs.length-1]:null;
@@ -2342,7 +2432,7 @@ function saveBIPField(bipId,field,value){
 function drawBIPChart(bip){
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
-  const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
+  const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(!graphDays||b.date>=new Date(Date.now()-graphDays*864e5).toISOString().slice(0,10))).sort((a,b)=>a.date.localeCompare(b.date));
   if(logs.length<1)return;
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#dc2626',duration:'#1a9fd4',rate:'#d97706'};
@@ -2643,9 +2733,21 @@ function renderAdmin(){
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn btn-outline" onclick="exportDB()">⬇ Export</button>'
+    +'<button class="btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
     +'<label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
     +'<button class="btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
+    +'</div>'
+    +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
+    +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Session Data</h4>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Exports all sessions &amp; behaviors up to end of selected month, then removes them from the database. Programs &amp; client profiles are kept.</p>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<label style="font-size:.82rem">Archive up to end of: <input type="month" id="archive-month" style="margin-left:4px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:.82rem"></label>'
+    +'<button class="btn btn-outline" onclick="archiveSessions()">📦 Archive &amp; Download</button>'
+    +'</div>'
+    +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
+    +'<h4 style="margin-bottom:8px;font-size:.9rem">📂 Restore Archive</h4>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Load a previously archived JSON file to review old session data. You can archive again when done.</p>'
+    +'<label class="btn btn-outline" style="cursor:pointer">⬆ Load Archive<input type="file" accept=".json" style="display:none" onchange="restoreArchive(this.files[0])"></label>'
     +'</div></div>';
 }
 function changeRole(userId, newRole){
