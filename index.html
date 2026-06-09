@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-G -->
+<!-- BUILD v2026-06-10-H -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-G</title>
+<title>CARE Client Binder v2026-06-10-H</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -2778,7 +2778,8 @@ function renderAdmin(){
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📂 Restore Archive</h4>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Load a previously archived JSON file to review old session data. You can archive again when done.</p>'
     +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Load Archive<input type="file" accept=".json" style="display:none" onchange="restoreArchive(this.files[0])"></label>'
-    +'</div></div>';
+    +'</div></div>'
+    +'<div id="modal-area"></div>';
 }
 function changeRole(userId, newRole){
   const u=DB.users.find(x=>x.id===userId);
