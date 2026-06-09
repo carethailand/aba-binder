@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-F -->
+<!-- BUILD v2026-06-09-G -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-F</title>
+<title>CARE Client Binder v2026-06-09-G</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -2647,7 +2647,9 @@ setTimeout(renderStorageBar,50);
 function saveUser(){const n=document.getElementById('au-n').value.trim(),u=document.getElementById('au-u').value.trim(),p=document.getElementById('au-p').value;if(!n||!u||!p){alert('All fields required');return;}if(DB.users.find(x=>x.username===u)){alert('Username taken');return;}const _nu={id:uid(),name:n,username:u,password:p,role:document.getElementById('au-r').value,assignedClients:[]};DB.users.push(_nu);sbSaveUser(_nu);toast('Added ✓');render();}
 function deleteUser(id){
   if(id===currentUser.id){alert("Can't remove yourself");return;}
-  modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Remove User?</h3><p style="color:var(--muted);margin-bottom:16px">This cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();sbDeleteUser(\\''+id+'\\');">Remove</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+  window._pendingDeleteId=id;
+  modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Remove User?</h3><p style="color:var(--muted);margin-bottom:16px">This cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();sbDeleteUser(window._pendingDeleteId)">Remove</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
 }
 function confirmReset(){
   modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">🚨</div><h3 style="margin-bottom:8px">Reset ALL Data?</h3><p style="color:var(--muted);margin-bottom:16px">This permanently deletes every client, session, and BIP. Export a backup first.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();resetData()">Yes, Reset Everything</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
