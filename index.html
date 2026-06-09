@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-H -->
+<!-- BUILD v2026-06-09-I -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-H</title>
+<title>CARE Client Binder v2026-06-09-I</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -367,14 +367,14 @@ function clearSessState(){sessionStorage.removeItem(SESS_KEY);}
 function updateSessState(key,val){const s=getSessState();s[key]=val;setSessState(s);}
 function startSession(){
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
-  const t=parseFloat((document.getElementById('pre-time')||{}).value)||4;
+  const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
   setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,started:true});
   render();
 }
 function startSessionFromBar(){
   const d=(document.getElementById('ss-date')||{}).value||new Date().toISOString().slice(0,10);
-  const t=parseFloat((document.getElementById('ss-time')||{}).value)||4;
+  const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'overlap';
   setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,started:true});
   render();
@@ -872,8 +872,8 @@ function renderClientView(){
     {id:'notes',l:'💬 Notes'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
-    {id:'maintenance',l:'🔁 Maintenance'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
+    {id:'maintenance',l:'🔁 Maintenance'},
     {id:'report',l:'📄 Report'}
   ];
   const tabs=isSup?supTabs:txTabs;
@@ -893,7 +893,7 @@ function renderClientView(){
         +'<span class="ss-val">'+esc(c.name)+'</span>'
         +'<span style="color:#fca5a5;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
-        +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||4)" style="width:60px">'
+        +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
         +'<span class="ss-label">Type</span><select id="ss-type" onchange="updateSessState(\'sessType\',this.value)">'+sessTypeOpts+'</select>'
         +'<div style="flex:1"></div>'
         +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSessionFromBar()">▶ Start Session</button>'
@@ -906,7 +906,7 @@ function renderClientView(){
         +'<span style="background:#16a34a22;color:#15803d;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">'+sessTypeLabel+'</span>'
         +'<span style="color:#86efac;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
-        +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||4)" style="width:60px">'
+        +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
         +'<div style="flex:1"></div>'
         +'<button class="btn btn-danger btn-sm" onclick="confirmEndSession()">⏹ End &amp; Save</button>'
         +'<button class="btn btn-outline btn-sm" onclick="confirmDiscard()">✕ Discard</button>'
@@ -1562,7 +1562,7 @@ function renderLessonCard(lesson){
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
   const supBtns=currentUser.role==='supervisor'?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">Supervisor Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notess</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function fmtDateShort(d){
@@ -1936,7 +1936,7 @@ function saveEditTarget(lId,sId,tId){
   sbSaveLesson(l);render();
 }
 function addLessonNote(lId){
-  modal('<h3 style="margin-bottom:12px">Supervisor Note</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+  modal('<h3 style="margin-bottom:12px">General Notes</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 function saveLessonNote(lId){const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({date:new Date().toISOString().slice(0,10),author:currentUser.id,text});saveData();render();}
 
@@ -2462,7 +2462,7 @@ function renderABCTab(){
     +'<td style="font-size:.78rem;max-width:160px;white-space:normal">'+(a.narrative?esc(a.narrative):'—')+'</td>'
     +'</tr>').join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
   return '<div class="card no-print"><h2>Log ABC</h2>'
-    +'<div class="form-row"><div class="fg-sm"><label>Date</label><input type="date" id="abc-d" value="'+new Date().toISOString().slice(0,10)+'"></div></div>'
+    +''
     +'<div class="form-row"><div class="fg"><label>A — Antecedent</label><input type="text" id="abc-a" placeholder="What happened before..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>B — Behavior</label><input type="text" id="abc-b" placeholder="What the client did..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>C — Consequence</label><input type="text" id="abc-c" placeholder="What happened after..."></div></div>'
@@ -2527,7 +2527,7 @@ function renderNotesTab(){
     +'<div class="note-meta">'+n.label+' · '+n.date+'</div>'
     +'<div class="note-text">'+esc(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
   const addForm=isSup
-    ?'<div class="card no-print"><h2>Add Supervisor Note</h2><div class="form-row"><div class="fg-sm"><label>Date</label><input type="date" id="note-d" value="'+today+'"></div></div><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
+    ?'<div class="card no-print"><h2>Add General Note</h2><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
     :'';
 
   return rCard+addForm+'<div class="card"><h2>Notes Feed</h2>'+feed+'</div>';
@@ -2580,7 +2580,7 @@ function renderReport(){
     return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+'</h4>'+graphs+'</div>';
   }).join('')||'<p style="color:var(--muted);font-size:.85rem">No BIPs defined.</p>';
   const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('');
-  return '<div class="flex-end no-print" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print / PDF</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">Supervisor Notes</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
+  return '<div class="flex-end no-print" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print / PDF</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">General Notess</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
 }
 
 // ════════════════════════════════════════════════
@@ -2605,7 +2605,7 @@ function renderAdmin(){
     +'<div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
     +'<div class="fg"><label>Username<input id="au-u" type="text"></label></div>'
     +'<div class="fg"><label>Password<input id="au-p" type="password"></label></div>'
-    +'<div class="fg-sm"><label>Role<select id="au-r"><option value="therapist">Therapist</option><option value="supervisor">Supervisor</option></select></label></div>'
+    +'<div class="fg-sm"><label>Role<select id="au-r"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label></div>'
     +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
     +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Therapists only see assigned clients. Hold Ctrl/Cmd to multi-select.</p>'
