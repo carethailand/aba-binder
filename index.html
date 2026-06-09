@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-L -->
+<!-- BUILD v2026-06-09-M -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-L</title>
+<title>CARE Client Binder v2026-06-09-M</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -1142,7 +1142,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
       if(ld.lessonId!==lesson.id)return;
       ld.targets&&ld.targets.forEach(t=>{
         if(t.targetId!==target.id)return;
-        const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:null);
+        const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(t.count/(s.sessTime||2)):null));
         if(v!=null&&!t.na){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);vals.push(v);rawDates.push(s.date);}
       });
     });
