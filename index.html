@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-H -->
+<!-- BUILD v2026-06-10-I -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-H</title>
+<title>CARE Client Binder v2026-06-10-I</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -909,7 +909,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 function showView(v){currentView=v;render();}
 function selectClient(id){
   if(currentUser&&currentUser.role==='admin'){toast('Admin cannot access client sessions');return;}
-  if(currentUser&&['junior','senior','therapist'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
+  if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
 selectedClientId=id;selectedTab='checklist';showView('client');}
 function setTab(t){selectedTab=t;render();}
 function render(){
@@ -966,10 +966,10 @@ function render(){
 
 // ── CLIENT LIST ──
 function renderClientList(){
-  const visibleClients=currentUser&&['junior','senior','therapist'].includes(currentUser.role)
+  const visibleClients=currentUser&&['junior','senior'].includes(currentUser.role)
     ?DB.clients.filter(c=>(currentUser.assignedClients||[]).includes(c.id))
     :DB.clients;
-  if(currentUser&&['junior','senior','therapist'].includes(currentUser.role)&&visibleClients.length===0){
+  if(currentUser&&['junior','senior'].includes(currentUser.role)&&visibleClients.length===0){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
   }
   const cards=visibleClients.map(c=>{
@@ -2253,7 +2253,7 @@ function switchBIPTab(bipId,tab){
 function renderBehaviorTab(){
   if(!DB.bips)DB.bips=[];
   // TX must have session started to log BIP data
-  const _isTX=currentUser&&['junior','senior','therapist'].includes(currentUser.role);
+  const _isTX=currentUser&&['junior','senior'].includes(currentUser.role);
   const _ss=getSessState();
   const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
   
@@ -2738,13 +2738,13 @@ function renderAdmin(){
   const userRows=DB.users.map(u=>{
     const ac=u.assignedClients||[];
     const inactive=u.active===false;
-    const chips=['junior','senior','therapist','supervisor'].includes(u.role)
+    const chips=['junior','senior','supervisor'].includes(u.role)
       ?DB.clients.map(c=>{
           const on=ac.includes(c.id);
           return '<span style="cursor:pointer;padding:2px 10px;border-radius:12px;font-size:.73rem;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+';white-space:nowrap" data-uid="'+u.id+'" data-cid="'+c.id+'" onclick="toggleAssign(this)">'+esc(c.name)+'</span>';
         }).join(' ')
       :'<span style="font-size:.78rem;color:var(--muted);font-style:italic">All</span>';
-    const roleSelect='<select class="role-select unlock-exempt" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','therapist','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+{junior:'Junior TX',senior:'Senior TX',therapist:'Therapist',supervisor:'Supervisor',director:'Director',admin:'Admin'}[r]+'</option>').join('')+'</select>';
+    const roleSelect='<select class="role-select unlock-exempt" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+{junior:'Junior TX',senior:'Senior TX',supervisor:'Supervisor',director:'Director',admin:'Admin'}[r]+'</option>').join('')+'</select>';
     const statusBtn=inactive
       ?'<button class="btn btn-sm" class="unlock-exempt" style="font-size:.72rem;background:#16a34a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
       :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
