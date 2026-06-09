@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-D -->
+<!-- BUILD v2026-06-10-E -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-D</title>
+<title>CARE Client Binder v2026-06-10-E</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -1176,6 +1176,10 @@ function renderTargetSessionEntry(lesson,sd,target){
   if(target.dataType==='ta'&&target.chainingMode&&target.chainingMode!=='total'){
     const ci=getCurrentStepIndex(target);
     html+='<span style="font-size:.78rem;background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:4px">📍 Step '+(ci+1)+'/'+target.taSteps.length+'</span>';
+  }
+  if(target.teachingSteps&&target.teachingSteps.length){
+    const curStep=target.teachingSteps[target.dtStepIndex||0]||target.teachingSteps[0];
+    html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
   }
   html+='<span class="target-status status-'+target.status+'">'+target.status.replace(/_/g,' ')+'</span>';
   html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';
@@ -2736,10 +2740,10 @@ function renderAdmin(){
           return '<span style="cursor:pointer;padding:2px 10px;border-radius:12px;font-size:.73rem;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+';white-space:nowrap" data-uid="'+u.id+'" data-cid="'+c.id+'" onclick="toggleAssign(this)">'+esc(c.name)+'</span>';
         }).join(' ')
       :'<span style="font-size:.78rem;color:var(--muted);font-style:italic">All</span>';
-    const roleSelect='<select class="role-select" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','therapist','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+{junior:'Junior TX',senior:'Senior TX',therapist:'Therapist',supervisor:'Supervisor',director:'Director',admin:'Admin'}[r]+'</option>').join('')+'</select>';
+    const roleSelect='<select class="role-select unlock-exempt" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','therapist','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+{junior:'Junior TX',senior:'Senior TX',therapist:'Therapist',supervisor:'Supervisor',director:'Director',admin:'Admin'}[r]+'</option>').join('')+'</select>';
     const statusBtn=inactive
-      ?'<button class="btn btn-sm" style="font-size:.72rem;background:#16a34a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
-      :'<button class="btn btn-sm btn-outline" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
+      ?'<button class="btn btn-sm" class="unlock-exempt" style="font-size:.72rem;background:#16a34a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
+      :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
     return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted)">'+esc(u.username)+'</td>'+'<td><span style="font-family:monospace;font-size:.82rem;background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">'+esc(u.password||'—')+'</span></td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
@@ -2755,21 +2759,21 @@ function renderAdmin(){
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
-    +'<label class="btn btn-outline" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
-    +'<button class="btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
+    +'<button class="unlock-exempt btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
+    +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
+    +'<button class="unlock-exempt btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Session Data</h4>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Exports all sessions &amp; behaviors up to end of selected month, then removes them from the database. Programs &amp; client profiles are kept.</p>'
     +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
     +'<label style="font-size:.82rem">Archive up to end of: <input type="month" id="archive-month" style="margin-left:4px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:.82rem"></label>'
-    +'<button class="btn btn-outline" onclick="archiveSessions()">📦 Archive &amp; Download</button>'
+    +'<button class="unlock-exempt btn btn-outline" onclick="archiveSessions()">📦 Archive &amp; Download</button>'
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📂 Restore Archive</h4>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Load a previously archived JSON file to review old session data. You can archive again when done.</p>'
-    +'<label class="btn btn-outline" style="cursor:pointer">⬆ Load Archive<input type="file" accept=".json" style="display:none" onchange="restoreArchive(this.files[0])"></label>'
+    +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Load Archive<input type="file" accept=".json" style="display:none" onchange="restoreArchive(this.files[0])"></label>'
     +'</div></div>';
 }
 function changeRole(userId, newRole){
