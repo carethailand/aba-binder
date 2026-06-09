@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-I -->
+<!-- BUILD v2026-06-10-J -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-I</title>
+<title>CARE Client Binder v2026-06-10-J</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -365,9 +365,9 @@ function saveData(){
 async function flushSave(){
   showSyncStatus('saving');
   try{
-    // Push everything currently in DB to Supabase
+    // Save clients first (lessons/bips have FK dependency on clients)
+    await Promise.all(DB.clients.map(c=>sbUpsert('clients',clientToRow(c))));
     await Promise.all([
-      ...DB.clients.map(c=>sbUpsert('clients',clientToRow(c))),
       ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
       ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count||null,duration:b.duration||null,avg_duration:b.avgDuration||null,rate:b.rate||null,notes:b.notes||null,tx_id:b.txId||null,tx_name:b.txName||null})),
