@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-M -->
+<!-- BUILD v2026-06-10-N -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-M</title>
+<title>CARE Client Binder v2026-06-10-N</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -2857,44 +2857,26 @@ function confirmReset(){
 }
 
 function defaultData(){
-  const cid1=uid(), cid2=uid();
-  const lid1=uid(), lid2=uid(), lid3=uid();
-  const sid1=uid(), sid2=uid();
-  const tid1=uid(), tid2=uid(), tid3=uid();
+  const cid1=uid();
+  const lid1=uid();
+  const sid1=uid();
+  const tid1=uid();
 
   const clients=[
-    {id:cid1, name:'XIC Demo', diagnosis:'ASD', dob:'2018-03-15', assignedTx:[]},
-    {id:cid2, name:'AVM Demo', diagnosis:'ASD', dob:'2019-07-22', assignedTx:[]}
+    {id:cid1, name:'Demo Client', diagnosis:'ASD', dob:'2019-07-22', assignedTx:[]}
   ];
 
   const lessons=[
-    {id:lid1, clientId:cid1, name:'People (Receptive ID)', phase:'acquisition',
-     teachingStyle:'DTT', purpose:'Receptive identification of familiar people',
-     maintenanceSchedule:'', dtType:'successive', dtStepIndex:0,
-     masteryRule:{pct:80,sessions:3,therapists:2},
-     supNotes:[{id:uid(),date:'2026-06-01',text:'Please remove distractors before presenting SD.',authorName:'Supervisor'}],
-     sds:[
-       {id:sid1, sd:'Tx present 2D photo and says "Who is this?"', response:'Client points to/says name',
-        teachingStyle:'DTT',
-        targets:[
-          {id:tid1, name:'Mom', dataType:'percent', trialCount:10, status:'in_progress',
-           introducedDate:'2026-06-01', masteredDate:'', teachingSteps:['Massed Trials','Expanded Trials','Random Rotation','Generalization'],
-           dtStepIndex:0, dtStepChanges:[], stepMasteryRecords:{}, taSteps:[], chainingMode:'total', ratingScale:null, tallyGoal:null, tallyPeriod:null},
-          {id:tid2, name:'Dad', dataType:'percent', trialCount:10, status:'not_started',
-           introducedDate:'', masteredDate:'', teachingSteps:['Massed Trials','Expanded Trials','Random Rotation','Generalization'],
-           dtStepIndex:0, dtStepChanges:[], stepMasteryRecords:{}, taSteps:[], chainingMode:'total', ratingScale:null, tallyGoal:null, tallyPeriod:null}
-        ]}
-     ]},
-    {id:lid2, clientId:cid2, name:'Following 1-Step Instructions', phase:'acquisition',
+    {id:lid1, clientId:cid1, name:'Following 1-Step Instructions', phase:'acquisition',
      teachingStyle:'DTT', purpose:'Following simple 1-step verbal instructions',
      maintenanceSchedule:'', dtType:'successive', dtStepIndex:0,
      masteryRule:{pct:80,sessions:3,therapists:2},
      supNotes:[],
      sds:[
-       {id:sid2, sd:'Tx says instruction with gesture cue', response:'Client complies within 5 seconds',
+       {id:sid1, sd:'Tx says instruction with gesture cue', response:'Client complies within 5 seconds',
         teachingStyle:'DTT',
         targets:[
-          {id:tid3, name:'Sit down', dataType:'percent', trialCount:10, status:'not_started',
+          {id:tid1, name:'Sit down', dataType:'percent', trialCount:10, status:'not_started',
            introducedDate:'', masteredDate:'', teachingSteps:['Massed Trials (FP)','Massed Trials (PP)','Massed Trials (Gesture)','Random Rotation'],
            dtStepIndex:0, dtStepChanges:[], stepMasteryRecords:{}, taSteps:[], chainingMode:'total', ratingScale:null, tallyGoal:null, tallyPeriod:null}
         ]}
