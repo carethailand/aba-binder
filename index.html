@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-B -->
+<!-- BUILD v2026-06-10-C -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-B</title>
+<title>CARE Client Binder v2026-06-10-C</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -257,6 +257,21 @@ async function sbUpsert(table,body){
 }
 
 // ── Map DB <-> Supabase ──
+// ── DTT Teaching Hierarchy Steps ────────────────────────────────────────────
+const DT_SUCCESSIVE=[
+  'Massed Trials (Same SD, blocked)',
+  'Expanded Trials (Interspersal, 80% target)',
+  'Random Rotation (Mixed with known targets)',
+  'Generalization (New people/settings/materials)'
+];
+const DT_SIMULTANEOUS=[
+  'Massed Trials (Both SDs blocked)',
+  'Alternating Blocks (AABB pattern)',
+  'Random Rotation (Both SDs mixed)',
+  'Fluency Building (Speed + accuracy)',
+  'Generalization (New contexts)'
+];
+
 function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif||null};}
 function rowToClient(r){return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:r.sup_notif||null};}
 
@@ -2602,7 +2617,7 @@ function renderABCTab(){
 function logABC(){
   const freq=document.getElementById('abc-freq').value;
   const dur=document.getElementById('abc-dur').value;
-  const entry={id:uid(),clientId:selectedClientId,date:document.getElementById('abc-d').value,txId:currentUser.id,txName:currentUser.name,
+  const entry={id:uid(),clientId:selectedClientId,date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),txId:currentUser.id,txName:currentUser.name,
     a:document.getElementById('abc-a').value.trim(),b:document.getElementById('abc-b').value.trim(),c:document.getElementById('abc-c').value.trim(),
     narrative:document.getElementById('abc-narrative').value.trim()};
   if(freq!=='')entry.frequency=parseInt(freq);
@@ -2674,7 +2689,7 @@ function deleteReinforcer(idx){
   saveData();render();
 }
 
-function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:document.getElementById('note-d').value,author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
