@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-09-N -->
+<!-- BUILD v2026-06-09-O -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-09-N</title>
+<title>CARE Client Binder v2026-06-09-O</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
@@ -170,6 +170,15 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .session-locked button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
 .session-locked .no-session-banner{display:flex;}
 .no-session-banner{display:none;align-items:center;gap:8px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#92400e;}
+
+/* ── Supervisor view-only on unassigned cases ── */
+.view-only-mode input,
+.view-only-mode textarea,
+.view-only-mode select{pointer-events:none;opacity:.55;background:#f8fafc;}
+.view-only-mode button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
+.view-only-mode .view-only-banner{display:flex;}
+.view-only-mode .no-session-banner{display:none!important;}
+.view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#9d174d;}
 </style>
 </head>
 <body>
@@ -785,7 +794,7 @@ document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementB
 // ── ROUTING ──
 function showView(v){currentView=v;render();}
 function selectClient(id){
-  if(currentUser&&currentUser.role==='therapist'&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
+  if(currentUser&&['junior','senior','therapist'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
 selectedClientId=id;selectedTab='checklist';showView('client');}
 function setTab(t){selectedTab=t;render();}
 function render(){
@@ -842,10 +851,10 @@ function render(){
 
 // ── CLIENT LIST ──
 function renderClientList(){
-  const visibleClients=currentUser&&currentUser.role==='therapist'
+  const visibleClients=currentUser&&['junior','senior','therapist'].includes(currentUser.role)
     ?DB.clients.filter(c=>(currentUser.assignedClients||[]).includes(c.id))
     :DB.clients;
-  if(currentUser&&currentUser.role==='therapist'&&visibleClients.length===0){
+  if(currentUser&&['junior','senior','therapist'].includes(currentUser.role)&&visibleClients.length===0){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
   }
   const cards=visibleClients.map(c=>{
@@ -854,7 +863,7 @@ function renderClientList(){
     const flags=countFlags(c.id);
     return '<div class="client-card" onclick="selectClient(\''+c.id+'\')"><h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⚑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
   }).join('');
-  const addBtn=currentUser.role==='supervisor'?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
+  const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
   return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div><div class="card-grid">'+cards+'</div><div id="modal-area"></div>';
 }
 function countFlags(cid){return DB.lessons.filter(l=>l.clientId===cid).reduce((s,l)=>s+l.sds.reduce((s2,sd)=>s2+sd.targets.filter(t=>t.status==='flagged').length,0),0);}
@@ -866,7 +875,7 @@ function renderClientView(){
   const c=DB.clients.find(x=>x.id===selectedClientId);if(!c)return'';
   const flags=countFlags(selectedClientId);
   const flagBanner=flags?'<div class="alert alert-warn no-print">⚑ <strong>'+flags+' target'+(flags>1?'s':'')+' flagged for mastery review</strong> — check Lessons tab.</div>':'';
-  const isSup=currentUser.role==='supervisor';
+  const isSup=['supervisor','director'].includes(currentUser.role);
   const txTabs=[
     {id:'checklist',l:'☑ Checklist'},
     {id:'notes',l:'💬 Notes'},
@@ -955,11 +964,17 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1px solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isSessionActive()?'':' class="session-locked"')+'><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div><div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"')+'><div class="view-only-banner">👁 View only — you are not assigned to this client</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+}
+function isViewOnly(){
+  if(!currentUser||!selectedClientId)return false;
+  if(currentUser.role!=='supervisor')return false;
+  const ac=currentUser.assignedClients||[];
+  return !ac.includes(selectedClientId);
 }
 function isSessionActive(){
   if(!currentUser)return false;
-  const isSup=currentUser.role==='supervisor';
+  const isSup=['supervisor','director'].includes(currentUser.role);
   return isSup?!!getSupState().started:!!getSessState().started;
 }
 function renderTab(){
@@ -1455,7 +1470,7 @@ function checkDTStepAdvance(lesson,date,ftResult,pct){
 // ════════════════════════════════════════════════
 function renderLessonsView(){
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
-  const addBtn=currentUser.role==='supervisor'?'<button class="btn btn-green btn-sm no-print" onclick="showAddLesson()">+ Add Lesson</button>':'';
+  const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddLesson()">+ Add Lesson</button>':'';
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
@@ -1535,15 +1550,15 @@ function renderLessonCard(lesson){
     const tHtml=sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').map(t=>{
       const isFlagged=t.status==='flagged';
       const chartId='lch_'+lesson.id+'_'+sd.id+'_'+t.id;
-      const confirmBtns=isFlagged?(currentUser.role==='supervisor'?'<button class="btn btn-green btn-xs no-print" onclick="confirmMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✓ Mastered</button> <button class="btn btn-xs btn-outline no-print" onclick="rejectMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">Keep active</button>':'<span style=\"font-size:.8rem;color:#d97706\">⚑ Awaiting supervisor review</span>'):'';
+      const confirmBtns=isFlagged?(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-xs no-print" onclick="confirmMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✓ Mastered</button> <button class="btn btn-xs btn-outline no-print" onclick="rejectMastery(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">Keep active</button>':'<span style=\"font-size:.8rem;color:#d97706\">⚑ Awaiting supervisor review</span>'):'';
       const isTHold=t.status==='on_hold';
       const isTMast=t.status==='mastered';
       const editBtn=currentUser.role!=='supervisor'?''
         :'<button class="btn btn-xs btn-outline no-print" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
         +(!isTMast&&!isTHold&&(t.teachingSteps&&t.teachingSteps.length)?'<button class="btn btn-xs no-print" style="padding:2px 7px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd" onclick="showMeetCriteria(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">🎯 Meet Criteria</button>':'')
-        +(currentUser.role==='supervisor'&&!isTMast&&!isTHold
+        +(['supervisor','director'].includes(currentUser.role)&&!isTMast&&!isTHold
           ?'<button class="btn btn-xs btn-green no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',\'mastered\')" title="Mark mastered">✓ Mastered</button>'
-          :(currentUser.role==='supervisor'&&isTMast?'<button class="btn btn-xs btn-outline no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',' + '\'in_progress\')" title="Un-master">↩ Reopen</button>':'')
+          :(['supervisor','director'].includes(currentUser.role)&&isTMast?'<button class="btn btn-xs btn-outline no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',' + '\'in_progress\')" title="Un-master">↩ Reopen</button>':'')
         )
         +(isTHold
           ?'<button class="btn btn-xs btn-outline no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',' + '\'in_progress\')" title="Resume">▶ Resume</button>'
@@ -1563,20 +1578,20 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(currentUser.role==='supervisor'?'<button class="btn btn-xs btn-outline no-print" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
   const isActive=phase==='acquisition'||phase==='active'||phase==='dt';
   const isMaint=phase==='maintenance';
   const isHold=phase==='hold';
-  const statusBtns=currentUser.role==='supervisor'
+  const statusBtns=['supervisor','director'].includes(currentUser.role)
     ?'<button class="status-btn '+(isActive?'active-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'active\')" title="Show in Session tab">📖 Introduced</button>'
      +'<button class="status-btn '+(isMaint?'maint-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'maintenance\')" title="Move to Maintenance">✅ Maintenance</button>'
      +'<button class="status-btn '+(isHold?'hold-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'hold\')" title="Pause this lesson">⏸ Hold</button>'
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
-  const supBtns=currentUser.role==='supervisor'?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
+  const supBtns=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
   return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notess</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
@@ -1904,7 +1919,7 @@ function editTarget(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   const tSteps=t.teachingSteps||[];
   const cur=t.dtStepIndex!=null?t.dtStepIndex:0;
-  const supSection=currentUser.role==='supervisor'?
+  const supSection=['supervisor','director'].includes(currentUser.role)?
     '<div style="background:#f0f4ff;border:1px solid #b3e0f5;border-radius:8px;padding:12px;margin-top:10px">'+
     '<label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted)">(one per line)</span></label>'+
     '<textarea id="et-tsteps" rows="5" placeholder="e.g.\nMT alone\nMT with unknown distracter\nRandom Rotation">'+esc(tSteps.join('\n'))+'</textarea>'+
@@ -1917,7 +1932,7 @@ function editTarget(lId,sId,tId){
   '<label>Name<input id="et-n" type="text" value="'+esc(t.name)+'"></label>'+
   '<div class="form-row" style="margin-top:8px"><div class="fg-sm"><label>Trial count<input id="et-tr" type="number" value="'+t.trialCount+'"></label></div><div class="fg"><label>Status<select id="et-st"><option value="not_started"'+(t.status==='not_started'?' selected':'')+'>Not started</option><option value="in_progress"'+(t.status==='in_progress'?' selected':'')+'>In progress</option><option value="mastered"'+(t.status==='mastered'?' selected':'')+'>Mastered</option></select></label></div></div>'+
   (t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>':'')+
-  (currentUser.role==='supervisor'?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
+  (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+
   '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
@@ -1928,7 +1943,7 @@ function saveEditTarget(lId,sId,tId){
   t.status=document.getElementById('et-st').value;
   const noteEl=document.getElementById('et-note');if(noteEl)t.note=noteEl.value.trim();
   if(t.dataType==='ta'){const el=document.getElementById('et-st2');if(el)t.taSteps=el.value.split('\n').map(s=>s.trim()).filter(Boolean);}
-  if(currentUser.role==='supervisor'){
+  if(['supervisor','director'].includes(currentUser.role)){
     const tsEl=document.getElementById('et-tsteps');
     if(tsEl){
       const newSteps=tsEl.value.split('\n').map(s=>s.trim()).filter(Boolean);
@@ -2114,13 +2129,13 @@ function switchBIPTab(bipId,tab){
 function renderBehaviorTab(){
   if(!DB.bips)DB.bips=[];
   // TX must have session started to log BIP data
-  const _isTX=currentUser&&currentUser.role==='therapist';
+  const _isTX=currentUser&&['junior','senior','therapist'].includes(currentUser.role);
   const _ss=getSessState();
   const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
   
   const bips=DB.bips.filter(b=>b.clientId===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
-  const addBipBtn=currentUser.role==='supervisor'?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
+  const addBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#dc2626',duration:'#1a9fd4',rate:'#d97706'};
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
@@ -2129,7 +2144,7 @@ function renderBehaviorTab(){
     const allMeas=bipMeasList(bip);
     const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
     const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
-    const editBipBtn=currentUser.role==='supervisor'?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button>':'';
+    const editBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button>':'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
     const lastEntry=logs.length?logs[logs.length-1]:null;
     const lastBadges=lastEntry?allMeas.map(m=>{const v=bipValForMeas(lastEntry,m);return v!=null?'<span class="badge badge-gray" style="font-size:.72rem">'+measLabels[m].split(' ')[0]+': '+bipVal(lastEntry,m)+'</span>':''}).join(' '):'';
@@ -2150,7 +2165,7 @@ function renderBehaviorTab(){
       const val=bip[key]||'';
       const boxStyle='margin-bottom:14px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden';
       const hdrStyle='background:#f8fafc;padding:6px 12px;font-size:.78rem;font-weight:700;color:#29ABE2;border-bottom:1px solid #e5e7eb;letter-spacing:.03em';
-      if(currentUser.role==='supervisor'){
+      if(['supervisor','director'].includes(currentUser.role)){
         return '<div style="'+boxStyle+'">'
           +'<div style="'+hdrStyle+'">'+label+'</div>'
           +'<textarea id="bip_'+key+'_'+bip.id+'" rows="4" style="margin:0;border:none;border-radius:0;font-size:.84rem;resize:vertical;width:100%;box-sizing:border-box;padding:10px 12px;background:#fff" placeholder="'+placeholder+'" onchange="saveBIPField(\''+bip.id+'\',\''+key+'\',this.value)">'+esc(val)+'</textarea>'
@@ -2254,7 +2269,7 @@ function renderBehaviorTab(){
       +logForm
       +(logs.length>1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">Graph shows after 2+ entries.</p>');
 
-    const bodyContent=currentUser.role==='supervisor'
+    const bodyContent=['supervisor','director'].includes(currentUser.role)
       ? tabNav+tab1+tab2+tab3+tab4+tab5
       : txBody;
 
@@ -2266,7 +2281,7 @@ function renderBehaviorTab(){
       +'</summary>'
       +'<div style="margin-top:12px">'+bodyContent+'</div>'
       +'</details>';
-  }).join('')||(currentUser.role==='supervisor'?'<p style="color:var(--muted)">No BIPs yet. Add one above.</p>':'<p style="color:var(--muted)">No behaviors tracked.</p>');
+  }).join('')||(['supervisor','director'].includes(currentUser.role)?'<p style="color:var(--muted)">No BIPs yet. Add one above.</p>':'<p style="color:var(--muted)">No behaviors tracked.</p>');
 
   return '<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><h2 style="flex:1;margin:0">🔴 Behavior Intervention Plans</h2>'+addBipBtn+'</div>'+bipCards+'</div>';
 }
@@ -2497,7 +2512,7 @@ function logABC(){
 function renderNotesTab(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
-  const isSup=currentUser.role==='supervisor';
+  const isSup=['supervisor','director'].includes(currentUser.role);
 
   // ── Reinforcer list ──
   const reinforcers=c.reinforcers||[];
@@ -2558,7 +2573,7 @@ function deleteReinforcer(idx){
   saveData();render();
 }
 
-function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:document.getElementById('note-d').value,author:currentUser.id,authorName:currentUser.name,type:currentUser.role==='supervisor'?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:document.getElementById('note-d').value,author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -2599,7 +2614,7 @@ function renderAdmin(){
   const userRows=DB.users.map(u=>{
     const ac=u.assignedClients||[];
     const uid_safe=u.id.replace(/[^a-z0-9]/gi,'_');
-    const ctrl=u.role==='therapist'?
+    const ctrl=['junior','senior','therapist'].includes(u.role)?
       '<div style="display:flex;flex-wrap:wrap;gap:4px;max-width:260px">'+
       DB.clients.map(c=>{
         const on=ac.includes(c.id);
