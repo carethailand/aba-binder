@@ -689,7 +689,7 @@ function finishSupervision(){
           if(sd.response)lines.push('R: '+sd.response);
           lines.push('Target: '+t.name);
           if(t.dataType)lines.push('Data type: '+t.dataType+(t.trialCount?' ('+t.trialCount+' trials)':''));
-          if(t.teachingSteps&&t.teachingSteps.length)lines.push('Teaching steps:\n'+t.teachingSteps.map((s,i)=>'  '+(i+1)+'. '+s).join('\n'));
+          if(t.teachingSteps&&t.teachingSteps.length){const curIdx=t.dtStepIndex||0;lines.push('Current teaching step: Step '+(curIdx+1)+': '+(t.teachingSteps[curIdx]||t.teachingSteps[0]));}
           // Any existing scores for this target?
           const existScores=[];
           DB.sessions.filter(s=>s.clientId===selectedClientId).forEach(s=>{
@@ -1790,7 +1790,8 @@ function renderLessonCard(lesson){
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
   const supBtns=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" open style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  const _cardOpen=isSessionActive()?'open':'';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" '+_cardOpen+' style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function fmtDateShort(d){
