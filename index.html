@@ -1929,7 +1929,7 @@ function skipDTStep(lId){
 function showAddLesson(){
   modal('<h3 style="margin-bottom:14px">Add Lesson</h3>'+
   '<div class="form-row"><div class="fg"><label>Lesson name<input id="nl-name" type="text"></label></div></div>'+
-  '<div class="form-row"><div class="fg"><label>Teaching style<select id="nl-style"><option value="DTT">DTT — Discrete Trial Training</option><option value="NET">NET — Natural Environment Teaching</option></select></label></div></div>'+
+  
   
   '<div class="form-row"><div class="fg-sm"><label>Mastery %<input id="nl-pct" type="number" value="80"></label></div><div class="fg-sm"><label>Sessions<input id="nl-sess" type="number" value="3"></label></div><div class="fg-sm"><label>Therapists<input id="nl-tx" type="number" value="2"></label></div></div>'+
   '<hr style="margin:12px 0"><h4 style="margin-bottom:10px">First SD-R Pair</h4>'+
@@ -1950,7 +1950,7 @@ function toggleTAFields(){const v=document.getElementById('nl-dtype').value;docu
 
 function saveNewLesson(){
   const name=document.getElementById('nl-name').value.trim();if(!name){alert('Name required');return;}
-  const style=document.getElementById('nl-style').value;
+  const style='DTT';
   const dtype=document.getElementById('nl-dtype').value;
   const taSteps=dtype==='ta'?document.getElementById('nl-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
   const chain=dtype==='ta'?(document.getElementById('nl-chain').value||'total'):'total';
@@ -1977,6 +1977,7 @@ function addNewSD(lId){
     +'<label>SD text<textarea id="ns-sd" rows="2" placeholder="e.g. Instruction is given..."></textarea></label>'
     +'<label style="margin-top:8px">Response (R)<textarea id="ns-r" rows="2" placeholder="e.g. Client responds..."></textarea></label>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
+    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills targets)</span></label><textarea id="ns-tsteps" rows="4" placeholder="e.g.\nMassed Trials (FP)\nRandom Rotation" style="font-size:.82rem"></textarea></div>'
     +'<button class="btn btn-green" onclick="saveNewSD(\''+lId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
@@ -1985,13 +1986,15 @@ function saveNewSD(lId){
   const sd=document.getElementById('ns-sd').value.trim();
   const r=document.getElementById('ns-r').value.trim();
   if(!sd)return;
-  l.sds.push({id:uid(),sd,response:r,teachingStyle:'DTT',targets:[]});
+  const sdTeachingSteps=(document.getElementById('ns-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  l.sds.push({id:uid(),sd,response:r,teachingStyle:'DTT',teachingSteps:sdTeachingSteps,targets:[]});
   saveData();closeModal();render();
 }
 
 // ── Add Target to specific SD ──
 function addTarget(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
+  const _sdSteps=(sd.teachingSteps||[]).join('\n');
   modal('<h3 style="margin-bottom:12px">Add Target</h3>'
     +'<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">SD: <strong>'+esc(sd.sd)+'</strong></p>'
     +'<label>Target name<input id="at-n" type="text" placeholder="e.g. 2-step instruction"></label>'
@@ -2003,7 +2006,7 @@ function addTarget(lId,sId){
     +'<div id="at-tally" style="display:none"><div class="form-row" style="margin-top:6px"><div class="fg-sm"><label>Goal count<input id="at-tally-goal" type="number" min="1" placeholder="e.g. 30"></label></div><div class="fg-sm"><label>Per (min)<input id="at-tally-period" type="number" min="1" placeholder="e.g. 60"></label></div></div></div>'
     +'<div style="margin-top:10px">'
     +'<label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — for DTT step tracking)</span></label>'
-    +'<textarea id="at-tsteps" rows="4" placeholder="e.g.\nMassed Trials\nExpanded Trials\nRandom Rotation\nGeneralization" style="font-size:.82rem"></textarea>'
+    +'<textarea id="at-tsteps" rows="4" placeholder="e.g.\nMassed Trials\nExpanded Trials\nRandom Rotation\nGeneralization" style="font-size:.82rem">'+esc(_sdSteps)+'</textarea>'
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-green" onclick="saveAddTarget(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
@@ -2055,13 +2058,12 @@ function saveAddSDTarget(lId){
 // ── Edit SD ──
 function editSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
+  const existingSteps=(sd.teachingSteps||[]).join('\n');
   modal('<h3 style="margin-bottom:12px">Edit SD</h3>'
     +'<label>SD text<textarea id="esd-sd" rows="2">'+esc(sd.sd)+'</textarea></label>'
     +'<label style="margin-top:8px">Response<textarea id="esd-r" rows="2">'+esc(sd.response)+'</textarea></label>'
-    +'<label style="margin-top:8px">Teaching Style<select id="esd-ts">'
-      +'<option value="DTT"'+(sd.teachingStyle==='DTT'||!sd.teachingStyle?' selected':'')+'>DTT — Discrete Trial Training</option>'
-      +'<option value="NET"'+(sd.teachingStyle==='NET'?' selected':'')+'>NET — Natural Environment Teaching</option>'
-      +'</select></label>'
+    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
+    +'<textarea id="esd-tsteps" rows="4" style="font-size:.82rem">'+esc(existingSteps)+'</textarea></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
@@ -2070,7 +2072,7 @@ function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   sd.sd=document.getElementById('esd-sd').value.trim()||sd.sd;
   sd.response=document.getElementById('esd-r').value.trim();
-  sd.teachingStyle=document.getElementById('esd-ts').value;
+  sd.teachingSteps=(document.getElementById('esd-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
   saveData();closeModal();render();
 }
 // ── Edit lesson / target ──
@@ -2121,7 +2123,7 @@ function applyMeetCriteria(lId,sId,tId){
 }
 function editTarget(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
-  const tSteps=t.teachingSteps||[];
+  const tSteps=t.teachingSteps&&t.teachingSteps.length?t.teachingSteps:(sd.teachingSteps||[]);
   const cur=t.dtStepIndex!=null?t.dtStepIndex:0;
   const supSection=['supervisor','director'].includes(currentUser.role)?
     '<div style="background:#f0f4ff;border:1px solid #b3e0f5;border-radius:8px;padding:12px;margin-top:10px">'+
