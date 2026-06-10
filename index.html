@@ -2789,10 +2789,13 @@ function _doDeleteBIP(bipId){
   if(!DB.bips)DB.bips=[];
   // Delete behavior logs for this BIP from Supabase first
   const logsToDelete=(DB.behaviors||[]).filter(b=>b.bipId===bipId);
-  Promise.all([
-    sbFetch('bips','DELETE',null,'id=eq.'+bipId),
-    ...logsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id))
-  ]).then(()=>{toast('BIP deleted.');}).catch(e=>toast('Delete error: '+e.message,'error'));
+  sbFetch('bips','DELETE',null,'id=eq.'+bipId).then(r=>{
+    if(r===null){toast('⚠ BIP delete failed — check Supabase RLS policy for bips table','error');}
+    else{
+      Promise.all(logsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)));
+      toast('BIP deleted ✓');
+    }
+  }).catch(e=>toast('Delete error: '+e.message,'error'));
   DB.bips=DB.bips.filter(b=>b.id!==bipId);
   DB.behaviors=DB.behaviors.filter(b=>b.bipId!==bipId);
   render();
