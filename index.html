@@ -272,17 +272,17 @@ const DT_SIMULTANEOUS=[
   'Generalization (New contexts)'
 ];
 
-function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif||null};}
-function rowToClient(r){return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:r.sup_notif||null};}
+function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif||null,school_info:c.schoolInfo||null};}
+function rowToClient(r){return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:r.sup_notif||null,schoolInfo:r.school_info||null};}
 
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
-function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:b.supNote||null,created_date:b.createdDate||null};}
-function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:r.sup_note||'',createdDate:r.created_date||''};}
+function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:b.supNote||null,created_date:b.createdDate||null,setting:b.setting||'therapy'};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:r.sup_note||'',createdDate:r.created_date||'',setting:r.setting||'therapy'};}
 
-function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',notes:s.notes||null,lesson_data:s.lessonData||[],bip_data:s.bipData||[],abc_data:s.abcData||[]};}
-function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
+function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:s.lessonData||[],bip_data:s.bipData||[],abc_data:s.abcData||[]};}
+function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
 
 function userToRow(u){return{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};}
 function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clients:(typeof r.assigned_clients==='string'&&r.assigned_clients?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:ac,active:r.active!==false};}
@@ -493,7 +493,7 @@ function startSession(){
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
-  setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,started:true});
+  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});
   render();
 }
 function startSessionFromBar(){
@@ -578,7 +578,7 @@ function startSupervision(){
   const d=(document.getElementById('sv-date')||{}).value||new Date().toISOString().slice(0,10);
   const ty=(document.getElementById('sv-type')||{}).value||'overlap';
   const snap=snapshotClient();
-  setSupState({clientId:selectedClientId,date:d,supType:ty,started:true,snap});
+  const _supSet=(document.getElementById('sv-setting')||{}).value||'therapy';setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true,snap});
   render();
 }
 
@@ -627,6 +627,7 @@ function makeSVGSparkline(scores,masteryPct){
 function finishSupervision(){
   const sv=getSupState();
   if(!sv.started||!sv.snap){clearSupState();render();return;}
+  const _isSchoolSup=(sv.setting||'therapy')==='school';
   const snap=sv.snap;
   const now=snapshotClient();
   const changes=[];
@@ -830,7 +831,7 @@ function printSupPDF(){
     +'.meta{font-size:.82rem;color:#64748b;margin-bottom:20px}'
     +'@media print{body{padding:15px}}</style></head><body>'
     +'<h1>Supervision Summary</h1>'
-    +'<div class="meta">Client: <strong>'+esc(clientName)+'</strong> &nbsp;|&nbsp; Type: '+(sv.supType||'overlap')+' &nbsp;|&nbsp; Date: '+sv.date+' &nbsp;|&nbsp; Supervisor: '+esc(currentUser.name)+'<br>'+totalChanges+' change'+(totalChanges!==1?'s':'')+' recorded</div>'
+    +'<div class="meta">Client: <strong>'+esc(clientName)+'</strong> &nbsp;|&nbsp; '+(_isSchoolSup?'🏫 School Observation':'Supervision')+' &nbsp;|&nbsp; Type: '+(sv.supType||'overlap')+' &nbsp;|&nbsp; Date: '+sv.date+' &nbsp;|&nbsp; Supervisor: '+esc(currentUser.name)+'<br>'+totalChanges+' change'+(totalChanges!==1?'s':'')+' recorded</div>'
     +sectionsHtml
     +'<p style="margin-top:30px;font-size:.75rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px">Generated by ABA Binder · '+new Date().toLocaleString()+'</p>'
     +'<script>window.onload=()=>window.print();<\/script>'
@@ -997,7 +998,8 @@ function renderClientView(){
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'session',l:'📝 Session'},
-    {id:'maintenance',l:'🔁 Maintenance'}
+    {id:'maintenance',l:'🔁 Maintenance'},
+    {id:'schoolinfo',l:'🏫 School Info'}
   ];
   const supTabs=[
     {id:'checklist',l:'☑ Checklist'},
@@ -1006,7 +1008,8 @@ function renderClientView(){
     {id:'behavior',l:'🔔 Behavior'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
     {id:'maintenance',l:'🔁 Maintenance'},
-    {id:'report',l:'📄 Report'}
+    {id:'report',l:'📄 Report'},
+    {id:'schoolinfo',l:'🏫 School Info'}
   ];
   const tabs=isSup?supTabs:txTabs;
   if(isSup&&selectedTab==='session')selectedTab='checklist';
@@ -1018,6 +1021,7 @@ function renderClientView(){
     const ss0=getSessState();
     if(!ss0.clientId||ss0.clientId!==selectedClientId){setSessState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),sessTime:4,started:false,sessType:'individual'});}
     const ss=getSessState();
+    const _ssSetting=ss.setting||'therapy';
     const sessTypeOpts='<option value="individual">1:1 Therapy</option>';
     if(!ss.started){
       stickyBar='<div id="sess-sticky" class="ss-idle">'
@@ -1027,15 +1031,18 @@ function renderClientView(){
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
         +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
         +'<span class="ss-label">Type</span><select id="ss-type" onchange="updateSessState(\'sessType\',this.value)">'+sessTypeOpts+'</select>'
+        +'<span class="ss-label">Setting</span><select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_ssSetting==='therapy'?' selected':'')+'>🏠 1:1 Therapy</option><option value="school"'+(_ssSetting==='school'?' selected':'')+'>🏫 School</option></select>'
         +'<div style="flex:1"></div>'
         +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSessionFromBar()">▶ Start Session</button>'
         +'</div>';
     } else {
       const sessTypeLabel='1:1 Therapy';
+      const _ssSettingActive=ss.setting||'therapy';
+      const settingBadge=_ssSettingActive==='school'?'<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School</span>':'<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏠 1:1</span>';
       stickyBar='<div id="sess-sticky" class="ss-active">'
         +'<span class="ss-label">✅ SESSION IN PROGRESS</span>'
         +'<span class="ss-val">'+esc(c.name)+'</span>'
-        +'<span style="background:#16a34a22;color:#15803d;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">'+sessTypeLabel+'</span>'
+        +'<span style="background:#16a34a22;color:#15803d;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">'+sessTypeLabel+'</span>'+settingBadge
         +'<span style="color:#86efac;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
         +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
@@ -1052,6 +1059,7 @@ function renderClientView(){
     if(!sv.clientId||sv.clientId!==selectedClientId){setSupState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),supType:'overlap',started:false});}
     const sv2=getSupState();
     const supTypeOpts=['overlap','clinic'].map(v=>'<option value="'+v+'"'+(sv2.supType===v?' selected':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</option>').join('');
+    const _svSetting=sv2.setting||'therapy';
     if(!sv2.started){
       supBar='<div id="sess-sticky" class="ss-idle">'
         +'<span class="ss-label">⚠ SUPERVISION NOT STARTED</span>'
@@ -1059,11 +1067,14 @@ function renderClientView(){
         +'<span style="color:#fca5a5;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="sv-date" value="'+sv2.date+'" onchange="updateSupState(\'date\',this.value)" style="width:130px">'
         +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value)">'+supTypeOpts+'</select>'
+        +'<span class="ss-label">Setting</span><select id="sv-setting" onchange="updateSupState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_svSetting==='therapy'?' selected':'')+'>🏠 1:1</option><option value="school"'+(_svSetting==='school'?' selected':'')+'>🏫 School Obs</option></select>'
         +'<div style="flex:1"></div>'
         +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
         +'</div>';
     } else {
       const supTypeLabel=(sv2.supType||'overlap').charAt(0).toUpperCase()+(sv2.supType||'overlap').slice(1);
+      const _svSettingActive=sv2.setting||'therapy';
+      const supSettingBadge=_svSettingActive==='school'?'<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School Obs</span>':'';
       supBar='<div id="sess-sticky" class="ss-active">'
         +'<span class="ss-label">✅ SUPERVISION IN PROGRESS</span>'
         +'<span class="ss-val">'+esc(c.name)+'</span>'
@@ -1095,6 +1106,7 @@ function isSessionActive(){
 }
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
+  if(selectedTab==='schoolinfo')return renderSchoolInfoTab();
   if(selectedTab==='checklist')return renderProgramChecklist();
   if(selectedTab==='lessons')return renderLessonsView();
   if(selectedTab==='maintenance')return renderMaintenanceTab();
@@ -1116,6 +1128,31 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 // SESSION ENTRY
 // ════════════════════════════════════════════════
+function renderSchoolInfoTab(){
+  const c=DB.clients.find(x=>x.id===selectedClientId);
+  const si=c.schoolInfo||{};
+  const canEdit=['supervisor','director'].includes(currentUser.role);
+  if(!canEdit)return '<div style="padding:20px"><h3>School Information</h3>'+(si.schoolName?'<p><strong>School:</strong> '+esc(si.schoolName)+'</p>':'')+(si.className?'<p><strong>Class:</strong> '+esc(si.className)+'</p>':'')+(si.teacher?'<p><strong>Teacher:</strong> '+esc(si.teacher)+'</p>':'')+(si.academicYear?'<p><strong>Academic Year:</strong> '+esc(si.academicYear)+'</p>':'')+(si.notes?'<p><strong>Notes:</strong> '+esc(si.notes)+'</p>':'')+'</div>';
+  return '<div style="padding:4px 0;max-width:520px">'
+    +'<h3 style="margin-bottom:14px">🏫 School Information</h3>'
+    +'<label>School Name<input id="si-school" type="text" value="'+esc(si.schoolName||'')+'" placeholder="e.g. ABC International School"></label>'
+    +'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Class / Room<input id="si-class" type="text" value="'+esc(si.className||'')+'" placeholder="e.g. 3B, Life Skills Room"></label></div><div class="fg"><label>Academic Year<input id="si-year" type="text" value="'+esc(si.academicYear||'')+'" placeholder="e.g. 2025–2026"></label></div></div>'
+    +'<label style="margin-top:8px">Class Teacher<input id="si-teacher" type="text" value="'+esc(si.teacher||'')+'" placeholder="Teacher name"></label>'
+    +'<label style="margin-top:8px">Additional Notes<textarea id="si-notes" rows="3" placeholder="Schedule, support staff, important context...">'+esc(si.notes||'')+'</textarea></label>'
+    +'<button class="btn btn-primary" style="margin-top:12px" onclick="saveSchoolInfo()">Save</button>'
+    +'</div>';
+}
+function saveSchoolInfo(){
+  const c=DB.clients.find(x=>x.id===selectedClientId);
+  c.schoolInfo={
+    schoolName:(document.getElementById('si-school')||{value:''}).value.trim(),
+    className:(document.getElementById('si-class')||{value:''}).value.trim(),
+    academicYear:(document.getElementById('si-year')||{value:''}).value.trim(),
+    teacher:(document.getElementById('si-teacher')||{value:''}).value.trim(),
+    notes:(document.getElementById('si-notes')||{value:''}).value.trim()
+  };
+  sbSaveClient(c);toast('School info saved ✓');render();
+}
 function renderSessionEntry(){
   const ss_check=getSessState();
 
@@ -1132,7 +1169,15 @@ function renderSessionEntry(){
     +'<p style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Record anything significant from this session — behavior observations, client mood, parent communication, environment notes, etc. <strong>Tip:</strong> Type as you go — notes are kept until you End Session.</p>'
     +'<textarea id="tx-sess-notes" rows="4" placeholder="e.g. Client was distracted first 30 min, picked up pace after break. Mom mentioned no sleep last night. Tantrum at 2:15pm, resolved in ~3 min with extinction..." style="font-size:.84rem"></textarea>'
     +'</div>';
-  return heldBanner+(blocks||'<div class="empty-state">No active lessons.</div>')+maintBlock+txNotesCard;
+  // Parent note card — school sessions only
+  const _ssNow=getSessState();
+  const _parentNoteCard=(_ssNow.setting||'therapy')==='school'?
+    '<div class="card" style="margin-top:14px;background:#fffbeb;border:1px solid #fde68a">'
+    +'<h2 style="margin-bottom:6px">📝 Daily Parent Note</h2>'
+    +'<p style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Brief note visible to parents about how today went.</p>'
+    +'<textarea id="parent-note-input" rows="3" placeholder="e.g. Great session today! AVM managed Phonics independently for the first time..." style="font-size:.84rem">'+esc(_ssNow.parentNote||'')+'</textarea>'
+    +'</div>':'';
+  return heldBanner+(blocks||'<div class="empty-state">No active lessons.</div>')+maintBlock+txNotesCard+_parentNoteCard;
 }
 
 function renderLessonSessionBlock(lesson){
@@ -1561,6 +1606,9 @@ function saveSession(){
 
   const txNotes=(document.getElementById('tx-sess-notes')||{}).value||'';
   const ss_save=getSessState();
+  // Save parent note to sessState so it persists until End Session
+  const _pnEl=document.getElementById('parent-note-input');
+  if(_pnEl)updateSessState('parentNote',_pnEl.value.trim());
   const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',notes:txNotes,lessonData};
   DB.sessions.push(newSess);
   // Persist first trial results onto target.firstTrialData[]
@@ -2361,7 +2409,11 @@ function renderBehaviorTab(){
   const _ss=getSessState();
   const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
   
-  const bips=DB.bips.filter(b=>b.clientId===selectedClientId);
+  const _bipSetting=(()=>{
+    if(['supervisor','director'].includes(currentUser.role)){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
+    const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
+  })();
+  const bips=DB.bips.filter(b=>b.clientId===selectedClientId&&(b.setting||'therapy')===_bipSetting);
   const today=new Date().toISOString().slice(0,10);
   const addBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
@@ -2372,8 +2424,11 @@ function renderBehaviorTab(){
     const allMeas=bipMeasList(bip);
     const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
     const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
-    const editBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button>':'';
+    const _isSup2=['supervisor','director'].includes(currentUser.role);
+    const _copySchBtn=(_isSup2&&(bip.setting||'therapy')==='therapy')?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();copyBIPToSchool(\''+bip.id+'\')" style="color:#92400e;border-color:#d97706">🏫 Copy to School</button>':'';
+    const editBipBtn=_isSup2?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button> '+_copySchBtn:'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
+    const bipSettingBadge=(bip.setting||'therapy')==='school'?'<span style="background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏫 School</span>':'<span style="background:#dbeafe;color:#1e40af;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏠 1:1</span>';
     const lastEntry=logs.length?logs[logs.length-1]:null;
     const lastBadges=lastEntry?allMeas.map(m=>{const v=bipValForMeas(lastEntry,m);return v!=null?'<span class="badge badge-gray" style="font-size:.72rem">'+measLabels[m].split(' ')[0]+': '+bipVal(lastEntry,m)+'</span>':''}).join(' '):'';
 
@@ -2607,6 +2662,17 @@ function drawBIPChart(bip){
 // ═══════════════════════════════════════════════════════
 // BIP — add / edit modals
 // ═══════════════════════════════════════════════════════
+function copyBIPToSchool(bipId){
+  const src=DB.bips.find(b=>b.id===bipId);if(!src)return;
+  const copy=JSON.parse(JSON.stringify(src));
+  copy.id=uid();
+  copy.setting='school';
+  copy.createdDate=new Date().toISOString().slice(0,10);
+  if(!DB.bips)DB.bips=[];
+  DB.bips.push(copy);
+  saveData();
+  toast('Copied to School BIP ✓ — switch to School session to view and edit it.');
+}
 function showAddBIP(){
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="nb-fn-'+f.id+'" value="'+f.id+'"> '+f.label+'</label>').join('');
   modal('<h3 style="margin-bottom:14px">Add Behavior (BIP)</h3>'
@@ -2626,6 +2692,7 @@ function showAddBIP(){
     +'</div>'
     +'<label style="margin-top:8px">Baseline<input id="nb-base" type="text" placeholder="e.g. 3/hr, 10 min avg"></label>'
     +'<label style="margin-top:8px">Goal value (for graph line, numeric)<input id="nb-gval" type="number" step="0.1" placeholder="e.g. 1"></label>'
+    +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Setting<select id="nb-setting" style="width:100%;margin-top:4px"><option value="therapy">🏠 1:1 Therapy</option><option value="school"'+((_bipSetting==='school')?' selected':'')+'>🏫 School</option></select></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveBIP()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 
@@ -2647,7 +2714,8 @@ function saveBIP(){
     goalDeadline:document.getElementById('nb-gdate').value||'',
     goalValue:gvalEl&&gvalEl.value?parseFloat(gvalEl.value):null,
     baseline:document.getElementById('nb-base').value.trim(),
-    createdDate:new Date().toISOString().slice(0,10)
+    createdDate:new Date().toISOString().slice(0,10),
+    setting:(document.getElementById('nb-setting')||{value:'therapy'}).value||'therapy'
   });
   saveData();render();closeModal();
 }
@@ -2729,7 +2797,8 @@ function renderABCTab(){
 function logABC(){
   const freq=document.getElementById('abc-freq').value;
   const dur=document.getElementById('abc-dur').value;
-  const entry={id:uid(),clientId:selectedClientId,date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),txId:currentUser.id,txName:currentUser.name,
+  const _finalSS=getSessState();
+  const entry={id:uid(),clientId:selectedClientId,date:(_finalSS.date||new Date().toISOString().slice(0,10)),setting:_finalSS.setting||'therapy',parentNote:_finalSS.parentNote||'',txId:currentUser.id,txName:currentUser.name,
     a:document.getElementById('abc-a').value.trim(),b:document.getElementById('abc-b').value.trim(),c:document.getElementById('abc-c').value.trim(),
     narrative:document.getElementById('abc-narrative').value.trim()};
   if(freq!=='')entry.frequency=parseInt(freq);
