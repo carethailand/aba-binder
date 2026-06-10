@@ -272,14 +272,14 @@ const DT_SIMULTANEOUS=[
   'Generalization (New contexts)'
 ];
 
-function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif||null,school_info:c.schoolInfo||null};}
-function rowToClient(r){return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:r.sup_notif||null,schoolInfo:r.school_info||null};}
+function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif?{...c.supNotif,_schoolInfo:c.schoolInfo||null}:(c.schoolInfo?{_schoolInfo:c.schoolInfo}:null)};}
+function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si};}
 
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
-function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:b.supNote||null,created_date:b.createdDate||null,setting:b.setting||'therapy'};}
-function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:r.sup_note||'',createdDate:r.created_date||'',setting:r.setting||'therapy'};}
+function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy'}),created_date:b.createdDate||null};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy';try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett};}
 
 function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:s.lessonData||[],bip_data:s.bipData||[],abc_data:s.abcData||[]};}
 function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
@@ -1271,7 +1271,8 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='</div></div>';
   }
 
-  // First Trial recorder
+  // First Trial recorder — percent and TA only
+  if(target.dataType==='percent'||target.dataType==='ta'){
   html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
   html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
   if(['junior','senior'].includes(currentUser.role)){
@@ -1302,6 +1303,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='</div>';
   }
   html+='</div>';
+  } // end First Trial recorder
 
   html+='</div>';
 
