@@ -504,7 +504,7 @@ function startSessionFromBar(){
   const d=(document.getElementById('ss-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'overlap';
-  setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,started:true});
+  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});
   render();
 }
 function confirmEndSession(){
@@ -1060,7 +1060,7 @@ function renderClientView(){
   let supBar='';
   if(isSup){
     const sv=getSupState();
-    if(!sv.clientId||sv.clientId!==selectedClientId){setSupState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),supType:'overlap',started:false});}
+    if(!sv.clientId||sv.clientId!==selectedClientId){setSupState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),supType:'overlap',setting:'therapy',started:false});}
     const sv2=getSupState();
     const supTypeOpts=['overlap','clinic'].map(v=>'<option value="'+v+'"'+(sv2.supType===v?' selected':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</option>').join('');
     const _svSetting=sv2.setting||'therapy';
