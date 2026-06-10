@@ -1433,6 +1433,7 @@ function toggleRating(btn){
 // ── Chaining helpers ──
 function getCurrentStepIndex(target){
   if(!target.chainingMode||target.chainingMode==='total')return -1;
+  if(target.taStepOverride!=null)return target.taStepOverride;
   const steps=target.taSteps||[];
   if(target.chainingMode==='forward'){for(let i=0;i<steps.length;i++){if(!isStepMastered(target,i))return i;}return steps.length-1;}
   else{for(let i=steps.length-1;i>=0;i--){if(!isStepMastered(target,i))return i;}return 0;}
@@ -2137,7 +2138,8 @@ function editTarget(lId,sId,tId){
   modal('<h3 style="margin-bottom:12px">Edit Target</h3>'+
   '<label>Name<input id="et-n" type="text" value="'+esc(t.name)+'"></label>'+
   '<div class="form-row" style="margin-top:8px"><div class="fg-sm"><label>Trial count<input id="et-tr" type="number" value="'+t.trialCount+'"></label></div><div class="fg"><label>Status<select id="et-st"><option value="not_started"'+(t.status==='not_started'?' selected':'')+'>Not started</option><option value="in_progress"'+(t.status==='in_progress'?' selected':'')+'>In progress</option><option value="mastered"'+(t.status==='mastered'?' selected':'')+'>Mastered</option></select></label></div></div>'+
-  (t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>':'')+
+  (t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
+    :'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+
   '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline" style="margin-left:auto;color:#c0392b;border-color:#c0392b" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
@@ -2148,7 +2150,11 @@ function saveEditTarget(lId,sId,tId){
   t.trialCount=parseInt(document.getElementById('et-tr').value)||t.trialCount;
   t.status=document.getElementById('et-st').value;
   const noteEl=document.getElementById('et-note');if(noteEl)t.note=noteEl.value.trim();
-  if(t.dataType==='ta'){const el=document.getElementById('et-st2');if(el)t.taSteps=el.value.split('\n').map(s=>s.trim()).filter(Boolean);}
+  if(t.dataType==='ta'){
+    const el=document.getElementById('et-st2');if(el)t.taSteps=el.value.split('\n').map(s=>s.trim()).filter(Boolean);
+    const taOvEl=document.getElementById('et-tastep');
+    if(taOvEl){const v=taOvEl.value;t.taStepOverride=(v===''?null:parseInt(v));}
+  }
   if(['supervisor','director'].includes(currentUser.role)){
     const tsEl=document.getElementById('et-tsteps');
     if(tsEl){
