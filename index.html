@@ -2676,6 +2676,10 @@ function copyBIPToSchool(bipId){
   toast('Copied to School BIP ✓ — switch to School session to view and edit it.');
 }
 function showAddBIP(){
+  const _bipSetting=(()=>{
+    if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
+    const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
+  })();
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="nb-fn-'+f.id+'" value="'+f.id+'"> '+f.label+'</label>').join('');
   modal('<h3 style="margin-bottom:14px">Add Behavior (BIP)</h3>'
     +'<label>Behavior name<input id="nb-n" type="text" placeholder="e.g. Tantrum"></label>'
