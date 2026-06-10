@@ -2140,7 +2140,7 @@ function editTarget(lId,sId,tId){
   (t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>':'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+
-  '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+  '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline" style="margin-left:auto;color:#c0392b;border-color:#c0392b" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
 }
 function saveEditTarget(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
@@ -2170,6 +2170,22 @@ function saveEditTarget(lId,sId,tId){
     }
   }
   sbSaveLesson(l);render();
+}
+function confirmDeleteTarget(lId,sId,tId){
+  const l=DB.lessons.find(x=>x.id===lId),sd=l&&l.sds.find(x=>x.id===sId),t=sd&&sd.targets.find(x=>x.id===tId);
+  if(!t)return;
+  modal('<h3 style="margin-bottom:8px;color:#c0392b">Delete Target?</h3>'+
+    '<p style="margin-bottom:16px">Delete <strong>'+esc(t.name)+'</strong>? This cannot be undone — all data recorded for this target will also be lost.</p>'+
+    '<div style="display:flex;gap:8px"><button class="btn btn-outline" style="color:#c0392b;border-color:#c0392b" onclick="deleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Yes, delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function deleteTarget(lId,sId,tId){
+  const l=DB.lessons.find(x=>x.id===lId),sd=l&&l.sds.find(x=>x.id===sId);
+  if(!sd)return;
+  sd.targets=sd.targets.filter(x=>x.id!==tId);
+  sbSaveLesson(l);
+  closeModal();
+  render();
+  toast('Target deleted.');
 }
 function addLessonNote(lId){
   modal('<h3 style="margin-bottom:12px">General Notes</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
