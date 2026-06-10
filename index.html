@@ -1226,9 +1226,53 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='</div></div>';
   }
 
+  // First Trial recorder
+  html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
+  html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
+  if(['junior','senior'].includes(currentUser.role)){
+    html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
+    html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
+    html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
+    html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="I" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">I</button>';
+    html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="N/A" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">N/A</button>';
+    html+='</div>';
+  } else {
+    html+='<p style="font-size:.78rem;color:var(--muted)">First trial recorded by TX during session.</p>';
+  }
+  // history dots (all roles see this)
+  const ftHistory=(target.firstTrialData||[]).slice(-8).reverse();
+  if(ftHistory.length){
+    html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div>';
+    html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+    ftHistory.forEach(function(ft){
+      const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+      const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+      const shortDate=fmtDateShort(ft.date);
+      const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
+      html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
+      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
+      html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+shortDate+'<br>'+txFirst+'</div>';
+      html+='</div>';
+    });
+    html+='</div>';
+  }
+  html+='</div>';
+
   html+='</div>';
 
   return html;
+}
+
+function toggleFT(btn){
+  const id=btn.dataset.id;
+  // deselect all buttons for this target
+  document.querySelectorAll('.ft-btn[data-id="'+id+'"]').forEach(function(b){
+    b.style.background='var(--bg)';b.style.color='var(--text)';b.style.borderColor='var(--border)';b.classList.remove('ft-sel');
+  });
+  // select this one
+  const val=btn.dataset.val;
+  const col=val==='C'?{bg:'#E1F5EE',c:'#0F6E56',b:'#5DCAA5'}:val==='P'?{bg:'#EEEDFE',c:'#534AB7',b:'#AFA9EC'}:val==='I'?{bg:'#FAECE7',c:'#993C1D',b:'#F0997B'}:{bg:'#F1EFE8',c:'#5F5E5A',b:'#B4B2A9'};
+  btn.style.background=col.bg;btn.style.color=col.c;btn.style.borderColor=col.b;btn.classList.add('ft-sel');
 }
 
 function calcPct(id){
@@ -1478,6 +1522,10 @@ function saveSession(){
             if(!isNaN(tallyVal)){entry.count=tallyVal;entry.pct=null;}
             else{entry._skipped=true;}
           }
+          // First Trial result
+          const ftSelBtn=document.querySelector('.ft-btn[data-id="ft_'+id+'"].ft-sel');
+          if(ftSelBtn)entry.firstTrial=ftSelBtn.dataset.val;
+
           const naEl=document.getElementById('na_'+id);
           if(naEl&&naEl.checked){
             ld.targets.push({targetId:target.id,targetName:target.name,sdId:sd.id,dataType:target.dataType,na:true});
@@ -1514,6 +1562,20 @@ function saveSession(){
   const ss_save=getSessState();
   const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',notes:txNotes,lessonData};
   DB.sessions.push(newSess);
+  // Persist first trial results onto target.firstTrialData[]
+  lessonData.forEach(function(ld){
+    const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
+    if(!lesson2)return;
+    (ld.targets||[]).forEach(function(te){
+      if(te.na||!te.firstTrial)return;
+      lesson2.sds.forEach(function(sd2){
+        const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
+        if(!tgt)return;
+        if(!tgt.firstTrialData)tgt.firstTrialData=[];
+        tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
+      });
+    });
+  });
   clearSessState();
   // Save session immediately to Supabase
   sbSaveSession(sessionToRow(newSess));
@@ -1693,7 +1755,23 @@ function renderLessonCard(lesson){
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+t.dataType+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div></div>';
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+t.dataType+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+(function(){
+        const ftH=(t.firstTrialData||[]).slice(-8).reverse();
+        if(!ftH.length)return'';
+        let d='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
+        ftH.forEach(function(ft){
+          const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+          const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+          const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
+          d+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+ft.result+'</div>'
+            +'<div style="font-size:.63rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+txFirst+'</div>'
+            +'</div>';
+        });
+        d+='</div></div>';
+        return d;
+      }())
+      +'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div></div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
@@ -1965,7 +2043,7 @@ function saveAddSDTarget(lId){
   const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
   const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
   const teachingSteps=(document.getElementById('at-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[]};
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
   const atTs=(document.getElementById('at-ts')||{}).value||'DTT';
   if(sdSel==='new'){l.sds.push({id:uid(),sd:document.getElementById('at-sd-t').value.trim(),response:document.getElementById('at-r-t').value.trim(),teachingStyle:atTs,targets:[newT]});}
   else{l.sds.find(s=>s.id===sdSel).targets.push(newT);}
