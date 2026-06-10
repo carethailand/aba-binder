@@ -2016,7 +2016,8 @@ function saveAddTarget(lId,sId){
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('at-rl1').value||'1',2:document.getElementById('at-rl2').value||'2',3:document.getElementById('at-rl3').value||'3',4:document.getElementById('at-rl4').value||'4',5:document.getElementById('at-rl5').value||'5'}}:null;
   const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
   const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10};
+  const teachingSteps=(document.getElementById('at-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
   sd.targets.push(newT);
   sbSaveLesson(l);closeModal();render();
 }
@@ -2991,7 +2992,7 @@ async function resetData(){
 // ════════════════════════════════════════════════
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function modal(html){document.getElementById('modal-area').innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;overflow-y:auto;padding:20px"><div style="background:#fff;padding:26px;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto">'+html+'</div></div>';}
+function modal(html){document.getElementById('modal-area').innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;overflow-y:auto;padding:20px"><div class="unlock-exempt" style="background:#fff;padding:26px;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto">'+html+'</div></div>';}
 function closeModal(){const m=document.getElementById('modal-area');if(m)m.innerHTML='';}
 function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',dur);}
 </script>
