@@ -539,7 +539,7 @@ function confirmDiscard(){
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
     +'</div></div>');
 }
-function discardSession(){clearSessState();render();}
+function discardSession(){clearSessState();clearSessionDraft();render();}
 
 // ── Supervision state ──
 const SUP_KEY='aba_sup_'+location.pathname;
@@ -919,13 +919,20 @@ function showView(v){currentView=v;render();}
 function selectClient(id){
   if(currentUser&&currentUser.role==='admin'){toast('Admin cannot access client sessions');return;}
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
-selectedClientId=id;selectedTab='checklist';showView('client');}
-function setTab(t){selectedTab=t;render();}
+if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab='checklist';showView('client');}
+function setTab(t){
+  if(selectedTab==='session'&&t!=='session')saveSessionDraft();
+  selectedTab=t;render();
+}
 function render(){
   const app=document.getElementById('app');
   if(currentView==='clients')app.innerHTML=(currentUser&&currentUser.role==='admin')?renderAdmin():renderClientList();
   else if(currentView==='client')app.innerHTML=renderClientView();
   else if(currentView==='admin')app.innerHTML=renderAdmin();
+  // Restore in-progress session form data after re-render
+  if(currentView==='client'&&selectedTab==='session'){
+    requestAnimationFrame(()=>restoreSessionDraft());
+  }
   // Draw lesson charts AFTER innerHTML is set — must happen here not inside renderLessonsView
   if(currentView==='client'&&selectedTab==='lessons'){
     const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
@@ -1542,6 +1549,91 @@ function isStepMastered(target,stepIdx){
 }
 
 // ── SAVE SESSION ──
+
+// ── Session draft: save/restore in-progress form data when switching tabs ──
+const SESS_DRAFT_KEY='sess_draft_v1';
+
+function saveSessionDraft(){
+  if(!selectedClientId)return;
+  const draft={clientId:selectedClientId,inputs:{},buttons:{},checkboxes:{}};
+
+  // text inputs + number inputs
+  document.querySelectorAll('#tab-content input[type=text],#tab-content input[type=number]').forEach(el=>{
+    if(el.id)draft.inputs[el.id]=el.value;
+  });
+  // textareas (session notes, parent note)
+  document.querySelectorAll('#tab-content textarea').forEach(el=>{
+    if(el.id)draft.inputs[el.id]=el.value;
+  });
+  // selected CPI/FT/rating buttons (have .sel or .ft-sel or .rating-sel)
+  document.querySelectorAll('#tab-content button.sel,#tab-content button.ft-sel,#tab-content button.rating-sel').forEach(el=>{
+    const key=(el.dataset.id||'')+'__'+(el.dataset.val||el.textContent.trim());
+    draft.buttons[key]=true;
+  });
+  // N/A checkboxes
+  document.querySelectorAll('#tab-content input[type=checkbox]').forEach(el=>{
+    if(el.id)draft.checkboxes[el.id]=el.checked;
+  });
+  // open/closed <details> (expanded lessons)
+  const opens=[];
+  document.querySelectorAll('#tab-content details').forEach(el=>{
+    if(el.open&&el.querySelector('summary'))opens.push(el.querySelector('h3,summary')&&(el.querySelector('h3')||el.querySelector('summary')).textContent.trim());
+  });
+  draft.openDetails=opens;
+
+  try{sessionStorage.setItem(SESS_DRAFT_KEY,JSON.stringify(draft));}catch(e){console.warn('Draft save failed',e);}
+}
+
+function restoreSessionDraft(){
+  if(!selectedClientId)return;
+  let draft;
+  try{const raw=sessionStorage.getItem(SESS_DRAFT_KEY);if(!raw)return;draft=JSON.parse(raw);}catch(e){return;}
+  if(!draft||draft.clientId!==selectedClientId)return;
+
+  // inputs / textareas
+  Object.keys(draft.inputs||{}).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&el.value!==draft.inputs[id])el.value=draft.inputs[id];
+  });
+  // restore selected buttons
+  Object.keys(draft.buttons||{}).forEach(key=>{
+    const parts=key.split('__');const dataId=parts[0];const dataVal=parts.slice(1).join('__');
+    // try data-val match
+    let btn=document.querySelector('button[data-id="'+dataId+'"][data-val="'+dataVal+'"]');
+    if(!btn){
+      // fallback: match by text content for CPI buttons
+      document.querySelectorAll('button[data-id="'+dataId+'"]').forEach(b=>{if(b.textContent.trim()===dataVal)btn=b;});
+    }
+    if(btn){
+      if(btn.classList.contains('ft-btn'))btn.classList.add('ft-sel');
+      else if(btn.dataset.id&&btn.dataset.id.startsWith('rt_'))btn.classList.add('rating-sel');
+      else btn.classList.add('sel');
+      btn.style.background='var(--primary)';btn.style.color='#fff';
+    }
+  });
+  // checkboxes
+  Object.keys(draft.checkboxes||{}).forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.checked=draft.checkboxes[id];
+  });
+  // re-open details
+  if(draft.openDetails&&draft.openDetails.length){
+    document.querySelectorAll('#tab-content details').forEach(el=>{
+      const h=el.querySelector('h3')||el.querySelector('summary');
+      if(h&&draft.openDetails.includes(h.textContent.trim()))el.open=true;
+    });
+  }
+  // recalculate any % labels
+  document.querySelectorAll('[id^="cor_"],[id^="tot_"]').forEach(el=>{
+    const id=el.id.replace(/^(cor_|tot_)/,'');
+    calcPct(id);
+  });
+}
+
+function clearSessionDraft(){
+  sessionStorage.removeItem(SESS_DRAFT_KEY);
+}
+
 function saveSession(){
   const ssEl=document.getElementById('ss-date');
   const stEl=document.getElementById('ss-time');
@@ -1674,6 +1766,7 @@ function saveSession(){
     });
   });
   clearSessState();
+  clearSessionDraft();
   // Save session immediately to Supabase
   sbSaveSession(sessionToRow(newSess));
   // Also flush any pending lesson/bip changes
