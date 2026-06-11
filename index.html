@@ -545,9 +545,9 @@ function discardSession(){clearSessState();render();}
 const SUP_KEY='aba_sup_'+location.pathname;
 function getSupState(){try{return JSON.parse(sessionStorage.getItem(SUP_KEY))||{};}catch(e){return{};}}
 function setSupState(o){sessionStorage.setItem(SUP_KEY,JSON.stringify(o));}
-function clearSupState(){sessionStorage.removeItem(SUP_KEY);}
+function clearSupState(){sessionStorage.removeItem(SUP_KEY);sessionStorage.removeItem('sup_snap');}
 function updateSupState(key,val){const s=getSupState();s[key]=val;setSupState(s);}
-function cancelSupervision(){clearSupState();render();}
+function cancelSupervision(){clearSupState();sessionStorage.removeItem('sup_snap');render();}
 function dismissSupNotif(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
   if(c)delete c.supNotif;
@@ -557,6 +557,7 @@ function dismissSupNotif(){
 function snapshotClient(){
   // Deep snapshot of everything changeable for this client
   const c=DB.clients.find(x=>x.id===selectedClientId);
+  if(!c)return{clientNotes:[],reinforcers:[],lessons:[],bips:[]};
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   const bips=(DB.bips||[]).filter(b=>b.clientId===selectedClientId);
   return JSON.parse(JSON.stringify({
@@ -582,7 +583,9 @@ function startSupervision(){
   const d=(document.getElementById('sv-date')||{}).value||new Date().toISOString().slice(0,10);
   const ty=(document.getElementById('sv-type')||{}).value||'overlap';
   const snap=snapshotClient();
-  const _supSet=(document.getElementById('sv-setting')||{}).value||'therapy';setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true,snap});
+  const _supSet=(document.getElementById('sv-setting')||{}).value||'therapy';
+  try{sessionStorage.setItem('sup_snap',JSON.stringify(snap));}catch(e){console.warn('Snap too large for sessionStorage',e);}
+  setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true});
   render();
 }
 
@@ -630,9 +633,10 @@ function makeSVGSparkline(scores,masteryPct){
 }
 function finishSupervision(){
   const sv=getSupState();
-  if(!sv.started||!sv.snap){clearSupState();render();return;}
+  if(!sv.started){clearSupState();render();return;}
+  if(!sv.snap)console.warn('No snapshot found — changes list may be incomplete.');
   const _isSchoolSup=(sv.setting||'therapy')==='school';
-  const snap=sv.snap;
+  let snap=sv.snap;try{if(!snap){const _s=sessionStorage.getItem('sup_snap');if(_s)snap=JSON.parse(_s);}}catch(e){}
   const now=snapshotClient();
   const changes=[];
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -1018,7 +1022,7 @@ function renderClientView(){
   const tabs=isSup?supTabs:txTabs;
   if(isSup&&selectedTab==='session')selectedTab='checklist';
   if(!isSup&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
-  const tabHtml=tabs.map(t=>'<button class="tab '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
+  const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
   let stickyBar='';
   if(!isSup){
