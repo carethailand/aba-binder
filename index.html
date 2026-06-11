@@ -1276,7 +1276,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   }
 
   // First Trial recorder — percent and TA only
-  if(target.dataType==='percent'||target.dataType==='ta'){
+  if(target.dataType==='percent'){
   html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
   html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
   if(['junior','senior'].includes(currentUser.role)){
@@ -1859,7 +1859,7 @@ function drawLessonChart(lesson,sd,target){
   const chartId='lch_'+lesson.id+'_'+sd.id+'_'+target.id;
   const wrapEl=document.getElementById('wrap_'+chartId);
   const canvas=document.getElementById(chartId);
-  if(!canvas){if(wrapEl)wrapEl.innerHTML='<p style="color:red;font-size:.75rem">ERR: canvas not found</p>';return;}
+  if(!canvas){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">No data yet.</p>';return;}
   // Set explicit pixel dimensions — walk up DOM to find a visible ancestor (details may be collapsed)
   let _w=0;let _el=wrapEl;while(_el&&_w<10){_w=_el.offsetWidth;_el=_el.parentElement;}
   canvas.width=_w||document.getElementById('app').offsetWidth||400;
@@ -1992,7 +1992,7 @@ function showAddLesson(){
   '<label style="margin-top:8px">Response<textarea id="nl-r" rows="2"></textarea></label>'+
   '<hr style="margin:12px 0"><h4 style="margin-bottom:10px">First Target</h4>'+
   '<label>Target name<input id="nl-tname" type="text" placeholder="e.g. Target 1"></label>'+
-  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option><option value="tally">Tally (raw count)</option><option value="checklist">Program Checklist</option></select></label></div><div class="fg-sm" id="nl-trials-wrap"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
+  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option><option value="tally">Tally (raw count)</option><option value="checklist">First Trial</option></select></label></div><div class="fg-sm" id="nl-trials-wrap"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
   '<div id="nl-ta-wrap" style="display:none"><label>Chaining mode<select id="nl-chain"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:8px">Steps (one per line)<textarea id="nl-steps" rows="5"></textarea></label></div>'+
   '<div id="nl-rating-wrap" style="display:none"><div style="background:#f8fafc;border-radius:8px;padding:12px;margin-top:8px"><p style="font-size:.82rem;font-weight:600;margin-bottom:8px">Rating labels (1–5):</p>'+
   [1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:6px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="nl-rl'+i+'" placeholder="e.g. '+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+
@@ -2054,7 +2054,7 @@ function addTarget(lId,sId){
     +'<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">SD: <strong>'+esc(sd.sd)+'</strong></p>'
     +'<label>Target name<input id="at-n" type="text" placeholder="e.g. 2-step instruction"></label>'
     +'<div class="form-row" style="margin-top:8px">'
-    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(&quot;at-ta&quot;).style.display=v===&quot;ta&quot;?&quot;&quot;:&quot;none&quot;;document.getElementById(&quot;at-rt&quot;).style.display=v===&quot;rating&quot;?&quot;&quot;:&quot;none&quot;;var _tw=document.getElementById(&quot;at-tr-wrap&quot;);if(_tw)_tw.style.display=v===&quot;tally&quot;?&quot;none&quot;:&quot;&quot;;var _tlw=document.getElementById(&quot;at-tally&quot;);if(_tlw)_tlw.style.display=v===&quot;tally&quot;?&quot;&quot;:&quot;none&quot;;"><option value=\"percent\">% Correct</option><option value=\"ta\">Task Analysis</option><option value=\"rating\">Rating Scale</option><option value=\"tally\">Tally (raw count)</option><option value=\"checklist\">Program Checklist</option></select></label></div>'
+    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(&quot;at-ta&quot;).style.display=v===&quot;ta&quot;?&quot;&quot;:&quot;none&quot;;document.getElementById(&quot;at-rt&quot;).style.display=v===&quot;rating&quot;?&quot;&quot;:&quot;none&quot;;var _tw=document.getElementById(&quot;at-tr-wrap&quot;);if(_tw)_tw.style.display=v===&quot;tally&quot;?&quot;none&quot;:&quot;&quot;;var _tlw=document.getElementById(&quot;at-tally&quot;);if(_tlw)_tlw.style.display=v===&quot;tally&quot;?&quot;&quot;:&quot;none&quot;;"><option value=\"percent\">% Correct</option><option value=\"ta\">Task Analysis</option><option value=\"rating\">Rating Scale</option><option value=\"tally\">Tally (raw count)</option><option value=\"checklist\">First Trial</option></select></label></div>'
     +'<div class="fg-sm"><label>Trials<input id="at-tr" type="number" value="10"></label></div></div>'
     +'<div id="at-ta" style="display:none"><label>Chain mode<select id="at-cm"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:6px">Steps (one per line)<textarea id="at-st" rows="4"></textarea></label></div>'
     +'<div id="at-rt" style="display:none">'+[1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:4px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="at-rl'+i+'" placeholder="'+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+'</div>'
@@ -2192,7 +2192,7 @@ function editTarget(lId,sId,tId){
   modal('<h3 style="margin-bottom:12px">Edit Target</h3>'+
   '<label>Name<input id="et-n" type="text" value="'+esc(t.name)+'"></label>'+
   '<div class="form-row" style="margin-top:8px"><div class="fg-sm"><label>Trial count<input id="et-tr" type="number" value="'+t.trialCount+'"></label></div><div class="fg"><label>Status<select id="et-st"><option value="not_started"'+(t.status==='not_started'?' selected':'')+'>Not started</option><option value="in_progress"'+(t.status==='in_progress'?' selected':'')+'>In progress</option><option value="mastered"'+(t.status==='mastered'?' selected':'')+'>Mastered</option></select></label></div></div>'+
-  (t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
+  +(['supervisor','director'].includes(currentUser.role)?'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="et-dtype" onchange="(function(){var v=this.value;})()"><option value="percent"'+(t.dataType==="percent"?' selected':'')+'>% Correct</option><option value="ta"'+(t.dataType==="ta"?' selected':'')+'>Task Analysis (Chaining)</option><option value="rating"'+(t.dataType==="rating"?' selected':'')+'>Rating Scale</option><option value="tally"'+(t.dataType==="tally"?' selected':'')+'>Tally (raw count)</option><option value="checklist"'+(t.dataType==="checklist"?' selected':'')+'>First Trial</option></select></label></div></div><p style="font-size:.75rem;color:#e67e22;margin-top:2px">⚠ Changing data type clears existing session data for this target.</p>':'')+(t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
     :'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+
@@ -2201,6 +2201,15 @@ function editTarget(lId,sId,tId){
 function saveEditTarget(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   t.name=document.getElementById('et-n').value.trim()||t.name;
+  if(['supervisor','director'].includes(currentUser.role)){
+    const dtypeEl=document.getElementById('et-dtype');
+    if(dtypeEl&&dtypeEl.value&&dtypeEl.value!==t.dataType){
+      t.dataType=dtypeEl.value;
+      // clear session data for this target so old data doesn't confuse graphs
+      DB.sessions.forEach(function(s){if(s.lessonData)s.lessonData.forEach(function(ld){if(ld.lessonId===lId&&ld.targets)ld.targets=ld.targets.filter(function(tt){return tt.targetId!==tId;});});});
+      toast('Data type changed — previous session data cleared for this target.');
+    }
+  }
   t.trialCount=parseInt(document.getElementById('et-tr').value)||t.trialCount;
   t.status=document.getElementById('et-st').value;
   const noteEl=document.getElementById('et-note');if(noteEl)t.note=noteEl.value.trim();
