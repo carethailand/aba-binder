@@ -1581,13 +1581,13 @@ function saveSessionDraft(){
   });
   draft.openDetails=opens;
 
-  try{sessionStorage.setItem(SESS_DRAFT_KEY,JSON.stringify(draft));}catch(e){console.warn('Draft save failed',e);}
+  try{localStorage.setItem(SESS_DRAFT_KEY,JSON.stringify(draft));}catch(e){console.warn('Draft save failed',e);}
 }
 
 function restoreSessionDraft(){
   if(!selectedClientId)return;
   let draft;
-  try{const raw=sessionStorage.getItem(SESS_DRAFT_KEY);if(!raw)return;draft=JSON.parse(raw);}catch(e){return;}
+  try{const raw=localStorage.getItem(SESS_DRAFT_KEY);if(!raw)return;draft=JSON.parse(raw);}catch(e){return;}
   if(!draft||draft.clientId!==selectedClientId)return;
 
   // inputs / textareas
@@ -1631,7 +1631,7 @@ function restoreSessionDraft(){
 }
 
 function clearSessionDraft(){
-  sessionStorage.removeItem(SESS_DRAFT_KEY);
+  localStorage.removeItem(SESS_DRAFT_KEY);
 }
 
 function saveSession(){
