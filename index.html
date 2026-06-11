@@ -1098,13 +1098,18 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isViewOnly()?' class="view-only-mode"':isSessionActive()?'':' class="session-locked"'))+'><div class="view-only-banner">👁️ View only — not assigned to this client / admin</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isSessionActive()?'':' class="session-locked"')))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':'admin view')+'</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
-  // supervisors and directors are NEVER locked out — they edit everything
-  if(['supervisor','director'].includes(currentUser.role))return false;
   if(currentUser.role==='admin')return true;
+  // directors can edit all clients
+  if(currentUser.role==='director')return false;
+  // supervisors can view all but only edit assigned clients
+  if(currentUser.role==='supervisor'){
+    const ac=currentUser.assignedClients||[];
+    return !ac.includes(selectedClientId);
+  }
   return false;
 }
 function isSessionActive(){
