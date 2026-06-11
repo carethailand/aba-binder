@@ -1073,7 +1073,7 @@ function renderClientView(){
         +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value)">'+supTypeOpts+'</select>'
         +'<span class="ss-label">Setting</span><select id="sv-setting" onchange="updateSupState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_svSetting==='therapy'?' selected':'')+'>🏠 1:1</option><option value="school"'+(_svSetting==='school'?' selected':'')+'>🏫 School Obs</option></select>'
         +'<div style="flex:1"></div>'
-        +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
+        +'<button class="unlock-exempt" style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
         +'</div>';
     } else {
       const supTypeLabel=(sv2.supType||'overlap').charAt(0).toUpperCase()+(sv2.supType||'overlap').slice(1);
@@ -1086,8 +1086,8 @@ function renderClientView(){
         +'<span style="color:#86efac;font-size:.78rem">|</span>'
         +'<span class="ss-label">'+sv2.date+'</span>'
         +'<div style="flex:1"></div>'
-        +'<button class="btn btn-primary btn-sm" onclick="finishSupervision()">📄 Finish &amp; Preview</button>'
-        +'<button class="btn btn-outline btn-sm" onclick="cancelSupervision()">✕ Cancel</button>'
+        +'<button class="btn btn-primary btn-sm unlock-exempt" onclick="finishSupervision()">📄 Finish &amp; Preview</button>'
+        +'<button class="btn btn-outline btn-sm unlock-exempt" onclick="cancelSupervision()">✕ Cancel</button>'
         +'</div>';
     }
     stickyBar=supBar;
@@ -1099,9 +1099,12 @@ function renderClientView(){
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
   if(currentUser.role==='admin')return true;
-  if(currentUser.role!=='supervisor')return false;
-  const ac=currentUser.assignedClients||[];
-  return !ac.includes(selectedClientId);
+  if(['supervisor','director'].includes(currentUser.role)){
+    if(currentUser.role==='director')return false; // directors see all
+    const ac=currentUser.assignedClients||[];
+    return !ac.includes(selectedClientId);
+  }
+  return false;
 }
 function isSessionActive(){
   if(!currentUser)return false;
@@ -1760,7 +1763,7 @@ function renderMasteredSection(lesson,sd,si,supView){
     const rows=mastered.map(t=>{
       const steps=t.teachingSteps||[];
       const curStep=steps.length?'Step '+((t.dtStepIndex||0)+1)+': '+(steps[t.dtStepIndex||0]||'—'):'—';
-      const editBtn='<button class="btn btn-xs btn-outline no-print" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
+      const editBtn='<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
         +' <button class="btn btn-xs btn-outline no-print" style="font-size:.72rem" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',\'in_progress\')" title="Reopen">↩</button>';
       const chartId='lch_'+lesson.id+'_'+sd.id+'_'+t.id;
       return '<details class="mastered-target-detail" data-mdet="'+lesson.id+'|'+sd.id+'|'+t.id+'">'
@@ -1790,7 +1793,7 @@ function renderHoldSection(lesson,sd,supView){
   if(!held.length)return '';
   if(supView){
     const rows=held.map(t=>{
-      const eb='<button class="btn btn-xs btn-outline no-print" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
+      const eb='<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
         +' <button class="btn btn-xs btn-outline no-print" style="font-size:.72rem" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',\'in_progress\')" title="Resume">▶ Resume</button>';
       return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid #e5e7eb;font-size:.8rem">'
         +'<span style="flex:1;font-weight:600">⏸ '+esc(t.name)+'</span>'
@@ -1824,7 +1827,7 @@ function renderLessonCard(lesson){
       const isTHold=t.status==='on_hold';
       const isTMast=t.status==='mastered';
       const editBtn=!['supervisor','director'].includes(currentUser.role)?''
-        :'<button class="btn btn-xs btn-outline no-print" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
+        :'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editTarget(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">✏</button>'
         +(!isTMast&&!isTHold&&(t.teachingSteps&&t.teachingSteps.length)?'<button class="btn btn-xs no-print unlock-exempt" style="padding:2px 7px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd" onclick="showMeetCriteria(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\')">🎯 Meet Criteria</button>':'')
         +(['supervisor','director'].includes(currentUser.role)&&!isTMast&&!isTHold
           ?'<button class="btn btn-xs btn-green no-print" style="padding:2px 7px" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',\'mastered\')" title="Mark mastered">✓ Mastered</button>'
@@ -1864,7 +1867,7 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -2229,7 +2232,7 @@ function editTarget(lId,sId,tId){
     :'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+
-  '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline" style="margin-left:auto;color:#c0392b;border-color:#c0392b" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
+  '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline unlock-exempt" style="margin-left:auto;color:#c0392b;border-color:#c0392b" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
 }
 function saveEditTarget(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
