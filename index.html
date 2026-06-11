@@ -1273,9 +1273,36 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<input type="number" id="tally_'+id+'" min="0" value="0" style="width:70px;font-size:1.3rem;font-weight:700;text-align:center;border:2px solid var(--primary);border-radius:8px;padding:4px">';
     html+='<button class="cpi-btn plus" style="font-size:1.2rem;width:36px;height:36px" onclick="adjustTally(\'inc_'+id+'\',\'tally_'+id+'\')">\+</button>';
     html+='</div></div>';
+  } else if(target.dataType==='checklist'){
+    // First Trial only — C/P/I/N/A buttons are the sole data entry
+    html+='<div style="margin-top:8px">';
+    html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
+    if(['junior','senior'].includes(currentUser.role)){
+      html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
+      html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
+      html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
+      html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="I" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">I</button>';
+      html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="N/A" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">N/A</button>';
+      html+='</div>';
+    }
+    const ftHist=(target.firstTrialData||[]).slice(-8).reverse();
+    if(ftHist.length){
+      html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Recent</div>';
+      html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
+      ftHist.forEach(function(ft){
+        const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+        const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+        html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
+        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
+        html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'</div>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }
+    html+='</div>';
   }
 
-  // First Trial recorder — percent and TA only
+  // First Trial recorder — percent only
   if(target.dataType==='percent'){
   html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
   html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
@@ -1573,10 +1600,16 @@ function saveSession(){
             const tallyVal=tallyEl?parseInt(tallyEl.value):NaN;
             if(!isNaN(tallyVal)){entry.count=tallyVal;entry.pct=null;}
             else{entry._skipped=true;}
+          } else if(target.dataType==='checklist'){
+            // checklist = First Trial only — mark as skipped until FT button is selected
+            entry._skipped=true; // will be unset below if FT is selected
           }
-          // First Trial result
+          // First Trial result (percent + checklist)
           const ftSelBtn=document.querySelector('.ft-btn[data-id="ft_'+id+'"].ft-sel');
-          if(ftSelBtn)entry.firstTrial=ftSelBtn.dataset.val;
+          if(ftSelBtn){
+            entry.firstTrial=ftSelBtn.dataset.val;
+            if(target.dataType==='checklist')entry._skipped=false; // FT is the only data needed
+          }
 
           const naEl=document.getElementById('na_'+id);
           if(naEl&&naEl.checked){
@@ -1810,7 +1843,7 @@ function renderLessonCard(lesson){
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+t.dataType+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+(function(){
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e8f6fd;color:#1a7fad;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 10px;font-size:.8rem;color:#92400e;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+(function(){
         const ftH=(t.firstTrialData||[]).slice(-8).reverse();
         if(!ftH.length)return'';
         let d='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
@@ -2204,10 +2237,15 @@ function saveEditTarget(lId,sId,tId){
   if(['supervisor','director'].includes(currentUser.role)){
     const dtypeEl=document.getElementById('et-dtype');
     if(dtypeEl&&dtypeEl.value&&dtypeEl.value!==t.dataType){
-      t.dataType=dtypeEl.value;
-      // clear session data for this target so old data doesn't confuse graphs
-      DB.sessions.forEach(function(s){if(s.lessonData)s.lessonData.forEach(function(ld){if(ld.lessonId===lId&&ld.targets)ld.targets=ld.targets.filter(function(tt){return tt.targetId!==tId;});});});
-      toast('Data type changed — previous session data cleared for this target.');
+      const newDtype=dtypeEl.value;
+      // Put existing target on hold (preserves all data)
+      t.status='on_hold';
+      // Create new target with same name, new data type
+      const newT={id:uid(),name:t.name,dataType:newDtype,taSteps:newDtype==='ta'?[]:[],chainingMode:'forward',stepMasteryRecords:{},ratingScale:newDtype==='rating'?{min:1,max:5,labels:{1:'1',2:'2',3:'3',4:'4',5:'5'}}:null,tallyGoal:null,tallyPeriod:null,status:'in_progress',introducedDate:new Date().toISOString().slice(0,10),masteredDate:'',trialCount:t.trialCount||10,teachingSteps:t.teachingSteps||[],dtStepIndex:0,dtStepChanges:[],firstTrialData:[],note:t.note||''};
+      sd.targets.push(newT);
+      toast('Data type changed — original target put on hold, new target created.');
+      sbSaveLesson(l);render();closeModal();
+      return;
     }
   }
   t.trialCount=parseInt(document.getElementById('et-tr').value)||t.trialCount;
