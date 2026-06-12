@@ -2035,10 +2035,10 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?t.count:null))
       const pinIdx=Math.min(c.sessionCount,sessionDates.length-1);
       return{idx:pinIdx,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
     }
-    // fallback: first session strictly after change date
-    const afterIdx=sessionDates.findIndex(d=>d>c.date);
+    // fallback: first session on or after change date
+    const afterIdx=sessionDates.findIndex(d=>d>=c.date);
     if(afterIdx>=0)return{idx:afterIdx,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
-    return{idx:sessionDates.length-1,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
+    return null; // no session yet after this change — don't draw the line
   }).filter(Boolean);
   // Custom plugin: draw vertical phase change lines + labels
   const phaseLinePlugin={id:'phaseLines',afterDraw(chart){
