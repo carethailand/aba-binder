@@ -1279,21 +1279,29 @@ function renderTargetSessionEntry(lesson,sd,target){
     });
     const _sxLast3=_sxRecent.slice(-3);
     const _sxLast2=_sxRecent.slice(-2);
+    // Date header row
+    if(_sxLast2.length){
+      const _dateHdr='<div style="display:flex;align-items:center;gap:6px;padding:2px 0 4px;border-bottom:1px solid var(--border);margin-bottom:4px">'
+        +'<span style="flex:1;font-size:.68rem;color:var(--muted)">Step</span>'
+        +'<div style="display:flex;gap:4px">'
+        +_sxLast2.map(sess=>'<span style="font-size:.65rem;color:var(--muted);min-width:22px;text-align:center;white-space:nowrap">'+fmtDateShort(sess.date)+'</span>').join('')
+        +'</div>'
+        +'<div style="flex-shrink:0;min-width:90px"></div>'
+        +'</div>';
+      html+=_dateHdr;
+    }
     html+=target.taSteps.map((s,i)=>{
       const isMastered=isStepMastered(target,i);
       const isTeach=mode!=='total'&&i===teachIdx&&!isMastered;
       const rowBg=isTeach?'background:#fffbeb;':'';
       const teachLabel=isTeach?'<span style="font-size:.68rem;color:#d97706;font-weight:700;margin-left:3px">←TEACH</span>':'';
       const mastLabel=isMastered?'<span style="font-size:.68rem;color:#16a34a;margin-left:3px">✓</span>':'';
-      // history cells (last 2)
+      // history cells (last 2) — date shown as header only, not per row
       const histCells=_sxLast2.map(sess=>{
         const sr=sess.steps&&sess.steps[i];const res=sr?sr.result:'';
         const bg=res==='+'?'#dcfce7':res==='-'?'#fee2e2':res==='P'?'#fef9c3':'#f1f5f9';
         const col=res==='+'?'#16a34a':res==='-'?'#dc2626':res==='P'?'#ca8a04':'#94a3b8';
-        return'<div style="display:flex;flex-direction:column;align-items:center;min-width:26px">'
-          +'<span style="font-size:.6rem;color:var(--muted);white-space:nowrap">'+fmtDateShort(sess.date)+'</span>'
-          +'<span style="background:'+bg+';color:'+col+';font-weight:700;font-size:.72rem;border-radius:4px;padding:1px 5px;margin-top:1px">'+(res||'—')+'</span>'
-          +'</div>';
+        return'<span style="background:'+bg+';color:'+col+';font-weight:700;font-size:.72rem;border-radius:4px;padding:1px 5px;min-width:22px;text-align:center;display:inline-block">'+(res||'—')+'</span>';
       }).join('');
       let ctrl='';
       if(isMastered){ctrl='<span style="font-size:.75rem;color:#16a34a;white-space:nowrap">✓ mastered</span>';}
