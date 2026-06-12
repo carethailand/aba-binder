@@ -1238,20 +1238,25 @@ function renderTargetSessionEntry(lesson,sd,target){
   html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
   html+='<strong style="flex:1;font-size:.88rem">🎯 '+esc(target.name)+'</strong>';
   html+='<label style="display:flex;align-items:center;gap:4px;font-size:.8rem;color:var(--muted);cursor:pointer"><input type="checkbox" id="na_'+id+'" onchange="toggleNA(\''+id+'\')"> N/A</label>';
-  if(target.dataType==='ta'&&target.chainingMode&&target.chainingMode!=='total'){
-    const ci=getCurrentStepIndex(target);
-    html+='<span style="font-size:.78rem;background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:4px">📍 Step '+(ci+1)+'/'+target.taSteps.length+'</span>';
+  if(target.dataType==='ta'){
+    const _cm=target.chainingMode||'total';
+    const _cmLabel=_cm==='forward'?'⬇ Forward Chaining':_cm==='backward'?'⬆ Backward Chaining':'↔ Total Task';
+    html+='<span style="font-size:.75rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-weight:600">'+_cmLabel+'</span>';
+    if(_cm!=='total'){
+      const ci=getCurrentStepIndex(target);
+      html+='<span style="font-size:.78rem;background:#fffbeb;color:#92400e;padding:2px 8px;border-radius:4px">📍 Step '+(ci+1)+'/'+target.taSteps.length+'</span>';
+    }
   }
   if(target.teachingSteps&&target.teachingSteps.length){
     const curStep=target.teachingSteps[target.dtStepIndex||0]||target.teachingSteps[0];
     html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
   }
   html+='<span class="target-status status-'+target.status+'">'+target.status.replace(/_/g,' ')+'</span>';
-  html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';
+  if(target.dataType!=='checklist'){html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';}
   html+='</div>';
 
   // expandable graph
-  html+='<div id="'+graphId+'" class="session-graph-wrap hidden"><div class="chart-wrap" style="height:150px"><canvas id="c_'+graphId+'"></canvas></div></div>';
+  if(target.dataType!=='checklist'){html+='<div id="'+graphId+'" class="session-graph-wrap hidden"><div class="chart-wrap" style="height:150px"><canvas id="c_'+graphId+'"></canvas></div></div>';}
 
   // data entry
   if(target.dataType==='percent'){
@@ -1462,7 +1467,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#29ABE2',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery',data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,fill:false}
-  ]},plugins:[sgPhasePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[sgPhasePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── DT Session Entry ──
@@ -2018,7 +2023,7 @@ function drawLessonChart(lesson,sd,target){
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(!graphMonth||s.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
-const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?t.count:null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
+const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataType==='tally'?t.count/(s.sessTime||2):t.count):null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
   if(!labels.length){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">📊 No session data yet for this target.</p>';return;}
   if(wrapEl)wrapEl.style.border='1px solid #29ABE2';
   const isRating=target.dataType==='rating';
@@ -2064,7 +2069,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?t.count:null))
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#29ABE2',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery '+masteryLine+(isRating?'':('%')),data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
-  ]},plugins:[phaseLinePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:10,callback:v=>isRating?v:v+'%'},title:{display:true,text:isRating?'Rating':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[phaseLinePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:10,callback:v=>isRating?v:v+'%'},title:{display:true,text:isRating?'Rating':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── Mastery actions ──
