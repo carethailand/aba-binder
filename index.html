@@ -340,7 +340,7 @@ async function sbSaveBIP(bObj){
   await sbUpsert('bips',bipToRow(bObj));
 }
 async function sbSaveSession(rowObj){
-  await sbUpsert('sessions',rowObj);
+  return await sbUpsert('sessions',rowObj);
 }
 async function sbDeleteUser(id){
   const url=SUPABASE_URL+'/rest/v1/users?id=eq.'+id;
@@ -1634,7 +1634,7 @@ function clearSessionDraft(){
   localStorage.removeItem(SESS_DRAFT_KEY);
 }
 
-function saveSession(){
+async function saveSession(){
   const ssEl=document.getElementById('ss-date');
   const stEl=document.getElementById('ss-time');
   const ss3=getSessState();
@@ -1749,7 +1749,8 @@ function saveSession(){
   // Save parent note to sessState so it persists until End Session
   const _pnEl=document.getElementById('parent-note-input');
   if(_pnEl)updateSessState('parentNote',_pnEl.value.trim());
-  const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',notes:txNotes,lessonData};
+  const _pnVal=(document.getElementById('parent-note-input')||{}).value||ss_save.parentNote||'';
+  const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',setting:ss_save.setting||'therapy',parentNote:_pnVal,notes:txNotes,lessonData};
   DB.sessions.push(newSess);
   // Persist first trial results onto target.firstTrialData[]
   lessonData.forEach(function(ld){
@@ -1767,18 +1768,32 @@ function saveSession(){
   });
   clearSessState();
   clearSessionDraft();
-  // Save session immediately to Supabase
-  sbSaveSession(sessionToRow(newSess));
-  // Also flush any pending lesson/bip changes
-  flushSave();
-  // flash checklist checkmarks before re-render
+  // flash checklist checkmarks immediately
   lessonData.forEach(ld=>{
     (ld.targets||[]).filter(t=>t.dataType!=='maintenance').forEach(t=>{
       const el=document.getElementById('cl_'+ld.lessonId+'_'+t.targetId);
       if(el){el.className='cl-check done';el.textContent='✓';}
     });
   });
-  setTimeout(()=>{toast('Session saved ✓ — returning to client list');showView('clients');},800);
+  // Save to Supabase — await so we know if it succeeded
+  toast('Saving session…');
+  try{
+    const saveResult=await sbSaveSession(sessionToRow(newSess));
+    if(saveResult===null){
+      toast('⚠ Session save failed — check your connection and try again','error',6000);
+      // Put session back so TX can retry
+      DB.sessions.pop();
+      return;
+    }
+    // Flush lesson/bip changes (mastery updates, first trial data, etc)
+    await flushSave();
+    toast('Session saved ✓ — returning to client list');
+    setTimeout(()=>showView('clients'),800);
+  }catch(e){
+    console.error('saveSession error',e);
+    toast('⚠ Save error: '+e.message,'error',6000);
+    DB.sessions.pop();
+  }
 }
 
 function checkMastery(lesson,target,date,pct){
