@@ -1892,7 +1892,7 @@ function renderMasteredSection(lesson,sd,si,supView){
         +'<span style="font-size:.74rem;background:#e8f6fd;color:#1a7fad;border-radius:4px;padding:1px 6px;margin-left:auto">'+esc(curStep)+'</span>'
         +' '+editBtn
         +'</summary>'
-        +'<div class="chart-wrap" id="wrap_'+chartId+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>'
+        +(t.dataType!=='checklist'?'<div class="chart-wrap" id="wrap_'+chartId+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>':'')
         +'</details>';
     }).join('');
     return '<div class="mastered-section"><div class="mastered-section-header">✅ Mastered ('+mastered.length+')</div>'+rows+'</div>';
@@ -1981,7 +1981,7 @@ function renderLessonCard(lesson){
         d+='</div></div>';
         return d;
       }())
-      +'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div></div>';
+      +(t.dataType!=='checklist'?'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>':'')+'</div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
@@ -2011,6 +2011,7 @@ function fmtDateShort(d){
   return months[parseInt(parts[1])-1]+' '+parseInt(parts[2])+', '+parts[0].slice(2);
 }
 function drawLessonChart(lesson,sd,target){
+  if(target.dataType==='checklist')return; // no graph for First Trial targets
   const chartId='lch_'+lesson.id+'_'+sd.id+'_'+target.id;
   const wrapEl=document.getElementById('wrap_'+chartId);
   const canvas=document.getElementById(chartId);
