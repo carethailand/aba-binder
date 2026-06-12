@@ -1957,10 +1957,48 @@ function renderLessonCard(lesson){
           :(!isTMast?'<button class="btn btn-xs no-print" style="padding:2px 7px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="setTargetStatus(\''+lesson.id+'\',\''+sd.id+'\',\''+t.id+'\',' + '\'on_hold\')" title="Put on hold">⏸ Hold</button>':'')
         );
       let chainInfo='';
-      if(t.dataType==='ta'&&t.chainingMode&&t.chainingMode!=='total'){
-        const ci=getCurrentStepIndex(t);
-        const mCount=t.taSteps.filter((_,i)=>isStepMastered(t,i)).length;
-        chainInfo='<p style="font-size:.77rem;background:#fffbeb;color:#92400e;padding:3px 8px;border-radius:5px;margin-bottom:6px">'+t.chainingMode.toUpperCase()+' &nbsp;|&nbsp; 📍 Step '+(ci+1)+'/'+t.taSteps.length+' &nbsp;|&nbsp; ✓ '+mCount+' mastered</p>';
+      if(t.dataType==='ta'){
+        const _cm=t.chainingMode||'total';
+        const _cmLabel=_cm==='forward'?'⬇ Forward':_cm==='backward'?'⬆ Backward':'↔ Total Task';
+        let _chainHeader='<span style="font-size:.77rem;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-weight:600">'+_cmLabel+'</span>';
+        if(_cm!=='total'){
+          const ci=getCurrentStepIndex(t);
+          const mCount=t.taSteps.filter((_,i)=>isStepMastered(t,i)).length;
+          _chainHeader+=' <span style="font-size:.77rem;color:var(--muted)">📍 Step '+(ci+1)+'/'+t.taSteps.length+' &nbsp;|&nbsp; ✓ '+mCount+' mastered</span>';
+        }
+        // Per-step history table — last 3 sessions oldest→newest
+        const _taSess=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
+        const _taRecent=[];
+        _taSess.forEach(s=>{
+          s.lessonData&&s.lessonData.forEach(ld=>{
+            if(ld.lessonId!==lesson.id)return;
+            ld.targets&&ld.targets.forEach(te=>{
+              if(te.targetId!==t.id||!te.steps)return;
+              _taRecent.push({date:s.date,tx:s.txName?s.txName.split(' ')[0]:'',steps:te.steps});
+            });
+          });
+        });
+        const _taLast3=_taRecent.slice(-3);
+        let _stepTable='';
+        if(_taLast3.length&&t.taSteps&&t.taSteps.length){
+          const _hdrCols=_taLast3.map(s=>'<th style="text-align:center;font-size:.68rem;color:var(--muted);padding:2px 6px;white-space:nowrap">'+fmtDateShort(s.date)+'<br>'+s.tx+'</th>').join('');
+          const _rows=t.taSteps.map((step,si)=>{
+            const isMast=(t.stepMasteryRecords&&t.stepMasteryRecords[si]&&isStepMastered(t,si));
+            const _cols=_taLast3.map(sess=>{
+              const sr=sess.steps&&sess.steps[si];
+              const res=sr?sr.result:'';
+              const bg=res==='+'?'#dcfce7':res==='-'?'#fee2e2':res==='P'?'#fef9c3':'#f1f5f9';
+              const col=res==='+'?'#16a34a':res==='-'?'#dc2626':res==='P'?'#ca8a04':'#94a3b8';
+              const disp=res||'—';
+              return'<td style="text-align:center;padding:2px 6px;background:'+bg+';color:'+col+';font-weight:700;font-size:.78rem">'+disp+'</td>';
+            }).join('');
+            const stepBg=isMast?'#f0fdf4':'';
+            const stepCol=isMast?'#16a34a':'inherit';
+            return'<tr style="background:'+stepBg+'"><td style="font-size:.75rem;padding:2px 8px;color:'+stepCol+'">'+(isMast?'✓ ':''+(si+1)+'. ')+esc(step)+'</td>'+_cols+'</tr>';
+          }).join('');
+          _stepTable='<div style="margin-top:6px;margin-bottom:8px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden"><thead><tr style="background:#f8fafc"><th style="text-align:left;font-size:.72rem;padding:3px 8px;color:var(--muted)">Step</th>'+_hdrCols+'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
+        }
+        chainInfo='<div style="margin-bottom:6px">'+_chainHeader+_stepTable+'</div>';
       }
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
