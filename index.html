@@ -1265,6 +1265,33 @@ function renderTargetSessionEntry(lesson,sd,target){
   } else if(target.dataType==='ta'){
     const mode=target.chainingMode||'total';
     const teachIdx=getCurrentStepIndex(target);
+    // Per-step history table (last 3 sessions, oldest→newest)
+    const _sxSess=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>a.date.localeCompare(b.date));
+    const _sxRecent=[];
+    _sxSess.forEach(s=>{
+      s.lessonData&&s.lessonData.forEach(ld=>{
+        if(ld.lessonId!==lesson.id)return;
+        ld.targets&&ld.targets.forEach(te=>{
+          if(te.targetId!==target.id||!te.steps)return;
+          _sxRecent.push({date:s.date,tx:s.txName?s.txName.split(' ')[0]:'',steps:te.steps});
+        });
+      });
+    });
+    const _sxLast3=_sxRecent.slice(-3);
+    if(_sxLast3.length&&target.taSteps&&target.taSteps.length){
+      const _hdr=_sxLast3.map(s=>'<th style="text-align:center;font-size:.65rem;color:var(--muted);padding:2px 5px;white-space:nowrap">'+fmtDateShort(s.date)+'<br>'+s.tx+'</th>').join('');
+      const _rows=target.taSteps.map((step,si)=>{
+        const isMast=isStepMastered(target,si);
+        const cols=_sxLast3.map(sess=>{
+          const sr=sess.steps&&sess.steps[si];const res=sr?sr.result:'';
+          const bg=res==='+'?'#dcfce7':res==='-'?'#fee2e2':res==='P'?'#fef9c3':'#f8fafc';
+          const col=res==='+'?'#16a34a':res==='-'?'#dc2626':res==='P'?'#ca8a04':'#94a3b8';
+          return'<td style="text-align:center;padding:2px 5px;background:'+bg+';color:'+col+';font-weight:700;font-size:.75rem">'+(res||'—')+'</td>';
+        }).join('');
+        return'<tr><td style="font-size:.73rem;padding:2px 6px;color:'+(isMast?'#16a34a':'inherit')+'">'+(isMast?'✓ ':si+1+'. ')+esc(step)+'</td>'+cols+'</tr>';
+      }).join('');
+      html+='<div style="margin-bottom:8px;overflow-x:auto"><table style="width:100%;border-collapse:collapse;border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:.75rem"><thead><tr style="background:#f8fafc"><th style="text-align:left;padding:3px 6px;font-size:.7rem;color:var(--muted)">Step</th>'+_hdr+'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
+    }
     html+=target.taSteps.map((s,i)=>{
       const isMastered=isStepMastered(target,i);
       const isTeach=mode!=='total'&&i===teachIdx&&!isMastered;
