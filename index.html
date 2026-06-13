@@ -405,48 +405,160 @@ function hideSyncStatus(){
 
 
 // ── Archive / Restore ────────────────────────────────────────────────────────
-async function archiveSessions(){
-  const monthEl=document.getElementById('archive-month');
-  if(!monthEl||!monthEl.value){alert('Please select a month to archive up to.');return;}
-  const cutoff=monthEl.value; // e.g. "2026-03"
-  const cutoffEnd=cutoff+'-31'; // sessions with date <= this are archived
+function showArchiveModal(){
+  // Build client list
+  const canArchive=['supervisor','director','admin'].includes(currentUser.role);
+  if(!canArchive){toast('Only supervisors, directors, and admins can archive data.','error');return;}
+  const clientOpts=DB.clients.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
+  modal('<div>'
+    +'<h3 style="margin-bottom:12px">📦 Archive Client Data</h3>'
+    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Downloads a read-only offline HTML file for the selected client and date range, then removes that session/behavior data from the database. Programs and lessons are kept.</p>'
+    +'<div class="form-row">'
+    +'<div class="fg"><label>Client<select id="arch-client">'+clientOpts+'</select></label></div>'
+    +'</div>'
+    +'<div class="form-row">'
+    +'<div class="fg-sm"><label>From<input type="month" id="arch-from" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem"></label></div>'
+    +'<div class="fg-sm"><label>To<input type="month" id="arch-to" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.85rem"></label></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'<button class="btn btn-primary" onclick="runArchive()">📦 Generate & Archive</button>'
+    +'</div>'
+    +'</div>');
+}
 
-  const archSessions=DB.sessions.filter(s=>s.date<=cutoffEnd);
-  const archBehaviors=DB.behaviors.filter(b=>b.date<=cutoffEnd);
+async function runArchive(){
+  const clientId=(document.getElementById('arch-client')||{}).value;
+  const fromVal=(document.getElementById('arch-from')||{}).value;
+  const toVal=(document.getElementById('arch-to')||{}).value;
+  if(!clientId||!fromVal||!toVal){toast('Please fill in all fields.','error');return;}
+  const fromDate=fromVal+'-01';
+  const toDate=toVal+'-31';
+  if(fromVal>toVal){toast('From date must be before To date.','error');return;}
+
+  const client=DB.clients.find(c=>c.id===clientId);
+  if(!client){toast('Client not found.','error');return;}
+
+  const archSessions=DB.sessions.filter(s=>s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate);
+  const archBehaviors=(DB.behaviors||[]).filter(b=>b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate);
+  const clientLessons=DB.lessons.filter(l=>l.clientId===clientId);
+  const clientBips=(DB.bips||[]).filter(b=>b.clientId===clientId);
 
   if(!archSessions.length&&!archBehaviors.length){
-    alert('No session data found up to '+cutoff+'.');return;
+    toast('No session or behavior data found for that period.','error');return;
   }
 
-  if(!confirm('Archive '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records up to end of '+cutoff+'?\nThis will remove them from the database after downloading.'))return;
+  closeModal();
+  toast('Generating offline archive…');
 
-  // Download archive file
-  const archive={
-    archivedAt:new Date().toISOString(),
-    archiveUpTo:cutoff,
-    sessions:archSessions,
-    behaviors:archBehaviors
-  };
-  const b=new Blob([JSON.stringify(archive,null,2)],{type:'application/json'});
+  // Build offline HTML
+  const html=buildOfflineArchiveHTML(client,clientLessons,clientBips,archSessions,archBehaviors,fromVal,toVal);
+  const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(b);
-  a.download='archive_'+cutoff+'.json';
+  a.href=URL.createObjectURL(blob);
+  const fname=(client.name.replace(/[^a-z0-9]/gi,'_'))+'_archive_'+fromVal+'_to_'+toVal+'.html';
+  a.download=fname;
   a.click();
 
-  // Delete from Supabase
-  for(const s of archSessions){
-    await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
-  }
-  for(const bx of archBehaviors){
-    await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
-  }
+  // Wait a moment then wipe from Supabase
+  setTimeout(async()=>{
+    toast('Deleting archived records from database…');
+    for(const s of archSessions) await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
+    for(const bx of archBehaviors) await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
+    DB.sessions=DB.sessions.filter(s=>!(s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate));
+    DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate));
+    toast('✓ Archive complete — '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records removed from database.');
+    render();
+  },1500);
+}
 
-  // Update local DB
-  DB.sessions=DB.sessions.filter(s=>s.date>cutoffEnd);
-  DB.behaviors=DB.behaviors.filter(b=>b.date>cutoffEnd);
+function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,fromVal,toVal){
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmtD=d=>{if(!d)return'';const p=d.split('-');return p.length<3?d:months[parseInt(p[1])-1]+' '+parseInt(p[2])+', '+p[0];};
+  const esc2=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
-  toast('Archived '+archSessions.length+' sessions ✓');
-  render();
+  // Session table rows
+  const sessRows=sessions.sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{
+    const targets=[];
+    (s.lessonData||[]).forEach(ld=>{
+      (ld.targets||[]).forEach(t=>{
+        if(t.na)return;
+        const val=t.pct!=null?t.pct+'%':t.rating!=null?'Rating: '+t.rating:t.count!=null?'Count: '+t.count:'—';
+        const ft=t.firstTrial?(' | FT: '+t.firstTrial):'';
+        targets.push('<span style="font-size:.78rem;background:#f1f5f9;border-radius:4px;padding:1px 6px;margin:1px;display:inline-block">'+esc2(t.targetName)+': <strong>'+val+ft+'</strong></span>');
+      });
+    });
+    return'<tr><td>'+fmtD(s.date)+'</td><td>'+esc2(s.txName)+'</td><td>'+esc2(s.sessType)+'</td><td>'+(s.sessTime||'—')+'h</td><td>'+targets.join(' ')+'</td><td>'+esc2(s.notes||'')+'</td></tr>';
+  }).join('');
+
+  // BIP behavior log rows
+  const bipRows=behaviors.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(b=>{
+    const bip=bips.find(x=>x.id===b.bipId);
+    return'<tr><td>'+fmtD(b.date)+'</td><td>'+esc2(bip?bip.name:'—')+'</td><td>'+esc2(b.function||'—')+'</td><td>'+(b.count!=null?b.count:'—')+'</td><td>'+(b.duration!=null?b.duration:'—')+'</td><td>'+esc2(b.txName||'—')+'</td><td>'+esc2(b.notes||'')+'</td></tr>';
+  }).join('');
+
+  // Programs summary
+  const progRows=lessons.map(l=>{
+    const allTargets=l.sds.flatMap(sd=>sd.targets);
+    const active=allTargets.filter(t=>t.status==='in_progress'||t.status==='flagged').length;
+    const mastered=allTargets.filter(t=>t.status==='mastered').length;
+    const hold=allTargets.filter(t=>t.status==='on_hold').length;
+    return'<tr><td><strong>'+esc2(l.name)+'</strong></td><td>'+esc2(l.phase)+'</td><td>'+esc2(l.teachingStyle)+'</td><td>'+active+'</td><td>'+mastered+'</td><td>'+hold+'</td></tr>';
+  }).join('');
+
+  return`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc2(client.name)} — ABA Archive ${fromVal} to ${toVal}</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;padding:20px;background:#f8fafc;color:#1e293b;}
+  .header{background:linear-gradient(135deg,#1a7fad,#29ABE2);color:#fff;padding:20px 24px;border-radius:12px;margin-bottom:20px;}
+  .header h1{margin:0 0 4px;font-size:1.4rem;}
+  .header p{margin:0;font-size:.85rem;opacity:.85;}
+  .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:16px;}
+  .card h2{font-size:1rem;margin:0 0 12px;color:#1e293b;border-bottom:1px solid #f1f5f9;padding-bottom:8px;}
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  th{background:#f8fafc;text-align:left;padding:7px 10px;border-bottom:2px solid #e2e8f0;font-size:.78rem;color:#64748b;}
+  td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+  tr:last-child td{border-bottom:none;}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;}
+  .readonly-banner{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.83rem;color:#92400e;}
+  @media print{body{padding:0;}button{display:none;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>📋 ${esc2(client.name)}</h1>
+  <p>ABA Session Archive &nbsp;|&nbsp; ${fromVal} to ${toVal} &nbsp;|&nbsp; DOB: ${esc2(client.dob||'—')} &nbsp;|&nbsp; ${esc2(client.diagnosis||'—')}</p>
+  <p style="margin-top:6px;font-size:.78rem;opacity:.7">Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp; Read-only offline record</p>
+</div>
+<div class="readonly-banner">👁 This is a read-only offline archive. Data for this period has been removed from the live database.</div>
+
+<div class="card">
+  <h2>📚 Programs at Time of Archive</h2>
+  <table><thead><tr><th>Program</th><th>Phase</th><th>Style</th><th>Active Targets</th><th>Mastered</th><th>On Hold</th></tr></thead>
+  <tbody>${progRows||'<tr><td colspan="6" style="color:#94a3b8">No programs</td></tr>'}</tbody></table>
+</div>
+
+<div class="card">
+  <h2>📅 Session Records (${sessions.length} sessions)</h2>
+  <table><thead><tr><th>Date</th><th>TX</th><th>Type</th><th>Duration</th><th>Data</th><th>Notes</th></tr></thead>
+  <tbody>${sessRows||'<tr><td colspan="6" style="color:#94a3b8">No sessions</td></tr>'}</tbody></table>
+</div>
+
+${bipRows?`<div class="card">
+  <h2>📊 Behavior Logs (${behaviors.length} records)</h2>
+  <table><thead><tr><th>Date</th><th>Behavior</th><th>Function</th><th>Count</th><th>Duration</th><th>TX</th><th>Notes</th></tr></thead>
+  <tbody>${bipRows}</tbody></table>
+</div>`:''}
+
+<div style="text-align:center;margin-top:24px;font-size:.75rem;color:#94a3b8">
+  CARE Thailand ABA Binder &nbsp;·&nbsp; Archived ${new Date().toLocaleDateString()}
+</div>
+</body>
+</html>`;
 }
 
 async function restoreArchive(file){
@@ -1105,7 +1217,7 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span></div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isSessionActive()?'':' class="session-locked"')))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':'admin view')+'</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isSessionActive()?'':' class="session-locked"')))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':'admin view')+'</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
@@ -3212,16 +3324,9 @@ function renderAdmin(){
     +'<button class="unlock-exempt btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
-    +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Session Data</h4>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Exports all sessions &amp; behaviors up to end of selected month, then removes them from the database. Programs &amp; client profiles are kept.</p>'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-    +'<label style="font-size:.82rem">Archive up to end of: <input type="month" id="archive-month" style="margin-left:4px;padding:3px 6px;border:1px solid var(--border);border-radius:6px;font-size:.82rem"></label>'
-    +'<button class="unlock-exempt btn btn-outline" onclick="archiveSessions()">📦 Archive &amp; Download</button>'
-    +'</div>'
-    +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
-    +'<h4 style="margin-bottom:8px;font-size:.9rem">📂 Restore Archive</h4>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Load a previously archived JSON file to review old session data. You can archive again when done.</p>'
-    +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Load Archive<input type="file" accept=".json" style="display:none" onchange="restoreArchive(this.files[0])"></label>'
+    +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Client Data</h4>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Select a client and date range to generate a read-only offline HTML archive, then remove that period's session and behavior data from the database. Programs and lessons are kept.</p>'
+    +'<button class="unlock-exempt btn btn-outline" onclick="showArchiveModal()">📦 Archive Client Data…</button>'
     +'</div></div>'
     +'<div id="modal-area"></div>';
 }
