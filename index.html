@@ -412,7 +412,7 @@ function showArchiveModal(){
   const clientOpts=DB.clients.map(c=>'<option value="'+c.id+'">'+esc(c.name)+'</option>').join('');
   modal('<div>'
     +'<h3 style="margin-bottom:12px">📦 Archive Client Data</h3>'
-    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Downloads a read-only offline HTML file for the selected client and date range, then removes that session/behavior data from the database. Programs and lessons are kept.</p>'
+    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Downloads a read-only offline HTML file for the selected client and date range. You will be asked whether to also remove that data from the database.</p>'
     +'<div class="form-row">'
     +'<div class="fg"><label>Client<select id="arch-client">'+clientOpts+'</select></label></div>'
     +'</div>'
@@ -479,93 +479,234 @@ async function runArchive(){
 }
 
 function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,fromVal,toVal){
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const fmtD=d=>{if(!d)return'';const p=d.split('-');return p.length<3?d:months[parseInt(p[1])-1]+' '+parseInt(p[2])+', '+p[0];};
   const esc2=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const fmtD=d=>{if(!d)return'';const p=d.split('-');return p.length<3?d:p[2]+'.'+p[1]+'.'+p[0].slice(2);};
+  const sortedSess=sessions.slice().sort((a,b)=>a.date.localeCompare(b.date));
 
-  // Session table rows
-  const sessRows=sessions.sort((a,b)=>a.date.localeCompare(b.date)).map(s=>{
-    const targets=[];
-    (s.lessonData||[]).forEach(ld=>{
-      (ld.targets||[]).forEach(t=>{
-        if(t.na)return;
-        const val=t.pct!=null?t.pct+'%':t.rating!=null?'Rating: '+t.rating:t.count!=null?'Count: '+t.count:'—';
-        const ft=t.firstTrial?(' | FT: '+t.firstTrial):'';
-        targets.push('<span style="font-size:.78rem;background:#f1f5f9;border-radius:4px;padding:1px 6px;margin:1px;display:inline-block">'+esc2(t.targetName)+': <strong>'+val+ft+'</strong></span>');
-      });
+  /* ── SVG CHART HELPERS (self-contained, no CDN) ── */
+  function svgLine(data,opts){
+    opts=opts||{};
+    const W=560,H=150,pad={top:18,right:16,bottom:52,left:44};
+    const iW=W-pad.left-pad.right,iH=H-pad.top-pad.bottom;
+    const n=data.length;if(!n)return'';
+    const vals=data.map(d=>d.v);
+    const maxY=opts.maxY||Math.ceil(Math.max.apply(null,vals)*1.25)||1;
+    const minY=0;
+    const color=opts.color||'#29ABE2';
+    const suffix=opts.suffix!==undefined?opts.suffix:'%';
+    const toX=i=>pad.left+(n>1?i*(iW/(n-1)):iW/2);
+    const toY=v=>pad.top+iH-((v-minY)/(maxY-minY))*iH;
+    const nTicks=4;
+    let grid='',dots='',xlbls='';
+    for(let i=0;i<=nTicks;i++){
+      const v=Math.round(maxY/nTicks*i);
+      const y=toY(v);
+      grid+=`<line x1="${pad.left}" y1="${y}" x2="${pad.left+iW}" y2="${y}" stroke="#e2e8f0" stroke-width="1"/>`;
+      grid+=`<text x="${pad.left-4}" y="${y+4}" text-anchor="end" font-size="10" fill="#94a3b8">${v}${suffix}</text>`;
+    }
+    const pts=data.map((d,i)=>`${toX(i)},${toY(d.v)}`).join(' ');
+    const fill=`${toX(0)},${pad.top+iH} ${pts} ${toX(n-1)},${pad.top+iH}`;
+    data.forEach((d,i)=>{
+      const cx=toX(i),cy=toY(d.v);
+      dots+=`<circle cx="${cx}" cy="${cy}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+      dots+=`<text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="9" fill="${color}" font-weight="600">${d.v}${suffix}</text>`;
+      const lx=cx,ly=pad.top+iH+8;
+      xlbls+=`<text transform="rotate(-45,${lx},${ly})" x="${lx}" y="${ly}" text-anchor="end" font-size="9" fill="#64748b">${esc2(d.l)}</text>`;
     });
-    return'<tr><td>'+fmtD(s.date)+'</td><td>'+esc2(s.txName)+'</td><td>'+esc2(s.sessType)+'</td><td>'+(s.sessTime||'—')+'h</td><td>'+targets.join(' ')+'</td><td>'+esc2(s.notes||'')+'</td></tr>';
+    return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block">
+      ${grid}
+      <polyline points="${fill}" fill="${color}18" stroke="none"/>
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+      ${dots}
+      <line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+iH}" stroke="#cbd5e1" stroke-width="1.5"/>
+      <line x1="${pad.left}" y1="${pad.top+iH}" x2="${pad.left+iW}" y2="${pad.top+iH}" stroke="#cbd5e1" stroke-width="1.5"/>
+      ${xlbls}
+    </svg>`;
+  }
+
+  function ftCircles(data){
+    const bgMap={'+':'#dcfce7','I':'#dbeafe','P':'#ede9fe','-':'#fee2e2','C':'#dcfce7'};
+    const colMap={'+':'#15803d','I':'#1e40af','P':'#7c3aed','-':'#dc2626','C':'#15803d'};
+    return '<div style="display:flex;gap:8px;flex-wrap:wrap;padding:4px 0">'+data.map(d=>{
+      const bg=bgMap[d.r]||'#f1f5f9',col=colMap[d.r]||'#475569';
+      return `<div style="text-align:center"><div style="width:32px;height:32px;border-radius:50%;background:${bg};color:${col};display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;margin:0 auto">${esc2(d.r)}</div><div style="font-size:.6rem;color:#64748b;margin-top:2px;line-height:1.3">${esc2(d.l)}<br>${esc2(d.tx)}</div></div>`;
+    }).join('')+'</div>';
+  }
+
+  /* ── CHECKLIST TAB ── */
+  const last30=sortedSess.slice(-30);
+  let chkHeader='<tr><td style="background:#dbeafe;font-weight:700;min-width:160px;padding:7px 10px">Session</td>';
+  last30.forEach(s=>{
+    const fn=(s.txName||'').split(' ')[0];
+    chkHeader+='<td style="text-align:center;background:#dbeafe;padding:4px 6px;min-width:48px;font-size:.72rem;font-weight:600;white-space:nowrap">'+esc2(fmtD(s.date))+'<br>'+esc2(fn)+'</td>';
+  });
+  chkHeader+='</tr>';
+  const sessLessons={};
+  last30.forEach(s=>{
+    const m={};
+    (s.lessonData||[]).forEach(ld=>{
+      const nm=(ld.targets||[]).filter(t=>t.dataType!=='maintenance');
+      if(ld.dtData){m[ld.lessonId]='ran';}
+      else if(nm.length){m[ld.lessonId]=nm.every(t=>t.na)?'na':'ran';}
+    });
+    sessLessons[s.id]=m;
+  });
+  let chkRows=lessons.map((l,i)=>{
+    const bg=i%2===0?'#f0fdf4':'#fff';
+    let r='<tr><td style="padding:7px 10px;font-size:.85rem;background:'+bg+';border-right:2px solid #b3e0f5">'+esc2(l.name)+'</td>';
+    last30.forEach(s=>{
+      const v=sessLessons[s.id]&&sessLessons[s.id][l.id];
+      if(v==='ran') r+='<td style="text-align:center;background:'+bg+';padding:5px"><div style="width:20px;height:20px;background:#16a34a;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#fff;font-size:.75rem">✓</div></td>';
+      else if(v==='na') r+='<td style="text-align:center;background:'+bg+';padding:5px"><div style="width:20px;height:20px;background:#e5e7eb;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#6b7280;font-size:.65rem;font-weight:700">N/A</div></td>';
+      else r+='<td style="text-align:center;background:'+bg+';padding:5px"><div style="width:20px;height:20px;border:2px solid #d1d5db;border-radius:4px;margin:0 auto"></div></td>';
+    });
+    r+='</tr>';return r;
   }).join('');
 
-  // BIP behavior log rows
-  const bipRows=behaviors.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).map(b=>{
-    const bip=bips.find(x=>x.id===b.bipId);
-    return'<tr><td>'+fmtD(b.date)+'</td><td>'+esc2(bip?bip.name:'—')+'</td><td>'+esc2(b.function||'—')+'</td><td>'+(b.count!=null?b.count:'—')+'</td><td>'+(b.duration!=null?b.duration:'—')+'</td><td>'+esc2(b.txName||'—')+'</td><td>'+esc2(b.notes||'')+'</td></tr>';
-  }).join('');
+  /* ── SESSION TAB ── */
+  let sessTabHtml='';
+  lessons.forEach(l=>{
+    let lHtml='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;overflow:hidden">';
+    lHtml+='<div style="background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0;font-weight:700;font-size:.95rem">'+esc2(l.name)+'<span style="font-size:.75rem;font-weight:400;color:#64748b;margin-left:8px">'+esc2(l.teachingStyle)+' · '+esc2(l.phase)+'</span></div>';
+    (l.sds||[]).forEach(sd=>{
+      lHtml+='<div style="padding:10px 14px;border-bottom:1px solid #f1f5f9">';
+      lHtml+='<div style="font-size:.82rem;font-weight:600;color:#29ABE2;margin-bottom:2px">'+esc2(sd.sd)+'</div>';
+      lHtml+='<div style="font-size:.78rem;color:#64748b;margin-bottom:8px;font-style:italic">R: '+esc2(sd.response)+'</div>';
+      (sd.targets||[]).forEach(t=>{
+        lHtml+='<div style="margin-bottom:12px;padding:8px 10px;background:#f8fafc;border-radius:6px;border:1px solid #e2e8f0">';
+        lHtml+='<div style="font-size:.85rem;font-weight:600;margin-bottom:6px">'+esc2(t.name)+'<span style="font-size:.72rem;font-weight:400;color:#64748b;margin-left:6px;background:#e2e8f0;border-radius:4px;padding:1px 5px">'+esc2(t.dataType)+'</span></div>';
+        // Collect data points
+        const pts=[];
+        sortedSess.forEach(s=>{
+          (s.lessonData||[]).forEach(ld=>{
+            if(ld.lessonId!==l.id)return;
+            (ld.targets||[]).forEach(te=>{
+              if(te.targetId!==t.id||te.na)return;
+              let v=te.pct!=null?te.pct:te.rating!=null?te.rating:te.count!=null?(t.dataType==='tally'?+(te.count/(s.sessTime||2)).toFixed(1):te.count):null;
+              if(v!=null) pts.push({l:fmtD(s.date)+'\n'+((s.txName||'').split(' ')[0]),v:+v});
+            });
+          });
+        });
+        // Draw chart
+        if(t.dataType!=='checklist'&&pts.length){
+          const isRating=t.dataType==='rating';
+          const isTally=t.dataType==='tally';
+          const maxY=isRating?5:isTally?null:100;
+          const suffix=isRating?'':isTally?'/hr':'%';
+          const color=isRating?'#8b5cf6':isTally?'#f59e0b':'#29ABE2';
+          lHtml+=svgLine(pts,{maxY,suffix,color});
+        }
+        // First trial circles
+        const fts=(t.firstTrialData||[]).filter(f=>f.date>=fromVal+'-01'&&f.date<=toVal+'-31').slice(-8);
+        if(fts.length){
+          lHtml+='<div style="font-size:.72rem;font-weight:600;color:#475569;margin:6px 0 3px">First Trial</div>';
+          lHtml+=ftCircles(fts.map(f=>({r:f.result,l:fmtD(f.date),tx:(f.txName||'').split(' ')[0]})));
+        }
+        lHtml+='</div>';
+      });
+      lHtml+='</div>';
+    });
+    lHtml+='</div>';
+    sessTabHtml+=lHtml;
+  });
 
-  // Programs summary
-  const progRows=lessons.map(l=>{
-    const allTargets=l.sds.flatMap(sd=>sd.targets);
-    const active=allTargets.filter(t=>t.status==='in_progress'||t.status==='flagged').length;
-    const mastered=allTargets.filter(t=>t.status==='mastered').length;
-    const hold=allTargets.filter(t=>t.status==='on_hold').length;
-    return'<tr><td><strong>'+esc2(l.name)+'</strong></td><td>'+esc2(l.phase)+'</td><td>'+esc2(l.teachingStyle)+'</td><td>'+active+'</td><td>'+mastered+'</td><td>'+hold+'</td></tr>';
-  }).join('');
+  /* ── BIP TAB ── */
+  let bipTabHtml='';
+  bips.forEach(bip=>{
+    const logs=behaviors.filter(b=>b.bipId===bip.id).sort((a,b)=>a.date.localeCompare(b.date));
+    bipTabHtml+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:14px;overflow:hidden">';
+    bipTabHtml+='<div style="background:#f8fafc;padding:10px 14px;border-bottom:1px solid #e2e8f0;font-weight:700">'+esc2(bip.name)+'<span style="font-size:.75rem;font-weight:400;color:#64748b;margin-left:8px">'+esc2(bip.function||'')+'</span></div>';
+    if(logs.length){
+      bipTabHtml+='<div style="padding:10px 14px">';
+      // Frequency line chart
+      const freqPts=logs.map(b=>({l:fmtD(b.date)+'\n'+((b.txName||'').split(' ')[0]),v:b.count||0}));
+      bipTabHtml+='<div style="font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">📈 Frequency (count)</div>';
+      bipTabHtml+=svgLine(freqPts,{suffix:'',color:'#ef4444'});
+      // Duration line chart — only if data exists
+      const durLogs=logs.filter(b=>b.duration!=null&&b.duration>0);
+      if(durLogs.length){
+        const durPts=durLogs.map(b=>({l:fmtD(b.date)+'\n'+((b.txName||'').split(' ')[0]),v:b.duration}));
+        bipTabHtml+='<div style="font-size:.75rem;font-weight:600;color:#475569;margin:12px 0 4px">⏱ Duration (minutes)</div>';
+        bipTabHtml+=svgLine(durPts,{suffix:'m',color:'#f59e0b'});
+      }
+      // Log table
+      bipTabHtml+='<table style="width:100%;border-collapse:collapse;font-size:.78rem;margin-top:12px"><thead><tr style="background:#f8fafc"><th style="padding:5px 8px;text-align:left;border-bottom:1px solid #e2e8f0">Date</th><th style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Count</th><th style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Duration</th><th style="padding:5px 8px;border-bottom:1px solid #e2e8f0">TX</th><th style="padding:5px 8px;border-bottom:1px solid #e2e8f0">Notes</th></tr></thead><tbody>';
+      logs.forEach(b=>{bipTabHtml+='<tr><td style="padding:4px 8px;border-bottom:1px solid #f1f5f9">'+fmtD(b.date)+'</td><td style="padding:4px 8px;border-bottom:1px solid #f1f5f9;text-align:center">'+(b.count!=null?b.count:'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f1f5f9;text-align:center">'+(b.duration!=null?b.duration+'m':'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f1f5f9">'+esc2(b.txName||'—')+'</td><td style="padding:4px 8px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:.72rem">'+esc2(b.notes||'')+'</td></tr>';});
+      bipTabHtml+='</tbody></table></div>';
+    } else {
+      bipTabHtml+='<div style="padding:12px;color:#94a3b8;font-size:.85rem">No behavior logs for this period.</div>';
+    }
+    bipTabHtml+='</div>';
+  });
+
+  /* ── NOTES TAB ── */
+  const allNotes=(client.notes||[]).filter(n=>n.date>=fromVal+'-01'&&n.date<=toVal+'-31').sort((a,b)=>a.date.localeCompare(b.date));
+  const notesTabHtml=allNotes.length?allNotes.map(n=>'<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px"><div style="font-size:.75rem;color:#64748b;margin-bottom:4px">'+fmtD(n.date)+' · '+esc2(n.authorName||'')+'<span style="margin-left:8px;background:'+(n.type==='supervisor'?'#dbeafe':'#f0fdf4')+';color:'+(n.type==='supervisor'?'#1e40af':'#166534')+';border-radius:4px;padding:1px 6px;font-size:.68rem">'+esc2(n.type)+'</span></div><div style="font-size:.85rem;line-height:1.5">'+esc2(n.text)+'</div></div>').join(''):'<div style="color:#94a3b8;padding:12px">No notes for this period.</div>';
 
   return`<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc2(client.name)} — ABA Archive ${fromVal} to ${toVal}</title>
+<title>${esc2(client.name)} — Archive ${fromVal} to ${toVal}</title>
 <style>
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;margin:0;padding:20px;background:#f8fafc;color:#1e293b;}
-  .header{background:linear-gradient(135deg,#1a7fad,#29ABE2);color:#fff;padding:20px 24px;border-radius:12px;margin-bottom:20px;}
-  .header h1{margin:0 0 4px;font-size:1.4rem;}
-  .header p{margin:0;font-size:.85rem;opacity:.85;}
-  .card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:18px;margin-bottom:16px;}
-  .card h2{font-size:1rem;margin:0 0 12px;color:#1e293b;border-bottom:1px solid #f1f5f9;padding-bottom:8px;}
-  table{width:100%;border-collapse:collapse;font-size:.82rem;}
-  th{background:#f8fafc;text-align:left;padding:7px 10px;border-bottom:2px solid #e2e8f0;font-size:.78rem;color:#64748b;}
-  td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
-  tr:last-child td{border-bottom:none;}
-  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;font-weight:600;}
-  .readonly-banner{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:.83rem;color:#92400e;}
-  @media print{body{padding:0;}button{display:none;}}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f1f5f9;color:#1e293b;}
+.top-bar{background:linear-gradient(135deg,#1a7fad,#29ABE2);color:#fff;padding:14px 20px;}
+.top-bar h1{font-size:1.15rem;font-weight:700;}
+.top-bar p{font-size:.8rem;opacity:.85;margin-top:3px;}
+.tabs{display:flex;background:#fff;border-bottom:2px solid #e2e8f0;padding:0 16px;overflow-x:auto;}
+.tab{padding:10px 16px;font-size:.85rem;font-weight:500;color:#64748b;cursor:pointer;border:none;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;background:none;}
+.tab.active{color:#29ABE2;border-bottom-color:#29ABE2;font-weight:700;}
+.pane{display:none;padding:16px;}
+.pane.active{display:block;}
+.banner{background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:9px 14px;margin-bottom:14px;font-size:.82rem;color:#92400e;}
+@media print{.tabs{display:none;}.pane{display:block!important;page-break-before:always;}.top-bar{-webkit-print-color-adjust:exact;}}
 </style>
 </head>
 <body>
-<div class="header">
+<div class="top-bar">
   <h1>📋 ${esc2(client.name)}</h1>
-  <p>ABA Session Archive &nbsp;|&nbsp; ${fromVal} to ${toVal} &nbsp;|&nbsp; DOB: ${esc2(client.dob||'—')} &nbsp;|&nbsp; ${esc2(client.diagnosis||'—')}</p>
-  <p style="margin-top:6px;font-size:.78rem;opacity:.7">Generated: ${new Date().toLocaleString()} &nbsp;|&nbsp; Read-only offline record</p>
+  <p>${esc2(client.diagnosis||'')} &nbsp;·&nbsp; Archive ${fromVal} → ${toVal} &nbsp;·&nbsp; Generated ${new Date().toLocaleDateString()}</p>
 </div>
-<div class="readonly-banner">👁 This is a read-only offline archive. Data for this period has been removed from the live database.</div>
-
-<div class="card">
-  <h2>📚 Programs at Time of Archive</h2>
-  <table><thead><tr><th>Program</th><th>Phase</th><th>Style</th><th>Active Targets</th><th>Mastered</th><th>On Hold</th></tr></thead>
-  <tbody>${progRows||'<tr><td colspan="6" style="color:#94a3b8">No programs</td></tr>'}</tbody></table>
+<div class="tabs">
+  <button class="tab active" onclick="show('checklist',this)">☑ Checklist</button>
+  <button class="tab" onclick="show('session',this)">📝 Session</button>
+  <button class="tab" onclick="show('bip',this)">🔔 Behavior</button>
+  <button class="tab" onclick="show('notes',this)">💬 Notes</button>
 </div>
-
-<div class="card">
-  <h2>📅 Session Records (${sessions.length} sessions)</h2>
-  <table><thead><tr><th>Date</th><th>TX</th><th>Type</th><th>Duration</th><th>Data</th><th>Notes</th></tr></thead>
-  <tbody>${sessRows||'<tr><td colspan="6" style="color:#94a3b8">No sessions</td></tr>'}</tbody></table>
+<div id="checklist" class="pane active">
+  <div class="banner">👁 Read-only offline archive — ${esc2(client.name)} · ${fromVal} to ${toVal}</div>
+  <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+    <div style="overflow-x:auto">
+      <table style="border-collapse:collapse;width:auto;min-width:100%">
+        <thead>${chkHeader}</thead>
+        <tbody>${chkRows||'<tr><td colspan="99" style="color:#94a3b8;padding:12px">No sessions in this period.</td></tr>'}</tbody>
+      </table>
+    </div>
+  </div>
 </div>
-
-${bipRows?`<div class="card">
-  <h2>📊 Behavior Logs (${behaviors.length} records)</h2>
-  <table><thead><tr><th>Date</th><th>Behavior</th><th>Function</th><th>Count</th><th>Duration</th><th>TX</th><th>Notes</th></tr></thead>
-  <tbody>${bipRows}</tbody></table>
-</div>`:''}
-
-<div style="text-align:center;margin-top:24px;font-size:.75rem;color:#94a3b8">
-  CARE Thailand ABA Binder &nbsp;·&nbsp; Archived ${new Date().toLocaleDateString()}
+<div id="session" class="pane">
+  ${sessTabHtml||'<div style="color:#94a3b8;padding:12px">No session data.</div>'}
 </div>
+<div id="bip" class="pane">
+  ${bipTabHtml||'<div style="color:#94a3b8;padding:12px">No behavior data.</div>'}
+</div>
+<div id="notes" class="pane">
+  ${notesTabHtml}
+</div>
+<script>
+function show(id,btn){
+  document.querySelectorAll('.pane').forEach(function(el){el.classList.remove('active');});
+  document.querySelectorAll('.tab').forEach(function(el){el.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+<\/script>
 </body>
 </html>`;
 }
+
 
 async function restoreArchive(file){
   const r=new FileReader();
@@ -2989,7 +3130,14 @@ function logBIP(bipId){
     const occurrences=entry.count||parseInt(cntEl&&cntEl.value)||1;
     entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*10)/10:0;
   }
-  DB.behaviors.push(entry);sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null});
+  DB.behaviors.push(entry);
+  sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
+    .then(function(r){
+      if(r===null){
+        DB.behaviors=DB.behaviors.filter(function(b){return b.id!==entry.id;});
+        toast('⚠ Behavior log failed to save — check connection','error',5000);
+      }
+    });
   toast('Logged '+esc(bip.name)+' ('+bipFnLabel(fn)+')');
   render();
   requestAnimationFrame(()=>requestAnimationFrame(()=>{const _b=DB.bips.find(b=>b.id===bipId);if(_b)drawBIPChart(_b);}));
@@ -3348,7 +3496,7 @@ function renderAdmin(){
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Client Data</h4>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Select a client and date range to generate a read-only offline HTML archive, then remove that period\'s session and behavior data from the database. Programs and lessons are kept.</p>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Select a client and date range to generate a read-only offline HTML archive. You will be asked whether to also remove that data from the database.</p>'
     +'<button class="unlock-exempt btn btn-outline" onclick="showArchiveModal()">📦 Archive Client Data…</button>'
     +'</div></div>'
     +'<div id="modal-area"></div>';
