@@ -399,7 +399,7 @@ async function flushSave(){
     await Promise.all([
       ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
-      ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count||null,duration:b.duration||null,avg_duration:b.avgDuration||null,rate:b.rate||null,notes:JSON.stringify({text:b.notes||'',setting:b.setting||'therapy'}),tx_id:b.txId||null,tx_name:b.txName||null})),
+      ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count!=null?b.count:null,duration:b.duration!=null?b.duration:null,avg_duration:b.avgDuration!=null?b.avgDuration:null,rate:b.rate!=null?b.rate:null,notes:JSON.stringify({text:b.notes||'',setting:b.setting||'therapy'}),tx_id:b.txId||null,tx_name:b.txName||null})),
       ...(DB.abcData||[]).map(a=>sbUpsert('abc_data',abcToRow(a))),
     ]);
     hideSyncStatus();
@@ -766,7 +766,7 @@ async function restoreArchive(file){
 
       // Save to Supabase
       for(const s of newSess) await sbUpsert('sessions',sessionToRow(s));
-      for(const bx of newBx) await sbUpsert('behaviors',{id:bx.id,client_id:bx.clientId,bip_id:bx.bipId,date:bx.date,func:bx.function,count:bx.count,duration:bx.duration,avg_duration:bx.avgDuration,rate:bx.rate,notes:bx.notes,tx_id:bx.txId,tx_name:bx.txName});
+      for(const bx of newBx) await sbUpsert('behaviors',{id:bx.id,client_id:bx.clientId,bip_id:bx.bipId,date:bx.date,func:bx.function,count:bx.count!=null?bx.count:null,duration:bx.duration!=null?bx.duration:null,avg_duration:bx.avgDuration!=null?bx.avgDuration:null,rate:bx.rate!=null?bx.rate:null,notes:bx.notes,tx_id:bx.txId,tx_name:bx.txName});
 
       DB.sessions=[...DB.sessions,...newSess].sort((a,b)=>a.date.localeCompare(b.date));
       DB.behaviors=[...DB.behaviors,...newBx].sort((a,b)=>a.date.localeCompare(b.date));
@@ -1106,7 +1106,10 @@ async function _saveEditedSession(sessId){
   });
 
   // Upsert — keep same id, just update fields
-  const result=await sbSaveSession(sessionToRow(sess));
+  const _rowToSave=sessionToRow(sess);
+  console.log('[EditSession] upserting row:', JSON.stringify(_rowToSave).slice(0,300));
+  const result=await sbSaveSession(_rowToSave);
+  console.log('[EditSession] upsert result:', result);
   if(result===null){toast('⚠ Save failed — check connection','error',5000);return;}
   closeModal();
   toast('Session updated ✓');
@@ -3562,7 +3565,7 @@ function logBIP(bipId){
     entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*100)/100:0;
   }
   DB.behaviors.push(entry);
-  sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
+  sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count!=null?entry.count:null,duration:entry.duration!=null?entry.duration:null,avg_duration:entry.avgDuration!=null?entry.avgDuration:null,rate:entry.rate!=null?entry.rate:null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
     .then(function(r){
       if(r===null){
         DB.behaviors=DB.behaviors.filter(function(b){return b.id!==entry.id;});
