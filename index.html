@@ -2832,7 +2832,7 @@ function editSD(lId,sId){
     +'<div><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
     +'<textarea id="esd-tsteps" rows="4" style="font-size:.82rem">'+esc(existingSteps)+'</textarea></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
-    +'<button class="btn btn-primary" onclick="saveEditSD(''+lId+'',''+sId+'')">Save</button>'
+    +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 function saveEditSD(lId,sId){
