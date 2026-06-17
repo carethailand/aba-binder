@@ -3561,7 +3561,7 @@ function renderABCTab(){
     +'<td>'+(a.frequency!=null?a.frequency+' count':'—')+'</td>'
     +'<td>'+(a.duration!=null?a.duration+' min':'—')+'</td>'
     +'<td style="font-size:.78rem;max-width:160px;white-space:normal">'+(a.narrative?esc(a.narrative):'—')+'</td>'
-    +(isSup?'<td><button class="btn btn-xs btn-danger no-print" onclick="deleteABCEntry(''+a.id+'')">✕</button></td>':'')
+    +(isSup?'<td><button class="btn btn-xs btn-danger no-print" onclick="deleteABCEntry(\''+a.id+'\')">✕</button></td>':'')
     +'</tr>').join('')||'<tr><td colspan="9" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
   const _abcSS=getSessState();
   const defaultDate=_abcSS.date||new Date().toISOString().slice(0,10);
