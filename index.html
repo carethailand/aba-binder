@@ -8,6 +8,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
+
+  function seDeleteBIPLog(logId){
+    if(!confirm('Delete this BIP log entry?'))return;
+    const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
+    if(!isSup){toast('Only supervisors can delete BIP logs.','error');return;}
+    DB.behaviors=(DB.behaviors||[]).filter(function(b){return b.id!==logId;});
+    sbFetch('behaviors','DELETE',null,{id:'eq.'+logId});
+    // Re-render modal section
+    const cont=document.getElementById('se-bip-section');
+    if(cont){
+      const sess=(DB.sessions||[]).find(function(s){return s.id===cont.dataset.sessId;});
+      if(sess)cont.innerHTML=buildBIPRows(sess);
+    }
+    toast('BIP log deleted.','success');
+  }
+
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 #nav{background:var(--primary);color:#fff;padding:0 20px;display:flex;align-items:center;gap:16px;height:54px;}
@@ -168,6 +184,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .session-locked textarea,
 .session-locked select{pointer-events:none;opacity:.55;background:#f8fafc;}
 .session-locked button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
+.session-locked .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
 .session-locked .no-session-banner{display:flex;}
 .no-session-banner{display:none;align-items:center;gap:8px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#92400e;}
 
@@ -176,6 +193,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-mode textarea,
 .view-only-mode select{pointer-events:none;opacity:.55;background:#f8fafc;}
 .view-only-mode button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
+.view-only-mode .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
 .view-only-mode .view-only-banner{display:flex;}
 .view-only-mode .no-session-banner{display:none!important;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#9d174d;}
@@ -946,6 +964,33 @@ function _doEditSession(sess){
   }
 
   const sessDate=fmtDateShort(sess.date);
+
+  // Build editable BIP behavior log rows for this session's date
+  function buildBIPRows(sess){
+    const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
+    if(!bips.length)return'';
+    const logsOnDate=(DB.behaviors||[]).filter(function(b){return b.clientId===selectedClientId&&b.date===sess.date;});
+    if(!logsOnDate.length)return'<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fef2f2;border-radius:6px;border-left:3px solid #dc2626">🔔 Behavior (BIP)</div><div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No BIP logs recorded on this date.</div>';
+    let html='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fef2f2;border-radius:6px;border-left:3px solid #dc2626">🔔 Behavior (BIP)</div>';
+    logsOnDate.forEach(function(log){
+      const bip=bips.find(function(b){return b.id===log.bipId;});
+      const bipName=bip?bip.name:log.bipId;
+      const allMeas=bip?bipMeasList(bip):['frequency'];
+      const hasFreq=allMeas.includes('frequency')||allMeas.includes('rate');
+      const hasDur=allMeas.includes('duration');
+      html+='<div style="padding:7px 10px;border-bottom:1px solid #f1f5f9">'
+        +'<div style="font-size:.82rem;font-weight:600;margin-bottom:6px">'+esc(bipName)
+        +'<span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:8px">'+esc(log.txName||'')+'</span></div>'
+        +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">'
+        +(hasFreq?'<label style="font-size:.8rem">Count <input type="number" class="se-bip-count" data-bid="'+log.id+'" min="0" style="width:65px;margin-left:4px" value="'+(log.count!=null?log.count:'')+'"></label>':'')
+        +(hasDur?'<label style="font-size:.8rem">Duration <input type="text" class="se-bip-dur" data-bid="'+log.id+'" style="width:80px;margin-left:4px" placeholder="min or m:ss" value="'+(log.duration!=null?log.duration:'')+'"></label>':'')
+        +'<label style="font-size:.8rem">Notes <input type="text" class="se-bip-notes" data-bid="'+log.id+'" style="width:160px;margin-left:4px" value="'+esc(log.notes||'')+'"></label>'
+        +'<button class="btn btn-xs btn-danger" onclick="seDeleteBIPLog(\''+log.id+'\')">✕ Delete</button>'
+        +'</div>'
+        +'</div>';
+    });
+    return html;
+  }
   const notesRow='<div style="margin:10px 0"><label style="font-size:.85rem;font-weight:600">Session Notes</label><textarea class="se-sess-notes" rows="3" style="font-size:.83rem;margin-top:4px">'+esc(sess.notes||'')+'</textarea></div>';
   const pnRow=sess.setting==='school'?'<div style="margin:8px 0"><label style="font-size:.85rem;font-weight:600">Parent Note</label><textarea class="se-parent-note" rows="2" style="font-size:.83rem;margin-top:4px">'+esc(sess.parentNote||'')+'</textarea></div>':'';
 
@@ -958,6 +1003,9 @@ function _doEditSession(sess){
     +'✏ Edit individual values below. Only changed fields are updated — nothing is deleted.'
     +'</div>'
     +buildLessonRows(sess)
+    +'<div id="se-bip-section" data-sess-id="'+sess.id+'">'
+    +buildBIPRows(sess)
+    +'</div>'
     +notesRow+pnRow
     +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
     +'<button class="btn btn-primary" onclick="_saveEditedSession(\''+sess.id+'\')">💾 Save Changes</button>'
@@ -1034,6 +1082,27 @@ async function _saveEditedSession(sessId){
       const ftEl=document.querySelector('.se-ft[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
       if(ftEl&&ftEl.value!==undefined)te.firstTrial=ftEl.value||null;
     });
+  });
+
+  // Save BIP log edits
+  document.querySelectorAll('.se-bip-count,.se-bip-dur,.se-bip-notes').forEach(function(el){
+    const bid=el.dataset.bid;
+    const log=(DB.behaviors||[]).find(function(b){return b.id===bid;});
+    if(!log)return;
+    if(el.classList.contains('se-bip-count')&&el.value!==''){log.count=parseInt(el.value)||0;}
+    if(el.classList.contains('se-bip-dur')){
+      const rawDur=el.value.trim();
+      if(rawDur){
+        const mss=rawDur.match(/^(\d+):(\d{1,2})$/);
+        const sec=rawDur.match(/^(\d+)s$/i);
+        if(mss)log.duration=parseInt(mss[1])+(parseInt(mss[2])/60);
+        else if(sec)log.duration=parseInt(sec[1])/60;
+        else log.duration=parseFloat(rawDur)||0;
+        log.duration=Math.round(log.duration*100)/100;
+      }
+    }
+    if(el.classList.contains('se-bip-notes'))log.notes=el.value;
+    sbUpsert('behaviors',{id:log.id,client_id:log.clientId,bip_id:log.bipId,date:log.date,func:log.function,count:log.count||null,duration:log.duration||null,avg_duration:log.avgDuration||null,rate:log.rate||null,notes:JSON.stringify({text:log.notes||'',setting:log.setting||'therapy'}),tx_id:log.txId||null,tx_name:log.txName||null});
   });
 
   // Upsert — keep same id, just update fields
@@ -1537,14 +1606,52 @@ function renderClientList(){
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&visibleClients.length===0){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
   }
-  const cards=visibleClients.map(c=>{
+
+  function clientCard(c){
     const n=DB.lessons.filter(l=>l.clientId===c.id).length;
     const last=DB.sessions.filter(s=>s.clientId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const flags=countFlags(c.id);
-    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')"><h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⚑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
-  }).join('');
+    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
+  }
+
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
-  return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div><div class="card-grid">'+cards+'</div><div id="modal-area"></div>';
+  const header='<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div>';
+
+  // TX/QCD roles: flat list (only see their assigned clients anyway)
+  if(currentUser&&['junior','senior','qcd'].includes(currentUser.role)){
+    return header+'<div class="card-grid">'+visibleClients.map(clientCard).join('')+'</div><div id="modal-area"></div>';
+  }
+
+  // Supervisor/director/admin: group by assigned supervisor
+  const supUsers=(DB.users||[]).filter(function(u){return['supervisor','director'].includes(u.role);});
+  const supMap={};
+  supUsers.forEach(function(u){supMap[u.id]=u.name;});
+
+  const UNASSIGNED='__unassigned__';
+  const groups={};
+  visibleClients.forEach(function(c){
+    const sid=c.supervisor||UNASSIGNED;
+    if(!groups[sid])groups[sid]=[];
+    groups[sid].push(c);
+  });
+
+  // Sort: supervisors A-Z, Unassigned last
+  const supIds=Object.keys(groups).filter(function(k){return k!==UNASSIGNED;}).sort(function(a,b){
+    return (supMap[a]||'').localeCompare(supMap[b]||'');
+  });
+  if(groups[UNASSIGNED])supIds.push(UNASSIGNED);
+
+  let html=header;
+  supIds.forEach(function(sid){
+    const label=sid===UNASSIGNED?'Unassigned':(supMap[sid]||'Unknown Supervisor');
+    const clients=groups[sid].slice().sort(function(a,b){return a.name.localeCompare(b.name);});
+    html+='<div style="margin-bottom:24px">'
+      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">'+esc(label)+'</div>'
+      +'<div class="card-grid">'+clients.map(clientCard).join('')+'</div>'
+      +'</div>';
+  });
+  html+='<div id="modal-area"></div>';
+  return html;
 }
 function countFlags(cid){return DB.lessons.filter(l=>l.clientId===cid).reduce((s,l)=>s+l.sds.reduce((s2,sd)=>s2+sd.targets.filter(t=>t.status==='flagged').length,0),0);}
 function showAddClient(){modal('<h3 style="margin-bottom:14px">Add Client</h3><label>Name<input id="nc-n" type="text"></label><label style="margin-top:10px">DOB<input id="nc-d" type="date"></label><label style="margin-top:10px">Diagnosis<input id="nc-dx" type="text" value="ASD"></label><div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="addNewClient()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
