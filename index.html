@@ -862,7 +862,7 @@ function editLastSession(){
     // Show picker modal — list recent sessions, let TX choose which to edit
     modal('<div>'
       +'<h3 style="margin-bottom:4px">✏ Edit a Session</h3>'
-      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session you want to correct. It will be removed and reloaded so you can re-enter the data.</p>'
+      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session to edit. You can update individual values without losing any other data.</p>'
       +_sessionPickerRows(sessions)
       +'<div style="margin-top:12px;text-align:right"><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
       +'</div>');
@@ -880,90 +880,172 @@ function editLastSession(){
 }
 
 function _doEditSession(sess){
-  if(!confirm('Edit this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+esc(sess.txName||'')+'\n\nThe session will be removed and reloaded so you can correct the data. Click End & Save when done.\n\nContinue?'))return;
-  DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
-  sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
-  _undoSessionFirstTrials(sess);
-  setSessState({
-    clientId:selectedClientId,
-    date:sess.date,
-    sessTime:sess.sessTime||4,
-    sessType:sess.sessType||'individual',
-    setting:sess.setting||'therapy',
-    started:true,
-    editingSessionId:sess.id
+  // Non-destructive inline editor — shows session data in a modal, saves back via upsert
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Build editable rows per lesson
+  function buildLessonRows(sess){
+    return lessons.map(function(lesson){
+      const ld=(sess.lessonData||[]).find(function(x){return x.lessonId===lesson.id;});
+      if(!ld&&lesson.phase==='maintenance')return'';
+      const lessonLabel='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#f1f5f9;border-radius:6px;border-left:3px solid var(--primary)">'+esc(lesson.name)+'<span style="font-size:.74rem;font-weight:400;color:var(--muted);margin-left:8px">'+lesson.phase+'</span></div>';
+      if(!ld)return lessonLabel+'<div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No data recorded for this lesson.</div>';
+
+      const targetRows=(ld.targets||[]).map(function(te){
+        if(te.dataType==='maintenance')return'';
+        const tName=te.targetName||te.targetId;
+        const naChk='<label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:4px"><input type="checkbox" class="se-na" data-lid="'+ld.lessonId+'" data-sid="'+te.sdId+'" data-tid="'+te.targetId+'"'+(te.na?' checked':'')+' onchange="seToggleNA(this)"> N/A</label>';
+        let inputHtml='';
+        if(te.na){
+          inputHtml='<span style="font-size:.78rem;color:var(--muted);font-style:italic">marked N/A</span>';
+        } else if(te.dataType==='percent'){
+          inputHtml='<input type="number" class="se-cor" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="cor" value="'+(te.correct!=null?te.correct:'')+'">'
+            +' / <input type="number" class="se-tot" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="tot" value="'+(te.total!=null?te.total:'')+'">'
+            +'<span class="se-pct" style="margin-left:8px;font-weight:700;color:var(--primary);min-width:40px">'+(te.pct!=null?te.pct+'%':'')+'</span>';
+        } else if(te.dataType==='rating'){
+          const max=(DB.lessons.find(l=>l.id===ld.lessonId)||{ratingScale:{max:5}}).ratingScale&&DB.lessons.find(l=>l.id===ld.lessonId).ratingScale?DB.lessons.find(l=>l.id===ld.lessonId).ratingScale.max:5;
+          const opts=Array.from({length:max},(_,i)=>i+1).map(v=>'<option value="'+v+'"'+(te.rating===v?' selected':'')+'>'+v+'</option>').join('');
+          inputHtml='<select class="se-rating" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option>'+opts+'</select>';
+        } else if(te.dataType==='tally'){
+          inputHtml='<input type="number" class="se-tally" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:70px" value="'+(te.count!=null?te.count:'')+'">';
+        } else if(te.dataType==='checklist'){
+          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+ Independent</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>− Prompted</option></select></label>';
+        } else if(te.dataType==='ta'){
+          const stepRows=(te.steps||[]).map(function(st,si){
+            if(st.mastered)return'<div style="font-size:.75rem;color:#059669">✓ '+esc(st.step||'Step '+(si+1))+'</div>';
+            const res=st.result||'';
+            return'<div style="font-size:.78rem;display:flex;align-items:center;gap:6px;margin:2px 0">'
+              +'<span style="flex:1">'+esc(st.step||'Step '+(si+1))+'</span>'
+              +'<select class="se-ta-step" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" data-si="'+si+'">'
+              +'<option value="">—</option>'
+              +'<option value="+"'+(res==='+'?' selected':'')+'>+</option>'
+              +'<option value="P"'+(res==='P'?' selected':'')+'>P</option>'
+              +'<option value="-"'+(res==='-'?' selected':'')+'>−</option>'
+              +'</select>'
+              +'</div>';
+          }).join('');
+          inputHtml='<div style="margin-top:4px">'+stepRows+'</div>';
+        }
+        // First trial for percent types
+        let ftHtml='';
+        if(te.dataType==='percent'||te.dataType==='ta'){
+          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
+        }
+        return'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 10px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap">'
+          +'<div style="flex:1;min-width:120px;font-size:.83rem;font-weight:500">'+esc(tName)+'</div>'
+          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+inputHtml+ftHtml+'</div>'
+          +naChk
+          +'</div>';
+      }).join('');
+
+      const noteVal=(ld.note||'');
+      const noteRow='<div style="padding:6px 10px"><label style="font-size:.76rem;color:var(--muted)">Lesson note <input type="text" class="se-lnote" data-lid="'+ld.lessonId+'" style="font-size:.8rem;margin-left:6px;width:260px" value="'+esc(noteVal)+'"></label></div>';
+
+      return lessonLabel+targetRows+noteRow;
+    }).join('');
+  }
+
+  const sessDate=fmtDateShort(sess.date);
+  const notesRow='<div style="margin:10px 0"><label style="font-size:.85rem;font-weight:600">Session Notes</label><textarea class="se-sess-notes" rows="3" style="font-size:.83rem;margin-top:4px">'+esc(sess.notes||'')+'</textarea></div>';
+  const pnRow=sess.setting==='school'?'<div style="margin:8px 0"><label style="font-size:.85rem;font-weight:600">Parent Note</label><textarea class="se-parent-note" rows="2" style="font-size:.83rem;margin-top:4px">'+esc(sess.parentNote||'')+'</textarea></div>':'';
+
+  modal('<div style="max-height:75vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+    +'<h3 style="flex:1;margin:0">✏ Edit Session — '+sessDate+'</h3>'
+    +'<span style="font-size:.78rem;color:var(--muted)">'+esc(sess.txName||'')+'</span>'
+    +'</div>'
+    +'<div style="background:#eff6ff;border:1px solid #b3e0f5;border-radius:6px;padding:7px 12px;font-size:.8rem;color:#1a5276;margin-bottom:10px">'
+    +'✏ Edit individual values below. Only changed fields are updated — nothing is deleted.'
+    +'</div>'
+    +buildLessonRows(sess)
+    +notesRow+pnRow
+    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
+    +'<button class="btn btn-primary" onclick="_saveEditedSession(\''+sess.id+'\')">💾 Save Changes</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'</div>'
+    +'</div>');
+
+  // Live % recalc
+  setTimeout(function(){
+    document.querySelectorAll('.se-cor,.se-tot').forEach(function(el){
+      el.addEventListener('input',function(){
+        const lid=el.dataset.lid,tid=el.dataset.tid;
+        const cor=parseFloat(document.querySelector('.se-cor[data-lid="'+lid+'"][data-tid="'+tid+'"]').value)||0;
+        const tot=parseFloat(document.querySelector('.se-tot[data-lid="'+lid+'"][data-tid="'+tid+'"]').value)||0;
+        const pctEl=el.closest('div').querySelector('.se-pct');
+        if(pctEl)pctEl.textContent=tot>0?Math.round(cor/tot*100)+'%':'';
+      });
+    });
+  },80);
+}
+
+function seToggleNA(cb){
+  const row=cb.closest('div[style]');
+  if(!row)return;
+  const inputs=row.querySelectorAll('input:not([type=checkbox]),select,textarea');
+  inputs.forEach(function(el){el.disabled=cb.checked;el.style.opacity=cb.checked?'.4':'1';});
+}
+
+async function _saveEditedSession(sessId){
+  const sess=DB.sessions.find(function(s){return s.id===sessId;});
+  if(!sess){toast('Session not found','error');return;}
+
+  // Update notes
+  const notesEl=document.querySelector('.se-sess-notes');
+  if(notesEl)sess.notes=notesEl.value.trim();
+  const pnEl=document.querySelector('.se-parent-note');
+  if(pnEl)sess.parentNote=pnEl.value.trim();
+
+  // Update lesson data
+  (sess.lessonData||[]).forEach(function(ld){
+    // lesson note
+    const lnEl=document.querySelector('.se-lnote[data-lid="'+ld.lessonId+'"]');
+    if(lnEl)ld.note=lnEl.value;
+    // targets
+    (ld.targets||[]).forEach(function(te){
+      // NA checkbox
+      const naEl=document.querySelector('.se-na[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+      if(naEl)te.na=naEl.checked;
+      if(te.na)return;
+      // percent
+      if(te.dataType==='percent'){
+        const corEl=document.querySelector('.se-cor[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+        const totEl=document.querySelector('.se-tot[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+        if(corEl&&corEl.value!==''){te.correct=parseInt(corEl.value)||0;te.total=parseInt(totEl&&totEl.value)||te.total;te.pct=te.total>0?Math.round(te.correct/te.total*100):null;}
+      }
+      // rating
+      if(te.dataType==='rating'){
+        const rEl=document.querySelector('.se-rating[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+        if(rEl&&rEl.value)te.rating=parseInt(rEl.value);
+      }
+      // tally
+      if(te.dataType==='tally'){
+        const talEl=document.querySelector('.se-tally[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+        if(talEl&&talEl.value!=='')te.count=parseInt(talEl.value);
+      }
+      // TA steps
+      if(te.dataType==='ta'){
+        document.querySelectorAll('.se-ta-step[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]').forEach(function(sel){
+          const si=parseInt(sel.dataset.si);
+          if(te.steps&&te.steps[si]&&!te.steps[si].mastered)te.steps[si].result=sel.value;
+        });
+      }
+      // first trial (percent, ta, checklist)
+      const ftEl=document.querySelector('.se-ft[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
+      if(ftEl&&ftEl.value!==undefined)te.firstTrial=ftEl.value||null;
+    });
   });
-  window._editSessionData=sess;
-  clearSessionDraft();
+
+  // Upsert — keep same id, just update fields
+  const result=await sbSaveSession(sessionToRow(sess));
+  if(result===null){toast('⚠ Save failed — check connection','error',5000);return;}
+  closeModal();
+  toast('Session updated ✓');
   render();
-  setTimeout(function(){_restoreEditSession(sess);},120);
-  toast('Session loaded — correct the data then click End & Save');
 }
 
 function _restoreEditSession(sess){
-  // Restore TX notes
-  const notesEl=document.getElementById('tx-sess-notes');
-  if(notesEl&&sess.notes)notesEl.value=sess.notes;
-  // Restore parent note (school)
-  const pnEl=document.getElementById('parent-note-input');
-  if(pnEl&&sess.parentNote)pnEl.value=sess.parentNote;
-  // Restore lesson data
-  if(!sess.lessonData)return;
-  sess.lessonData.forEach(function(ld){
-    (ld.targets||[]).forEach(function(te){
-      if(te.na){
-        const naEl=document.getElementById('na_'+ld.lessonId+'_'+te.sdId+'_'+te.targetId);
-        if(naEl)naEl.checked=true;
-        return;
-      }
-      const id=ld.lessonId+'_'+te.sdId+'_'+te.targetId;
-      // percent data
-      if(te.dataType==='percent'&&te.correct!=null){
-        const corEl=document.getElementById('cor_'+id);
-        const totEl=document.getElementById('tot_'+id);
-        if(corEl)corEl.value=te.correct;
-        if(totEl)totEl.value=te.total;
-        calcPct(id);
-      }
-      // rating data
-      if(te.dataType==='rating'&&te.rating!=null){
-        const rBtn=document.querySelector('.cpi-btn[data-id="rt_'+id+'"][data-val="'+te.rating+'"]');
-        if(rBtn){rBtn.classList.add('rating-sel');rBtn.style.background='var(--primary)';rBtn.style.color='#fff';}
-      }
-      // tally data
-      if(te.dataType==='tally'&&te.count!=null){
-        const talEl=document.getElementById('tally_'+id);
-        if(talEl)talEl.value=te.count;
-      }
-      // task analysis steps
-      if(te.dataType==='ta'&&te.steps){
-        te.steps.forEach(function(st,i){
-          if(st.mastered||!st.result)return;
-          const val=st.result==='+' ? '+' : st.result==='-' ? '-' : 'P';
-          const btn=document.querySelector('.cpi-btn[data-id="ta_'+id+'_'+i+'"][data-val="'+val+'"]');
-          if(btn){btn.classList.add('sel');btn.style.background='var(--primary)';btn.style.color='#fff';}
-        });
-      }
-      // first trial
-      if(te.firstTrial){
-        const ftBtn=document.querySelector('.ft-btn[data-id="ft_'+id+'"][data-val="'+te.firstTrial+'"]');
-        if(ftBtn){ftBtn.classList.add('ft-sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
-      }
-    });
-    // DT lesson
-    if(ld.dtData){
-      const dtId='dt_'+ld.lessonId;
-      const corEl=document.getElementById('dtcor_'+dtId);
-      const totEl=document.getElementById('dttot_'+dtId);
-      if(corEl&&ld.dtData.correct!=null)corEl.value=ld.dtData.correct;
-      if(totEl&&ld.dtData.total!=null)totEl.value=ld.dtData.total;
-      if(ld.dtData.firstTrial){
-        const ftVal=ld.dtData.firstTrial==='+' ? '+' : '-';
-        const ftBtn=document.querySelector('.cpi-btn[data-id="dtft_'+dtId+'"][data-val="'+ftVal+'"]');
-        if(ftBtn){ftBtn.classList.add('sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
-      }
-    }
-  });
+  // Legacy — kept for safety but no longer called by new flow
 }
 
 function deleteLastSession(){
@@ -1580,7 +1662,7 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isSessionActive()?'':' class="session-locked"')))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
@@ -1602,6 +1684,26 @@ function isSessionActive(){
   if(!currentUser)return false;
   const isSup=['supervisor','director'].includes(currentUser.role);
   return isSup?!!getSupState().started:!!getSessState().started;
+}
+
+// ── Session guard — call at top of any data-entry function ──
+function requireActiveSession(){
+  const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
+  if(isSup){
+    const sv=getSupState();
+    if(!sv.started||sv.clientId!==selectedClientId){
+      toast('⚠ Start a supervision session first before recording data.','error',3500);
+      return false;
+    }
+    return true;
+  } else {
+    const ss=getSessState();
+    if(!ss.started||ss.clientId!==selectedClientId){
+      toast('⚠ Start a session first before recording data.','error',3500);
+      return false;
+    }
+    return true;
+  }
 }
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
@@ -3309,6 +3411,7 @@ function renderBehaviorTab(){
 // BIP — log
 // ═══════════════════════════════════════════════════════
 function logBIP(bipId){
+  if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   const isSup2=['supervisor','director'].includes(currentUser.role);
@@ -3580,6 +3683,7 @@ function renderABCTab(){
 }
 
 function logABC(){
+  if(!requireActiveSession())return;
   const freq=document.getElementById('abc-freq').value;
   const dur=document.getElementById('abc-dur').value;
   const dateEl=document.getElementById('abc-date');
@@ -3651,6 +3755,7 @@ function renderNotesTab(){
 }
 
 function saveReinforcer(){
+  if(!requireActiveSession())return;
   const name=(document.getElementById('r-name').value||'').trim();
   if(!name){alert('Enter a reinforcer name');return;}
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -3666,7 +3771,7 @@ function deleteReinforcer(idx){
   saveData();render();
 }
 
-function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
