@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-10-N -->
+<!-- BUILD v2026-06-17-A -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -286,6 +286,8 @@ function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.
 
 function userToRow(u){return{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};}
 function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clients:(typeof r.assigned_clients==='string'&&r.assigned_clients?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:ac,active:r.active!==false};}
+function abcToRow(a){return{id:a.id,client_id:a.clientId,date:a.date,tx_id:a.txId||null,tx_name:a.txName||null,setting:a.setting||'therapy',a_text:a.a||'',b_text:a.b||'',c_text:a.c||'',frequency:a.frequency!=null?a.frequency:null,duration:a.duration!=null?a.duration:null,narrative:a.narrative||''};}
+function rowToABC(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',setting:r.setting||'therapy',a:r.a_text||'',b:r.b_text||'',c:r.c_text||'',frequency:r.frequency!=null?r.frequency:null,duration:r.duration!=null?r.duration:null,narrative:r.narrative||''};}
 
 // ── Load all data from Supabase ──
 async function loadFromSupabase(){
@@ -299,6 +301,7 @@ async function loadFromSupabase(){
     const bips    = await safe('bips','select=*');
     const sessions = await safe('sessions','select=*&order=date.asc');
     const behaviors= await safe('behaviors','select=*&order=date.asc');
+    const abcRows  = await safe('abc_data','select=*&order=date.asc');
 
     console.log('Loaded — users:',users.length,'clients:',clients.length,'lessons:',lessons.length);
 
@@ -307,6 +310,7 @@ async function loadFromSupabase(){
     DB.lessons  = lessons.map(rowToLesson);
     DB.bips    = bips.map(rowToBIP);
     DB.sessions = sessions.map(rowToSession);
+    DB.abcData  = abcRows.map(rowToABC);
     DB.behaviors= behaviors.map(r=>{
       let _bNotes=r.notes||'',_bSetting='therapy';
       try{const _p=typeof r.notes==='string'&&r.notes.startsWith('{')?JSON.parse(r.notes):null;if(_p&&'setting' in _p){_bNotes=_p.text||'';_bSetting=_p.setting||'therapy';}}catch(e){}
@@ -353,6 +357,9 @@ async function sbDeleteUser(id){
 async function sbSaveUser(uObj){
   await sbUpsert('users',userToRow(uObj));
 }
+async function sbSaveABC(aObj){
+  await sbUpsert('abc_data',abcToRow(aObj));
+}
 async function deleteRecord(table,id){
   await sbFetch(table,'DELETE',null,'id=eq.'+id);
 }
@@ -375,6 +382,7 @@ async function flushSave(){
       ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
       ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count||null,duration:b.duration||null,avg_duration:b.avgDuration||null,rate:b.rate||null,notes:JSON.stringify({text:b.notes||'',setting:b.setting||'therapy'}),tx_id:b.txId||null,tx_name:b.txName||null})),
+      ...(DB.abcData||[]).map(a=>sbUpsert('abc_data',abcToRow(a))),
     ]);
     hideSyncStatus();
   }catch(e){
@@ -441,18 +449,19 @@ async function runArchive(){
 
   const archSessions=DB.sessions.filter(s=>s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate);
   const archBehaviors=(DB.behaviors||[]).filter(b=>b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate);
+  const archABC=(DB.abcData||[]).filter(a=>a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate);
   const clientLessons=DB.lessons.filter(l=>l.clientId===clientId);
   const clientBips=(DB.bips||[]).filter(b=>b.clientId===clientId);
 
-  if(!archSessions.length&&!archBehaviors.length){
-    toast('No session or behavior data found for that period.','error');return;
+  if(!archSessions.length&&!archBehaviors.length&&!archABC.length){
+    toast('No session, behavior, or ABC data found for that period.','error');return;
   }
 
   closeModal();
   toast('Generating offline archive…');
 
   // Build offline HTML
-  const html=buildOfflineArchiveHTML(client,clientLessons,clientBips,archSessions,archBehaviors,fromVal,toVal);
+  const html=buildOfflineArchiveHTML(client,clientLessons,clientBips,archSessions,archBehaviors,archABC,fromVal,toVal);
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -467,9 +476,12 @@ async function runArchive(){
         toast('Deleting archived records from database…');
         for(const s of archSessions) await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
         for(const bx of archBehaviors) await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
+        const archABC=(DB.abcData||[]).filter(a=>a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate);
+        for(const ax of archABC) await sbFetch('abc_data','DELETE',null,'id=eq.'+ax.id);
         DB.sessions=DB.sessions.filter(s=>!(s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate));
         DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate));
-        toast('✓ Archive complete — '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records removed from database.');
+        DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate));
+        toast('✓ Archive complete — '+archSessions.length+' sessions, '+archBehaviors.length+' behavior records, and '+archABC.length+' ABC entries removed from database.');
         render();
       })();
     } else {
@@ -478,7 +490,7 @@ async function runArchive(){
   },1500);
 }
 
-function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,fromVal,toVal){
+function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,abcEntries,fromVal,toVal){
   const esc2=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const fmtD=d=>{if(!d)return'';const p=d.split('-');return p.length<3?d:p[2]+'.'+p[1]+'.'+p[0].slice(2);};
   const sortedSess=sessions.slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -643,6 +655,12 @@ function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,fromVal,
   const allNotes=(client.notes||[]).filter(n=>n.date>=fromVal+'-01'&&n.date<=toVal+'-31').sort((a,b)=>a.date.localeCompare(b.date));
   const notesTabHtml=allNotes.length?allNotes.map(n=>'<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px"><div style="font-size:.75rem;color:#64748b;margin-bottom:4px">'+fmtD(n.date)+' · '+esc2(n.authorName||'')+'<span style="margin-left:8px;background:'+(n.type==='supervisor'?'#dbeafe':'#f0fdf4')+';color:'+(n.type==='supervisor'?'#1e40af':'#166534')+';border-radius:4px;padding:1px 6px;font-size:.68rem">'+esc2(n.type)+'</span></div><div style="font-size:.85rem;line-height:1.5">'+esc2(n.text)+'</div></div>').join(''):'<div style="color:#94a3b8;padding:12px">No notes for this period.</div>';
 
+
+  /* ── ABC TAB ── */
+  const _sortedABC=(abcEntries||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const abcTabHtml=_sortedABC.length
+    ?'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.8rem"><thead><tr style="background:#f8fafc"><th style="padding:6px 10px;text-align:left;border-bottom:1px solid #e2e8f0">Date</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">TX</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">A</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">B</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">C</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Freq</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Dur</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Narrative</th></tr></thead><tbody>'+_sortedABC.map(a=>'<tr><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+fmtD(a.date)+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.txName||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.a||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.b||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.c||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;text-align:center">'+(a.frequency!=null?a.frequency:'—')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;text-align:center">'+(a.duration!=null?a.duration+'m':'—')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:.75rem">'+esc2(a.narrative||'—')+'</td></tr>').join('')+'</tbody></table></div>'
+    :'<div style="color:#94a3b8;padding:12px">No ABC data for this period.</div>';
   return`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -674,6 +692,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="tab" onclick="show('session',this)">📝 Session</button>
   <button class="tab" onclick="show('bip',this)">🔔 Behavior</button>
   <button class="tab" onclick="show('notes',this)">💬 Notes</button>
+  <button class="tab" onclick="show('abc',this)">🔠 ABC Log</button>
 </div>
 <div id="checklist" class="pane active">
   <div class="banner">👁 Read-only offline archive — ${esc2(client.name)} · ${fromVal} to ${toVal}</div>
@@ -694,6 +713,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="notes" class="pane">
   ${notesTabHtml}
+</div>
+<div id="abc" class="pane">
+  ${abcTabHtml}
 </div>
 <script>
 function show(id,btn){
@@ -1634,7 +1656,7 @@ function renderSessionEntry(){
   const ss_check=getSessState();
 
   const today=new Date().toISOString().slice(0,10);
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
@@ -2354,7 +2376,7 @@ function checkDTStepAdvance(lesson,date,ftResult,pct){
 // LESSONS VIEW
 // ════════════════════════════════════════════════
 function renderLessonsView(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddLesson()">+ Add Lesson</button>':'';
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
   const maint=lessons.filter(l=>l.phase==='maintenance');
@@ -2800,19 +2822,24 @@ function saveAddSDTarget(lId){
 function editSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   const existingSteps=(sd.teachingSteps||[]).join('\n');
+  const curStyle=sd.teachingStyle||'DTT';
+  const styleOpts=['DTT','NET','DTT+NET','Other'].map(s=>'<option value="'+s+'"'+(s===curStyle?' selected':'')+'>'+s+'</option>').join('');
   modal('<h3 style="margin-bottom:12px">Edit SD</h3>'
     +'<label>SD text<textarea id="esd-sd" rows="2">'+esc(sd.sd)+'</textarea></label>'
     +'<label style="margin-top:8px">Response<textarea id="esd-r" rows="2">'+esc(sd.response)+'</textarea></label>'
-    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
+    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Style</label>'
+    +'<select id="esd-ts" style="width:100%;margin-bottom:10px">'+styleOpts+'</select></div>'
+    +'<div><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
     +'<textarea id="esd-tsteps" rows="4" style="font-size:.82rem">'+esc(existingSteps)+'</textarea></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
-    +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
+    +'<button class="btn btn-primary" onclick="saveEditSD(''+lId+'',''+sId+'')">Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   sd.sd=document.getElementById('esd-sd').value.trim()||sd.sd;
   sd.response=document.getElementById('esd-r').value.trim();
+  sd.teachingStyle=(document.getElementById('esd-ts')||{value:'DTT'}).value||'DTT';
   sd.teachingSteps=(document.getElementById('esd-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
   saveData();closeModal();render();
 }
@@ -3195,7 +3222,7 @@ function renderBehaviorTab(){
         +'</select></div>'
       :'';
     const freqField='<div class="fg-sm"><label>Count</label><input type="number" id="bxfreq_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
-    const durField='<div class="fg-sm"><label>Total Duration (min)</label><input type="number" id="bxdur_'+bip.id+'" min="0" step="1" placeholder="0" style="width:80px"></div>';
+    const durField='<div class="fg-sm"><label>Duration <span style="font-weight:400;font-size:.72rem;color:var(--muted)">(min or m:ss)</span></label><input type="text" id="bxdur_'+bip.id+'" min="0" placeholder="e.g. 2 or 1:30" style="width:90px"></div>';
     const rateField='<div class="fg-sm"><label>Count (for rate)</label><input type="number" id="bxcnt_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
     const logFields=allMeas.map(m=>m==='frequency'?freqField:m==='duration'?durField:rateField).join('');
     const logForm='<div style="background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:12px">'
@@ -3309,10 +3336,20 @@ function logBIP(bipId){
     entry.rate=sessHrs>0?Math.round(cnt/sessHrs*10)/10:null;
   }
   if(allMeas.includes('duration')){
-    const totalDur=parseFloat(durEl&&durEl.value)||0;
+    // Parse duration: accepts plain minutes (e.g. "2", "1.5") or m:ss (e.g. "1:30") or bare seconds (e.g. "90s" or "90")
+    const _rawDur=(durEl&&durEl.value||'').trim();
+    let totalDur=0;
+    if(_rawDur){
+      const _mss=_rawDur.match(/^(\d+):(\d{1,2})$/);
+      const _sec=_rawDur.match(/^(\d+)s$/i);
+      if(_mss) totalDur=parseInt(_mss[1])+(parseInt(_mss[2])/60);
+      else if(_sec) totalDur=parseInt(_sec[1])/60;
+      else totalDur=parseFloat(_rawDur)||0;
+    }
+    totalDur=Math.round(totalDur*100)/100;
     entry.duration=totalDur;
     const occurrences=entry.count||parseInt(cntEl&&cntEl.value)||1;
-    entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*10)/10:0;
+    entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*100)/100:0;
   }
   DB.behaviors.push(entry);
   sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
@@ -3513,14 +3550,23 @@ function _doDeleteBIP(bipId){
 }
 
 function renderABCTab(){
+  const isSup=['supervisor','director'].includes(currentUser.role);
   const abcs=DB.abcData.filter(x=>x.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date));
-  const rows=abcs.slice(0,30).map(a=>'<tr><td>'+a.date+'</td><td>'+esc(a.txName)+'</td><td>'+esc(a.a)+'</td><td>'+esc(a.b)+'</td><td>'+esc(a.c)+'</td>'
+  const rows=abcs.slice(0,50).map(a=>'<tr>'
+    +'<td>'+fmtDateShort(a.date)+'</td>'
+    +'<td>'+esc(a.txName)+'</td>'
+    +'<td>'+esc(a.a)+'</td>'
+    +'<td>'+esc(a.b)+'</td>'
+    +'<td>'+esc(a.c)+'</td>'
     +'<td>'+(a.frequency!=null?a.frequency+' count':'—')+'</td>'
     +'<td>'+(a.duration!=null?a.duration+' min':'—')+'</td>'
     +'<td style="font-size:.78rem;max-width:160px;white-space:normal">'+(a.narrative?esc(a.narrative):'—')+'</td>'
-    +'</tr>').join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
+    +(isSup?'<td><button class="btn btn-xs btn-danger no-print" onclick="deleteABCEntry(''+a.id+'')">✕</button></td>':'')
+    +'</tr>').join('')||'<tr><td colspan="9" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
+  const _abcSS=getSessState();
+  const defaultDate=_abcSS.date||new Date().toISOString().slice(0,10);
   return '<div class="card no-print"><h2>Log ABC</h2>'
-    +''
+    +'<div class="form-row"><div class="fg-sm"><label>Date</label><input type="date" id="abc-date" value="'+defaultDate+'"></div></div>'
     +'<div class="form-row"><div class="fg"><label>A — Antecedent</label><input type="text" id="abc-a" placeholder="What happened before..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>B — Behavior</label><input type="text" id="abc-b" placeholder="What the client did..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>C — Consequence</label><input type="text" id="abc-c" placeholder="What happened after..."></div></div>'
@@ -3529,21 +3575,33 @@ function renderABCTab(){
     +'<div class="fg-sm"><label>Duration (min)</label><input type="number" id="abc-dur" min="0" step="1" placeholder="optional" style="width:90px"></div>'
     +'</div>'
     +'<div class="form-row"><div class="fg"><label>Narrative</label><textarea id="abc-narrative" rows="2" placeholder="Free-form description of the episode..."></textarea></div></div>'
-    +'<button class="btn btn-primary" onclick="logABC()">Save</button></div>'
-    +'<div class="card"><h2>ABC Log</h2><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Tx</th><th>A</th><th>B</th><th>C</th><th>Freq</th><th>Dur</th><th>Narrative</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    +'<button class="btn btn-primary" onclick="logABC()">Save ABC Entry</button></div>'
+    +'<div class="card"><h2>ABC Log</h2><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Tx</th><th>A</th><th>B</th><th>C</th><th>Freq</th><th>Dur</th><th>Narrative</th>'+(isSup?'<th></th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
+
 function logABC(){
   const freq=document.getElementById('abc-freq').value;
   const dur=document.getElementById('abc-dur').value;
+  const dateEl=document.getElementById('abc-date');
   const _finalSS=getSessState();
-  const entry={id:uid(),clientId:selectedClientId,date:(_finalSS.date||new Date().toISOString().slice(0,10)),setting:_finalSS.setting||'therapy',parentNote:_finalSS.parentNote||'',txId:currentUser.id,txName:currentUser.name,
-    a:document.getElementById('abc-a').value.trim(),b:document.getElementById('abc-b').value.trim(),c:document.getElementById('abc-c').value.trim(),
+  const entryDate=dateEl?dateEl.value:(_finalSS.date||new Date().toISOString().slice(0,10));
+  const a=document.getElementById('abc-a').value.trim();
+  const b=document.getElementById('abc-b').value.trim();
+  const c=document.getElementById('abc-c').value.trim();
+  if(!a&&!b&&!c){toast('Fill in at least A, B, or C.','error');return;}
+  const entry={id:uid(),clientId:selectedClientId,date:entryDate,setting:_finalSS.setting||'therapy',parentNote:_finalSS.parentNote||'',txId:currentUser.id,txName:currentUser.name,a,b,c,
     narrative:document.getElementById('abc-narrative').value.trim()};
   if(freq!=='')entry.frequency=parseInt(freq);
   if(dur!=='')entry.duration=Math.round(parseFloat(dur));
-  DB.abcData.push(entry);saveData();toast('Saved ✓');render();
+  DB.abcData.push(entry);sbSaveABC(entry);toast('ABC entry saved ✓');render();
 }
-
+function deleteABCEntry(id){
+  if(!['supervisor','director'].includes(currentUser.role)){toast('⚠ No permission');return;}
+  if(!confirm('Delete this ABC entry?'))return;
+  sbFetch('abc_data','DELETE',null,'id=eq.'+id);
+  DB.abcData=DB.abcData.filter(a=>a.id!==id);
+  toast('Deleted ✓');render();
+}
 function renderNotesTab(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
@@ -3670,7 +3728,7 @@ function renderAdmin(){
     +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
     +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Password</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -3800,7 +3858,7 @@ function defaultData(){
 async function resetData(){
   showSyncStatus('saving');
   // Delete all clinical data from Supabase (keep users)
-  const tables=['sessions','behaviors','lessons','bips','clients'];
+  const tables=['sessions','behaviors','abc_data','lessons','bips','clients'];
   for(const t of tables){
     const rows=await sbFetch(t,'GET',null,'select=id');
     if(rows&&rows.length) await Promise.all(rows.map(r=>sbFetch(t,'DELETE',null,'id=eq.'+r.id)));
