@@ -800,6 +800,183 @@ function confirmDiscard(){
 }
 function discardSession(){clearSessState();clearSessionDraft();render();}
 
+function _undoSessionFirstTrials(sess){
+  // Remove first-trial data pushed onto targets when this session was originally saved
+  DB.lessons.filter(l=>l.clientId===selectedClientId).forEach(function(lesson){
+    lesson.sds.forEach(function(sd){
+      sd.targets.forEach(function(tgt){
+        if(tgt.firstTrialData){
+          tgt.firstTrialData=tgt.firstTrialData.filter(function(ft){
+            return !(ft.date===sess.date&&ft.txId===sess.txId);
+          });
+        }
+      });
+    });
+  });
+}
+
+function _sessionPickerRows(sessions){
+  // Returns HTML rows for session picker modal — most recent first
+  return sessions.map(function(s,i){
+    const lessons=(s.lessonData||[]).length;
+    const setting=s.setting==='school'?'🏫 School':'🏠 1:1';
+    const time=s.sessTime?s.sessTime+'h':'';
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:var(--card)">'
+      +'<div style="flex:1">'
+      +'<div style="font-weight:700;font-size:.92rem">'+fmtDateShort(s.date)+'</div>'
+      +'<div style="font-size:.78rem;color:var(--muted);margin-top:2px">'+esc(s.txName||'Unknown TX')+' · '+setting+(time?' · '+time:'')+(lessons?' · '+lessons+' lesson'+(lessons!==1?'s':''):'')+'</div>'
+      +'</div>'
+      +'<button data-sidx="'+i+'" class="sess-pick-btn btn btn-sm btn-outline">Select</button>'
+      +'</div>';
+  }).join('');
+}
+
+function editLastSession(){
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  if(!sessions.length){toast('No previous sessions found.','error');return;}
+  if(sessions.length===1){
+    _doEditSession(sessions[0]);
+  } else {
+    // Show picker modal — list recent sessions, let TX choose which to edit
+    modal('<div>'
+      +'<h3 style="margin-bottom:4px">✏ Edit a Session</h3>'
+      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session you want to correct. It will be removed and reloaded so you can re-enter the data.</p>'
+      +_sessionPickerRows(sessions)
+      +'<div style="margin-top:12px;text-align:right"><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
+      +'</div>');
+    // Wire up select buttons
+    setTimeout(function(){
+      document.querySelectorAll('.sess-pick-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          const idx=parseInt(btn.dataset.sidx);
+          closeModal();
+          setTimeout(function(){_doEditSession(sessions[idx]);},80);
+        });
+      });
+    },60);
+  }
+}
+
+function _doEditSession(sess){
+  if(!confirm('Edit this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+esc(sess.txName||'')+'\n\nThe session will be removed and reloaded so you can correct the data. Click End & Save when done.\n\nContinue?'))return;
+  DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
+  sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
+  _undoSessionFirstTrials(sess);
+  setSessState({
+    clientId:selectedClientId,
+    date:sess.date,
+    sessTime:sess.sessTime||4,
+    sessType:sess.sessType||'individual',
+    setting:sess.setting||'therapy',
+    started:true,
+    editingSessionId:sess.id
+  });
+  window._editSessionData=sess;
+  clearSessionDraft();
+  render();
+  setTimeout(function(){_restoreEditSession(sess);},120);
+  toast('Session loaded — correct the data then click End & Save');
+}
+
+function _restoreEditSession(sess){
+  // Restore TX notes
+  const notesEl=document.getElementById('tx-sess-notes');
+  if(notesEl&&sess.notes)notesEl.value=sess.notes;
+  // Restore parent note (school)
+  const pnEl=document.getElementById('parent-note-input');
+  if(pnEl&&sess.parentNote)pnEl.value=sess.parentNote;
+  // Restore lesson data
+  if(!sess.lessonData)return;
+  sess.lessonData.forEach(function(ld){
+    (ld.targets||[]).forEach(function(te){
+      if(te.na){
+        const naEl=document.getElementById('na_'+ld.lessonId+'_'+te.sdId+'_'+te.targetId);
+        if(naEl)naEl.checked=true;
+        return;
+      }
+      const id=ld.lessonId+'_'+te.sdId+'_'+te.targetId;
+      // percent data
+      if(te.dataType==='percent'&&te.correct!=null){
+        const corEl=document.getElementById('cor_'+id);
+        const totEl=document.getElementById('tot_'+id);
+        if(corEl)corEl.value=te.correct;
+        if(totEl)totEl.value=te.total;
+        calcPct(id);
+      }
+      // rating data
+      if(te.dataType==='rating'&&te.rating!=null){
+        const rBtn=document.querySelector('.cpi-btn[data-id="rt_'+id+'"][data-val="'+te.rating+'"]');
+        if(rBtn){rBtn.classList.add('rating-sel');rBtn.style.background='var(--primary)';rBtn.style.color='#fff';}
+      }
+      // tally data
+      if(te.dataType==='tally'&&te.count!=null){
+        const talEl=document.getElementById('tally_'+id);
+        if(talEl)talEl.value=te.count;
+      }
+      // task analysis steps
+      if(te.dataType==='ta'&&te.steps){
+        te.steps.forEach(function(st,i){
+          if(st.mastered||!st.result)return;
+          const val=st.result==='+' ? '+' : st.result==='-' ? '-' : 'P';
+          const btn=document.querySelector('.cpi-btn[data-id="ta_'+id+'_'+i+'"][data-val="'+val+'"]');
+          if(btn){btn.classList.add('sel');btn.style.background='var(--primary)';btn.style.color='#fff';}
+        });
+      }
+      // first trial
+      if(te.firstTrial){
+        const ftBtn=document.querySelector('.ft-btn[data-id="ft_'+id+'"][data-val="'+te.firstTrial+'"]');
+        if(ftBtn){ftBtn.classList.add('ft-sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
+      }
+    });
+    // DT lesson
+    if(ld.dtData){
+      const dtId='dt_'+ld.lessonId;
+      const corEl=document.getElementById('dtcor_'+dtId);
+      const totEl=document.getElementById('dttot_'+dtId);
+      if(corEl&&ld.dtData.correct!=null)corEl.value=ld.dtData.correct;
+      if(totEl&&ld.dtData.total!=null)totEl.value=ld.dtData.total;
+      if(ld.dtData.firstTrial){
+        const ftVal=ld.dtData.firstTrial==='+' ? '+' : '-';
+        const ftBtn=document.querySelector('.cpi-btn[data-id="dtft_'+dtId+'"][data-val="'+ftVal+'"]');
+        if(ftBtn){ftBtn.classList.add('sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
+      }
+    }
+  });
+}
+
+function deleteLastSession(){
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  if(!sessions.length){toast('No previous sessions found.','error');return;}
+  if(sessions.length===1){
+    _doDeleteSession(sessions[0]);
+  } else {
+    modal('<div>'
+      +'<h3 style="margin-bottom:4px">🗑 Delete a Session</h3>'
+      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session to delete. <strong>This cannot be undone.</strong></p>'
+      +_sessionPickerRows(sessions)
+      +'<div style="margin-top:12px;text-align:right"><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
+      +'</div>');
+    setTimeout(function(){
+      document.querySelectorAll('.sess-pick-btn').forEach(function(btn){
+        btn.addEventListener('click',function(){
+          const idx=parseInt(btn.dataset.sidx);
+          closeModal();
+          setTimeout(function(){_doDeleteSession(sessions[idx]);},80);
+        });
+      });
+    },60);
+  }
+}
+
+async function _doDeleteSession(sess){
+  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis cannot be undone.'))return;
+  DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
+  _undoSessionFirstTrials(sess);
+  await sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
+  toast('Session deleted ✓');
+  render();
+}
+
 // ── Supervision state ──
 const SUP_KEY='aba_sup_'+location.pathname;
 function getSupState(){try{return JSON.parse(sessionStorage.getItem(SUP_KEY))||{};}catch(e){return{};}}
@@ -1308,6 +1485,12 @@ function renderClientView(){
     const _ssSetting=ss.setting||'therapy';
     const sessTypeOpts='<option value="individual">1:1 Therapy</option>';
     if(!ss.started){
+      const _lastSess=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date))[0];
+      const _isTxRole=['junior','senior','qcd'].includes(currentUser&&currentUser.role);
+      const _lastSessBtns=(_lastSess&&_isTxRole)?
+        '<button style="background:#4f46e5;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="editLastSession()" title="Edit the most recent session data">✏ Edit Last</button>'
+        +'<button style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="deleteLastSession()" title="Delete the most recent session">🗑 Delete Last</button>'
+        :'';
       stickyBar='<div id="sess-sticky" class="ss-idle">'
         +'<span class="ss-label">⚠ SESSION NOT STARTED</span>'
         +'<span class="ss-val">'+esc(c.name)+'</span>'
@@ -1317,7 +1500,8 @@ function renderClientView(){
         +'<span class="ss-label">Type</span><select id="ss-type" onchange="updateSessState(\'sessType\',this.value)">'+sessTypeOpts+'</select>'
         +'<span class="ss-label">Setting</span><select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_ssSetting==='therapy'?' selected':'')+'>🏠 1:1 Therapy</option><option value="school"'+(_ssSetting==='school'?' selected':'')+'>🏫 School</option></select>'
         +'<div style="flex:1"></div>'
-        +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSessionFromBar()">▶ Start Session</button>'
+        +_lastSessBtns
+        +'<button style="background:#16a34a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="startSessionFromBar()">▶ Start Session</button>'
         +'</div>';
     } else {
       const sessTypeLabel='1:1 Therapy';
