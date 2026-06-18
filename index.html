@@ -893,8 +893,25 @@ function confirmEndSession(){
   let unscored=0;
   lessons.forEach(l=>l.sds.forEach(sd=>sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(t=>{
     const id=l.id+'_'+sd.id+'_'+t.id;
-    const el=document.getElementById('pct_'+id)||document.getElementById('rating_'+id);
-    if(!el||el.value==='')unscored++;
+    const naEl=document.getElementById('na_'+id);
+    if(naEl&&naEl.checked)return; // N/A is valid data
+    if(t.dataType==='percent'){
+      const corEl=document.getElementById('cor_'+id);
+      if(!corEl||corEl.value.trim()==='')unscored++;
+    } else if(t.dataType==='rating'){
+      const sel=document.querySelector('.cpi-btn[data-id="rt_'+id+'"].rating-sel');
+      if(!sel)unscored++;
+    } else if(t.dataType==='tally'){
+      // tally defaults to 0 — always has a value, never unscored
+    } else if(t.dataType==='ta'){
+      // ta — check if any step button is selected
+      const anyStep=document.querySelector('.cpi-btn[data-id^="ta_'+id+'_"].sel');
+      if(!anyStep)unscored++;
+    } else if(t.dataType==='checklist'){
+      // checklist — needs a first trial selection
+      const ftSel=document.querySelector('.ft-btn[data-id="ft_'+id+'"].ft-sel');
+      if(!ftSel)unscored++;
+    }
   })));
   if(unscored>0){
     modal('<div style="text-align:center;padding:10px">'
@@ -3390,7 +3407,9 @@ function renderMaintenanceTab(){
 function renderProgramChecklist(){
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   // get all sessions sorted oldest→newest, limit last 30
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId)
+  // Determine current context setting — show therapy sessions on therapy checklist, school on school
+  const _clSetting=(getSessState().setting||'therapy');
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(s.setting||'therapy')===_clSetting)
     .sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
 
   if(!lessons.length)return'<div class="empty-state">No lessons yet.</div>';
@@ -3412,7 +3431,8 @@ function renderProgramChecklist(){
       if(ld.dtData){map[ld.lessonId]='ran';}
       else if(nonMaint.length>0){
         const allNA=nonMaint.every(t=>t.na);
-        map[ld.lessonId]=allNA?'na':'ran';
+        const hasRealData=nonMaint.some(t=>!t.na&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null));
+        map[ld.lessonId]=allNA?'na':(hasRealData?'ran':'na');
       }
     });
     sessionLessons[s.id]=map;
