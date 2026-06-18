@@ -2414,7 +2414,7 @@ function showSaveStatus(state,msg){
   } else if(state==='saved'){
     el.style.background='#dcfce7';el.style.color='#15803d';
     el.textContent='✓ '+(msg||'Saved');el.style.opacity='1';
-    setTimeout(function(){el.style.opacity='0';},3000);
+    setTimeout(function(){el.style.opacity='0';},6000);
   } else if(state==='pending'){
     el.style.background='#fef9c3';el.style.color='#854d0e';
     el.textContent='⚠ '+(msg||'Unsaved logs — will sync at End Session');el.style.opacity='1';
@@ -2679,8 +2679,8 @@ async function saveSession(){
       showSaveStatus('saved','Session saved ✓');
     }
 
-    toast('Session saved ✓ — returning to client list');
-    setTimeout(()=>showView('clients'),800);
+    toast('Session saved ✓');
+    selectedTab='checklist';render();
   }catch(e){
     console.error('saveSession error',e);
     toast('⚠ Save error: '+e.message,'error',6000);
@@ -2925,7 +2925,7 @@ function renderLessonCard(lesson){
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
   const supBtns=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function fmtDateShort(d){
@@ -3565,7 +3565,13 @@ function renderBehaviorTab(){
       }
       if(!val)return'';
       const paras=val.split(/\n+/).filter(s=>s.trim());
-      const paraHtml=paras.map(p=>'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55">'+esc(p)+'</p>').join('');
+      const paraHtml=paras.map(p=>{
+        const isBullet=p.match(/^[-•*]\s+/);
+        if(isBullet){const txt=p.replace(/^[-•*]\s+/,'');return'<div style="display:flex;gap:7px;margin:0 0 6px 0;font-size:.84rem;line-height:1.55"><span style="color:#29ABE2;flex-shrink:0;margin-top:2px">▸</span><span>'+esc(txt)+'</span></div>';}
+        const _lbM=p.match(/^([A-Za-z][^:]{1,50}?):\s+(.+)$/);
+        if(_lbM)return'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55"><strong style="color:#1e293b">'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</p>';
+        return'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55">'+esc(p)+'</p>';
+      }).join('');
       return '<div style="'+boxStyle+'">'
         +'<div style="'+hdrStyle+'">'+label+'</div>'
         +'<div style="padding:10px 12px">'+paraHtml+'</div></div>';
@@ -3643,7 +3649,9 @@ function renderBehaviorTab(){
             +'<span style="color:#29ABE2;flex-shrink:0;margin-top:2px">▸</span>'
             +'<span>'+esc(txt)+'</span></div>';
         } else {
-          bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;font-weight:500;color:#374151">'+esc(line)+'</p>';
+          const _lbM=line.match(/^([A-Za-z][^:]{1,50}?):\s+(.+)$/);
+          if(_lbM){bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;color:#374151"><strong style="color:#1e293b">'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</p>';}
+          else{bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;font-weight:500;color:#374151">'+esc(line)+'</p>';}
         }
       });
       return '<div style="margin-bottom:12px;border-left:3px solid #29ABE2;padding:6px 0 2px 12px">'
