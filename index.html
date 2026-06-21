@@ -138,7 +138,7 @@ details.card[open]>summary .det-arrow{transform:rotate(90deg);}
 .note-entry{border-left:3px solid var(--border);padding:8px 12px;margin-bottom:8px;}
 .note-entry.sup-note{border-color:var(--sup);background:var(--sup-light);border-radius:0 7px 7px 0;}
 .note-meta{font-size:.75rem;color:var(--muted);margin-bottom:3px;}
-.note-text{font-size:.87rem;}
+.note-text{font-size:.87rem;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
 /* Table */
 table{width:100%;border-collapse:collapse;font-size:.85rem;}
 th{background:var(--primary-light);color:var(--primary);font-weight:600;padding:8px 10px;text-align:left;}
@@ -2051,7 +2051,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   }
   if(target.teachingSteps&&target.teachingSteps.length){
     const curStep=target.teachingSteps[target.dtStepIndex||0]||target.teachingSteps[0];
-    html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
+    html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;white-space:normal;word-break:break-word" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
   }
   html+='<span class="target-status status-'+target.status+'">'+target.status.replace(/_/g,' ')+'</span>';
   if(target.dataType!=='checklist'){html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';}
@@ -3613,7 +3613,7 @@ function renderBehaviorTab(){
         +'</select></div>'
       :'';
     const freqField='<div class="fg-sm"><label>Count</label><input type="number" id="bxfreq_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
-    const durField='<div class="fg-sm"><label>Duration <span style="font-weight:400;font-size:.72rem;color:var(--muted)">(min or m:ss)</span></label><input type="text" id="bxdur_'+bip.id+'" min="0" placeholder="e.g. 2 or 1:30" style="width:90px"></div>';
+    const durField='<div class="fg-sm"><label>Duration</label><input type="text" id="bxdur_'+bip.id+'" min="0" placeholder="e.g. 1:15" style="width:90px"><div style="font-size:.7rem;color:var(--muted);margin-top:2px">0:05 = 5 sec · 1:15 = 1 min 15 sec</div></div>';
     const rateField='<div class="fg-sm"><label>Count (for rate)</label><input type="number" id="bxcnt_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
     const logFields=allMeas.map(m=>m==='frequency'?freqField:m==='duration'?durField:rateField).join('');
     const logForm='<div style="background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:12px">'
