@@ -2641,31 +2641,7 @@ async function saveSession(){
   if(_pnEl)updateSessState('parentNote',_pnEl.value.trim());
   const _pnVal=(document.getElementById('parent-note-input')||{}).value||ss_save.parentNote||'';
   const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',setting:ss_save.setting||'therapy',parentNote:_pnVal,notes:txNotes,lessonData};
-  DB.sessions.push(newSess);
-  // Persist first trial results onto target.firstTrialData[]
-  lessonData.forEach(function(ld){
-    const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
-    if(!lesson2)return;
-    (ld.targets||[]).forEach(function(te){
-      if(te.na||!te.firstTrial)return;
-      lesson2.sds.forEach(function(sd2){
-        const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
-        if(!tgt)return;
-        if(!tgt.firstTrialData)tgt.firstTrialData=[];
-        tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
-      });
-    });
-  });
-  clearSessState();
-  clearSessionDraft();
-  // flash checklist checkmarks immediately
-  lessonData.forEach(ld=>{
-    (ld.targets||[]).filter(t=>t.dataType!=='maintenance').forEach(t=>{
-      const el=document.getElementById('cl_'+ld.lessonId+'_'+t.targetId);
-      if(el){el.className='cl-check done';el.textContent='✓';}
-    });
-  });
-  // Save to Supabase — await so we know if it succeeded
+  // Save to Supabase FIRST — only commit to local state if it succeeds
   toast('Saving session…');
   showSaveStatus('saving','Saving session...');
   try{
@@ -2673,10 +2649,27 @@ async function saveSession(){
     if(saveResult===null){
       showSaveStatus('error','Session save failed — check connection');
       toast('⚠ Session save failed — check your connection and try again','error',6000);
-      // Put session back so TX can retry
-      DB.sessions.pop();
+      // Do NOT clear state — TX can retry by pressing End Session again
       return;
     }
+    // Supabase confirmed save — now commit to local state
+    DB.sessions.push(newSess);
+    // Persist first trial results onto target.firstTrialData[]
+    lessonData.forEach(function(ld){
+      const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
+      if(!lesson2)return;
+      (ld.targets||[]).forEach(function(te){
+        if(te.na||!te.firstTrial)return;
+        lesson2.sds.forEach(function(sd2){
+          const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
+          if(!tgt)return;
+          if(!tgt.firstTrialData)tgt.firstTrialData=[];
+          tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
+        });
+      });
+    });
+    clearSessState();
+    clearSessionDraft();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
     await flushSave();
 
