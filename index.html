@@ -1008,35 +1008,45 @@ function _doEditSession(sess){
     return lessons.map(function(lesson){
       const ld=(sess.lessonData||[]).find(function(x){return x.lessonId===lesson.id;});
       if(!ld&&lesson.phase==='maintenance')return'';
-      const lessonLabel='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#f1f5f9;border-radius:6px;border-left:3px solid var(--primary)">'+esc(lesson.name)+'<span style="font-size:.74rem;font-weight:400;color:var(--muted);margin-left:8px">'+lesson.phase+'</span></div>';
-      if(!ld)return lessonLabel+'<div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No data recorded for this lesson.</div>';
+      const _lid=lesson.id; // always use lesson.id as the data-lid key
 
-      const targetRows=(ld.targets||[]).map(function(te){
+      // Merge: saved targets + any active targets not yet recorded
+      const savedTargets=ld?ld.targets||[]:[];
+      const hasData=savedTargets.filter(t=>t.dataType!=='maintenance').length>0;
+      const allActiveTargets=lesson.sds.flatMap(function(sd){
+        return sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).map(function(t){
+          const saved=savedTargets.find(function(te){return te.targetId===t.id;});
+          return saved||{targetId:t.id,targetName:t.name,sdId:sd.id,dataType:t.dataType,_missing:true};
+        });
+      });
+
+      const targetRows=allActiveTargets.map(function(te){
         if(te.dataType==='maintenance')return'';
         const tName=te.targetName||te.targetId;
-        const naChk='<label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:4px"><input type="checkbox" class="se-na" data-lid="'+ld.lessonId+'" data-sid="'+te.sdId+'" data-tid="'+te.targetId+'"'+(te.na?' checked':'')+' onchange="seToggleNA(this)"> N/A</label>';
+        const naChk='<label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:4px"><input type="checkbox" class="se-na" data-lid="'+_lid+'" data-sid="'+te.sdId+'" data-tid="'+te.targetId+'"'+(te.na?' checked':'')+' onchange="seToggleNA(this)"> N/A</label>';
         let inputHtml='';
         if(te.na){
           inputHtml='<span style="font-size:.78rem;color:var(--muted);font-style:italic">marked N/A</span>';
         } else if(te.dataType==='percent'){
-          inputHtml='<input type="number" class="se-cor" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="cor" value="'+(te.correct!=null?te.correct:'')+'">'
-            +' / <input type="number" class="se-tot" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="tot" value="'+(te.total!=null?te.total:'')+'">'
+          inputHtml='<input type="number" class="se-cor" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="cor" value="'+(te.correct!=null?te.correct:'')+'">'
+            +' / <input type="number" class="se-tot" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="tot" value="'+(te.total!=null?te.total:'')+'">'
             +'<span class="se-pct" style="margin-left:8px;font-weight:700;color:var(--primary);min-width:40px">'+(te.pct!=null?te.pct+'%':'')+'</span>';
         } else if(te.dataType==='rating'){
-          const max=(DB.lessons.find(l=>l.id===ld.lessonId)||{ratingScale:{max:5}}).ratingScale&&DB.lessons.find(l=>l.id===ld.lessonId).ratingScale?DB.lessons.find(l=>l.id===ld.lessonId).ratingScale.max:5;
+          const _rLesson=DB.lessons.find(l=>l.id===_lid);
+          const max=(_rLesson&&_rLesson.ratingScale&&_rLesson.ratingScale.max)||5;
           const opts=Array.from({length:max},(_,i)=>i+1).map(v=>'<option value="'+v+'"'+(te.rating===v?' selected':'')+'>'+v+'</option>').join('');
-          inputHtml='<select class="se-rating" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option>'+opts+'</select>';
+          inputHtml='<select class="se-rating" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option>'+opts+'</select>';
         } else if(te.dataType==='tally'){
-          inputHtml='<input type="number" class="se-tally" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" min="0" style="width:70px" value="'+(te.count!=null?te.count:'')+'">';
+          inputHtml='<input type="number" class="se-tally" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:70px" value="'+(te.count!=null?te.count:'')+'">';
         } else if(te.dataType==='checklist'){
-          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+ Independent</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>− Prompted</option></select></label>';
+          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+ Independent</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>− Prompted</option></select></label>';
         } else if(te.dataType==='ta'){
           const stepRows=(te.steps||[]).map(function(st,si){
             if(st.mastered)return'<div style="font-size:.75rem;color:#059669">✓ '+esc(st.step||'Step '+(si+1))+'</div>';
             const res=st.result||'';
             return'<div style="font-size:.78rem;display:flex;align-items:center;gap:6px;margin:2px 0">'
               +'<span style="flex:1">'+esc(st.step||'Step '+(si+1))+'</span>'
-              +'<select class="se-ta-step" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'" data-si="'+si+'">'
+              +'<select class="se-ta-step" data-lid="'+_lid+'" data-tid="'+te.targetId+'" data-si="'+si+'">'
               +'<option value="">—</option>'
               +'<option value="+"'+(res==='+'?' selected':'')+'>+</option>'
               +'<option value="P"'+(res==='P'?' selected':'')+'>P</option>'
@@ -1046,22 +1056,33 @@ function _doEditSession(sess){
           }).join('');
           inputHtml='<div style="margin-top:4px">'+stepRows+'</div>';
         }
-        // First trial for percent types
         let ftHtml='';
         if(te.dataType==='percent'||te.dataType==='ta'){
-          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+ld.lessonId+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
+          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
         }
         return'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 10px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap">'
-          +'<div style="flex:1;min-width:120px;font-size:.83rem;font-weight:500">'+esc(tName)+'</div>'
+          +'<div style="flex:1;min-width:120px;font-size:.83rem;font-weight:500">'+esc(tName)+(te._missing?'<span style="font-size:.7rem;color:#f59e0b;margin-left:6px">not recorded</span>':'')+'</div>'
           +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+inputHtml+ftHtml+'</div>'
           +naChk
           +'</div>';
       }).join('');
 
-      const noteVal=(ld.note||'');
-      const noteRow='<div style="padding:6px 10px"><label style="font-size:.76rem;color:var(--muted)">Lesson note <input type="text" class="se-lnote" data-lid="'+ld.lessonId+'" style="font-size:.8rem;margin-left:6px;width:260px" value="'+esc(noteVal)+'"></label></div>';
+      const noteVal=(ld&&ld.note||'');
+      const noteRow='<div style="padding:6px 10px 8px"><label style="font-size:.76rem;color:var(--muted)">Lesson note <input type="text" class="se-lnote" data-lid="'+_lid+'" style="font-size:.8rem;margin-left:6px;width:220px" value="'+esc(noteVal)+'"></label></div>';
 
-      return lessonLabel+targetRows+noteRow;
+      // Wrap in <details> — open if lesson has saved data
+      const statusBadge=hasData
+        ?'<span style="font-size:.7rem;background:#dcfce7;color:#16a34a;border-radius:10px;padding:1px 8px;margin-left:8px">data recorded</span>'
+        :'<span style="font-size:.7rem;background:#fef9c3;color:#92400e;border-radius:10px;padding:1px 8px;margin-left:8px">not recorded</span>';
+      return'<details style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;overflow:hidden"'+(hasData?' open':'')+'>'
+        +'<summary style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;background:#f8fafc;list-style:none;user-select:none">'
+        +'<span style="font-size:.85rem">▶</span>'
+        +'<span style="font-weight:700;font-size:.88rem;flex:1">'+esc(lesson.name)+'</span>'
+        +'<span style="font-size:.74rem;color:var(--muted)">'+lesson.phase+'</span>'
+        +statusBadge
+        +'</summary>'
+        +'<div>'+targetRows+noteRow+'</div>'
+        +'</details>';
     }).join('');
   }
 
@@ -1147,6 +1168,33 @@ async function _saveEditedSession(sessId){
   if(pnEl)sess.parentNote=pnEl.value.trim();
 
   // Update lesson data
+  if(!sess.lessonData)sess.lessonData=[];
+  // Ensure every lesson that has DOM inputs is represented in lessonData
+  DB.lessons.filter(l=>l.clientId===selectedClientId).forEach(function(lesson){
+    let ld=sess.lessonData.find(function(x){return x.lessonId===lesson.id;});
+    if(!ld){
+      // Lesson wasn't in original session — create entry only if DOM has data
+      const hasAnyInput=document.querySelector('.se-cor[data-lid="'+lesson.id+'"],.se-tally[data-lid="'+lesson.id+'"],.se-rating[data-lid="'+lesson.id+'"],.se-ta-step[data-lid="'+lesson.id+'"],.se-ft[data-lid="'+lesson.id+'"]');
+      if(!hasAnyInput)return;
+      ld={lessonId:lesson.id,lessonName:lesson.name,targets:[]};
+      sess.lessonData.push(ld);
+    }
+    // Add any missing targets that now have data in DOM
+    lesson.sds.forEach(function(sd){
+      sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(function(t){
+        if(ld.targets.find(function(te){return te.targetId===t.id;}))return; // already exists
+        // Check if DOM has any value for this target
+        const corEl=document.querySelector('.se-cor[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const talEl=document.querySelector('.se-tally[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const rEl=document.querySelector('.se-rating[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const ftEl=document.querySelector('.se-ft[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const taEl=document.querySelector('.se-ta-step[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const naEl=document.querySelector('.se-na[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
+        const hasValue=(corEl&&corEl.value!=='')||(talEl&&talEl.value!=='')||(rEl&&rEl.value!=='')||(ftEl&&ftEl.value!=='')||(taEl&&taEl.value!=='')||(naEl&&naEl.checked);
+        if(hasValue)ld.targets.push({targetId:t.id,targetName:t.name,sdId:sd.id,dataType:t.dataType});
+      });
+    });
+  });
   (sess.lessonData||[]).forEach(function(ld){
     // lesson note
     const lnEl=document.querySelector('.se-lnote[data-lid="'+ld.lessonId+'"]');
@@ -1245,11 +1293,22 @@ function deleteLastSession(){
 }
 
 async function _doDeleteSession(sess){
-  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis cannot be undone.'))return;
+  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis will also delete ABC data and BIP logs from this date. Cannot be undone.'))return;
+  // Remove from local DB
   DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
   _undoSessionFirstTrials(sess);
+  // Also remove abc_data and behaviors for this client+date
+  const abcsToDelete=(DB.abcData||[]).filter(a=>a.clientId===sess.clientId&&a.date===sess.date);
+  const behaviorsToDelete=(DB.behaviors||[]).filter(b=>b.clientId===sess.clientId&&b.date===sess.date);
+  DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===sess.clientId&&a.date===sess.date));
+  DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===sess.clientId&&b.date===sess.date));
+  // Delete from Supabase
   await sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
-  toast('Session deleted ✓');
+  await Promise.all([
+    ...abcsToDelete.map(a=>sbFetch('abc_data','DELETE',null,'id=eq.'+a.id)),
+    ...behaviorsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)),
+  ]);
+  toast('Session deleted ✓'+(abcsToDelete.length?' ('+abcsToDelete.length+' ABC entries removed)':'')+(behaviorsToDelete.length?' ('+behaviorsToDelete.length+' BIP logs removed)':''));
   render();
 }
 
@@ -1731,8 +1790,8 @@ function renderClientList(){
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
   const header='<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div>';
 
-  // TX/QCD roles: flat list (only see their assigned clients anyway)
-  if(currentUser&&['junior','senior','qcd'].includes(currentUser.role)){
+  // TX roles: flat list (only see their assigned clients anyway)
+  if(currentUser&&['junior','senior'].includes(currentUser.role)){
     return header+'<div class="card-grid">'+visibleClients.map(clientCard).join('')+'</div><div id="modal-area"></div>';
   }
 
@@ -1814,7 +1873,7 @@ function renderClientView(){
       const _isTxRole=['junior','senior','qcd'].includes(currentUser&&currentUser.role);
       const _lastSessBtns=(_lastSess&&_isTxRole)?
         '<button style="background:#4f46e5;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="editLastSession()" title="Edit the most recent session data">✏ Edit Last</button>'
-        +'<button style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="deleteLastSession()" title="Delete the most recent session">🗑 Delete Last</button>'
+        
         :'';
       stickyBar='<div id="sess-sticky" class="ss-idle">'
         +'<span class="ss-label">⚠ SESSION NOT STARTED</span>'
