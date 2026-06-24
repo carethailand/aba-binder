@@ -1329,7 +1329,7 @@ function snapshotClient(){
   // Deep snapshot of everything changeable for this client
   const c=DB.clients.find(x=>x.id===selectedClientId);
   if(!c)return{clientNotes:[],reinforcers:[],lessons:[],bips:[]};
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const bips=(DB.bips||[]).filter(b=>b.clientId===selectedClientId);
   return JSON.parse(JSON.stringify({
     clientNotes:c.notes||[],
