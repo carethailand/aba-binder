@@ -3457,7 +3457,7 @@ function renderMaintenanceTab(){
 // PROGRAM CHECKLIST TAB
 // ════════════════════════════════════════════════
 function renderProgramChecklist(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
   // get all sessions sorted oldest→newest, limit last 30
   // Determine current context setting — show therapy sessions on therapy checklist, school on school
   const _clSetting=(getSessState().setting||'therapy');
