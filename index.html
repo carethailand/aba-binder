@@ -1039,7 +1039,7 @@ function _doEditSession(sess){
         } else if(te.dataType==='tally'){
           inputHtml='<input type="number" class="se-tally" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:70px" value="'+(te.count!=null?te.count:'')+'">';
         } else if(te.dataType==='checklist'){
-          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+ Independent</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>− Prompted</option></select></label>';
+          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="C"'+(te.firstTrial==='C'?' selected':'')+'>C</option><option value="P"'+(te.firstTrial==='P'?' selected':'')+'>P</option><option value="I"'+(te.firstTrial==='I'?' selected':'')+'>I</option><option value="N/A"'+(te.firstTrial==='N/A'?' selected':'')+'>N/A</option></select></label>';
         } else if(te.dataType==='ta'){
           const stepRows=(te.steps||[]).map(function(st,si){
             if(st.mastered)return'<div style="font-size:.75rem;color:#059669">✓ '+esc(st.step||'Step '+(si+1))+'</div>';
@@ -1058,7 +1058,7 @@ function _doEditSession(sess){
         }
         let ftHtml='';
         if(te.dataType==='percent'||te.dataType==='ta'){
-          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
+          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="P"'+(te.firstTrial==='P'?' selected':'')+'>P</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
         }
         return'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 10px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap">'
           +'<div style="flex:1;min-width:120px;font-size:.83rem;font-weight:500">'+esc(tName)+(te._missing?'<span style="font-size:.7rem;color:#f59e0b;margin-left:6px">not recorded</span>':'')+'</div>'
@@ -1253,6 +1253,31 @@ async function _saveEditedSession(sessId){
     }
     if(el.classList.contains('se-bip-notes'))log.notes=el.value;
     sbUpsert('behaviors',{id:log.id,client_id:log.clientId,bip_id:log.bipId,date:log.date,func:log.function,count:log.count!=null?log.count:null,duration:log.duration!=null?log.duration:null,avg_duration:log.avgDuration!=null?log.avgDuration:null,rate:log.rate!=null?log.rate:null,notes:JSON.stringify({text:log.notes||'',setting:log.setting||'therapy'}),tx_id:log.txId||null,tx_name:log.txName||null});
+  });
+
+  // Sync firstTrial values back onto target.firstTrialData in DB.lessons
+  // so the session tab and graphs reflect edits immediately
+  (sess.lessonData||[]).forEach(function(ld){
+    const lesson=DB.lessons.find(function(l){return l.id===ld.lessonId;});
+    if(!lesson)return;
+    (ld.targets||[]).forEach(function(te){
+      if(!te.firstTrial)return;
+      lesson.sds.forEach(function(sd){
+        const tgt=sd.targets.find(function(t){return t.id===te.targetId;});
+        if(!tgt)return;
+        if(!tgt.firstTrialData)tgt.firstTrialData=[];
+        // Remove existing entry for this date+tx then re-add with new value
+        tgt.firstTrialData=tgt.firstTrialData.filter(function(f){
+          return !(f.date===sess.date&&f.txId===sess.txId);
+        });
+        tgt.firstTrialData.push({date:sess.date,result:te.firstTrial,txId:sess.txId,txName:sess.txName});
+      });
+    });
+  });
+  // Save updated lessons to Supabase
+  const editedLessonIds=new Set((sess.lessonData||[]).map(function(ld){return ld.lessonId;}));
+  DB.lessons.filter(function(l){return editedLessonIds.has(l.id);}).forEach(function(l){
+    sbUpsert('lessons',lessonToRow(l));
   });
 
   // Upsert — keep same id, just update fields
