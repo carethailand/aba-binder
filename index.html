@@ -2231,7 +2231,7 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>';
+      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(sd.note?'<div style="margin-bottom:10px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0;font-size:.82rem;white-space:normal">'+formatNoteText(sd.note)+'</div>':'');
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -3149,7 +3149,7 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(['supervisor','director'].includes(currentUser.role)?'<div style="margin-bottom:10px"><textarea rows="2" style="font-size:.8rem;resize:vertical;min-height:36px;background:#fffef5;border:1px dashed #fcd34d;border-radius:6px;padding:5px 8px;width:100%;box-sizing:border-box;color:#78350f" placeholder="SD note for TX (optional)..." onblur="saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',this.value)" onchange="saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',this.value)">'+esc(sd.note||'')+'</textarea></div>':(sd.note?'<div style="margin-bottom:10px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0;font-size:.82rem;white-space:normal">'+formatNoteText(sd.note)+'</div>':''))+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3444,6 +3444,12 @@ function editSD(lId,sId){
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function saveSDNote(lId,sId,val){
+  const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
+  const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
+  sd.note=val.trim();
+  saveData();
 }
 function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
