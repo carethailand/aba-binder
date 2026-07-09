@@ -1613,31 +1613,137 @@ async function printSupPDF(){
   const _isSchoolSup=(sv&&sv.setting||'therapy')==='school';
   const c=DB.clients.find(x=>x.id===selectedClientId);
   const totalChanges=changes.reduce((a,s)=>a+s.items.length,0);
-  const sectionsHtml=changes.map(sec=>{
-    const itemsHtml=sec.items.map(it=>{
-      let bodyHtml='';
-      if(it.html){
-        bodyHtml=it.html;
-      } else {
-        const paras=(it.value||'').split(/\n+/).filter(s=>s.trim());
-        bodyHtml=paras.map(p=>'<p style="font-size:.83rem;margin:0 0 5px 0;line-height:1.55">'+esc(p)+'</p>').join('');
+
+  // Find TX who ran session that day
+  const todaySess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.date===sv.date).sort((a,b)=>a.sessTime-b.sessTime);
+  const txNames=[...new Set(todaySess.map(s=>s.txName).filter(Boolean))];
+  const txNameStr=txNames.join(', ')||'—';
+
+  // Format date as D.M.YY
+  const _fmtDate=function(d){if(!d)return'—';const p=d.split('-');return parseInt(p[2])+'.'+parseInt(p[1])+'.'+(p[0].slice(2));};
+
+  // General section: client notes added today by supervisor
+  const todayNotes=(c.notes||[]).filter(n=>n.date===sv.date&&n.type==='supervisor');
+  const generalHtml=todayNotes.length
+    ? todayNotes.map(n=>{
+        const lines=n.text.split(/\n+/).filter(s=>s.trim());
+        return lines.map(l=>'<div style="font-size:.88rem;line-height:1.65;margin-bottom:3px">'+esc(l)+'</div>').join('');
+      }).join('<div style="margin-top:8px"></div>')
+    :'<div style="font-size:.85rem;color:#94a3b8;font-style:italic">No general notes recorded.</div>';
+
+  // Behaviors section: BIP logs from today
+  const todayBehaviors=(DB.behaviors||[]).filter(b=>b.clientId===selectedClientId&&b.date===sv.date);
+  let behaviorsHtml='';
+  if(todayBehaviors.length){
+    todayBehaviors.forEach(function(b){
+      const bip=(DB.bips||[]).find(x=>x.id===b.bipId);
+      const name=bip?bip.name:b.bipId;
+      let parts=[];
+      if(b.count!=null)parts.push(b.count+' time'+(b.count!==1?'s':''));
+      if(b.duration!=null){
+        const mins=Math.floor(b.duration);const secs=Math.round((b.duration-mins)*60);
+        parts.push('Duration: '+(mins>0?mins+'m ':'')+secs+'s');
       }
-      return '<div style="margin-bottom:10px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;page-break-inside:avoid">'
-        +'<div style="background:#eff6ff;padding:4px 10px;font-size:.76rem;font-weight:700;color:#29ABE2;border-bottom:1px solid #e5e7eb">'+esc(it.label)+'</div>'
-        +(bodyHtml?'<div style="padding:7px 10px">'+bodyHtml+'</div>':'')
+      if(b.notes)parts.push(b.notes);
+      behaviorsHtml+='<div style="font-size:.88rem;line-height:1.65;margin-bottom:4px">- '+esc(name)+': '+esc(parts.join(' | '))+'</div>';
+    });
+  } else {
+    behaviorsHtml='<div style="font-size:.85rem;color:#94a3b8;font-style:italic">No behavior data recorded.</div>';
+  }
+
+  // Lesson updates sections — reformatted to match clinical style
+  const lessonSections=changes.filter(s=>s.section.toLowerCase().startsWith('program:')).map(sec=>{
+    const lessonName=sec.section.replace(/^program:\s*/i,'');
+    const itemsHtml=sec.items.map(it=>{
+      const label=it.label||'';
+      let bodyText=it.value||'';
+      // Clean up the body — remove redundant "Lesson:" prefix lines
+      const lines=bodyText.split(/\n+/).filter(s=>s.trim()).filter(s=>!s.match(/^Lesson:/));
+      const bodyHtml=lines.map(l=>{
+        const _lbM=l.match(/^([A-Za-z][^:]{1,40}?):\s+(.+)$/);
+        if(_lbM)return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px"><strong>'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</div>';
+        return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px">'+esc(l)+'</div>';
+      }).join('');
+      return'<div style="margin-bottom:8px">'
+        +'<div style="font-size:.82rem;font-weight:700;color:#334155;margin-bottom:3px">'+esc(label)+'</div>'
+        +(it.html
+          ?'<div style="font-size:.85rem;line-height:1.6">'+it.html+'</div>'
+          :(bodyHtml||''))
         +'</div>';
     }).join('');
-    return '<div style="margin-bottom:16px;page-break-inside:avoid"><div style="font-size:.78rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #ccc">'+esc(sec.section)+'</div>'+itemsHtml+'</div>';
+    return'<div style="margin-bottom:18px;page-break-inside:avoid">'
+      +'<div style="font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#29ABE2;border-bottom:1.5px solid #bae6fd;padding-bottom:4px;margin-bottom:10px">'+esc(lessonName)+'</div>'
+      +itemsHtml
+      +'</div>';
   }).join('');
-  const _supHtml='<!DOCTYPE html><html><head><title>Supervision — '+clientName+'</title>'
-    +'<style>body{font-family:system-ui,sans-serif;padding:30px;max-width:700px;margin:0 auto;color:#1e293b}'
-    +'h1{font-size:1.3rem;color:#29ABE2;margin-bottom:4px}'
-    +'.meta{font-size:.82rem;color:#64748b;margin-bottom:20px}'
-    +'@media print{body{padding:15px}}</style></head><body>'
-    +'<h1>Supervision Summary</h1>'
-    +'<div class="meta">Client: <strong>'+esc(clientName)+'</strong> &nbsp;|&nbsp; '+(_isSchoolSup?'🏫 School Observation':'Supervision')+' &nbsp;|&nbsp; Type: '+(sv.supType||'overlap')+' &nbsp;|&nbsp; Date: '+sv.date+' &nbsp;|&nbsp; Supervisor: '+esc(currentUser.name)+'<br>'+totalChanges+' change'+(totalChanges!==1?'s':'')+' recorded</div>'
-    +sectionsHtml
-    +'<p style="margin-top:30px;font-size:.75rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px">Generated by ABA Binder · '+new Date().toLocaleString()+'</p>'
+
+  // BIP changes
+  const bipSections=changes.filter(s=>s.section.toLowerCase().startsWith('bip:')).map(sec=>{
+    const bipName=sec.section.replace(/^bip:\s*/i,'');
+    const itemsHtml=sec.items.map(it=>{
+      return'<div style="margin-bottom:8px">'
+        +(it.html?'<div style="font-size:.85rem;line-height:1.6">'+it.html+'</div>':'<div style="font-size:.87rem">'+esc(it.value||'')+'</div>')
+        +'</div>';
+    }).join('');
+    return'<div style="margin-bottom:18px;page-break-inside:avoid">'
+      +'<div style="font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;border-bottom:1.5px solid #fca5a5;padding-bottom:4px;margin-bottom:10px">BIP: '+esc(bipName)+'</div>'
+      +itemsHtml
+      +'</div>';
+  }).join('');
+
+  // Client notes section (non-supervisor notes)
+  const clientNoteChanges=changes.filter(s=>s.section==='Client Notes').map(sec=>{
+    return sec.items.map(it=>it.value||'').join('\n');
+  }).join('\n');
+
+  const _supHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Overlap Notes — '+clientName+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:"Sarabun",system-ui,sans-serif;color:#1e293b;background:#fff}'
+    +'.page{padding:36px 48px;max-width:760px;margin:0 auto}'
+    +'.letterhead{text-align:center;padding-bottom:14px;margin-bottom:18px;border-bottom:2px solid #29ABE2}'
+    +'.letterhead h1{font-size:1.15rem;font-weight:700;color:#29ABE2;letter-spacing:.03em}'
+    +'.letterhead h2{font-size:.95rem;font-weight:600;margin-top:4px;color:#334155}'
+    +'.meta{width:100%;border-collapse:collapse;margin-bottom:20px}'
+    +'.meta td{font-size:.9rem;padding:3px 0}'
+    +'.meta td:first-child{font-weight:700;width:140px;color:#334155}'
+    +'.sec-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#64748b;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin:20px 0 10px}'
+    +'.lesson-title{font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#29ABE2;border-bottom:1.5px solid #bae6fd;padding-bottom:4px;margin:18px 0 10px}'
+    +'.footer{margin-top:36px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;font-size:.7rem;color:#64748b;line-height:1.7}'
+    +'@media print{.page{padding:20px 28px}}'
+    +'</style></head><body>'
+    +'<div class="page">'
+    // Letterhead
+    +'<div class="letterhead">'
+    +'<h1>CARE CHILD PROFESSIONAL SCHOOL</h1>'
+    +'<h2>'+(_isSchoolSup?'School Observation Notes':'Overlap Notes')+'</h2>'
+    +'</div>'
+    // Session info table
+    +'<table class="meta">'
+    +'<tr><td>Client:</td><td>'+esc(clientName)+'</td></tr>'
+    +'<tr><td>Date:</td><td>'+_fmtDate(sv.date)+'</td></tr>'
+    +'<tr><td>Therapist:</td><td>'+esc(txNameStr)+'</td></tr>'
+    +'<tr><td>Overlapped by:</td><td>'+esc(currentUser.name)+'</td></tr>'
+    +'<tr><td>Type:</td><td>'+esc(sv.supType||'overlap')+'</td></tr>'
+    +'</table>'
+    // General
+    +'<div class="sec-title">General</div>'
+    +generalHtml
+    // Behaviors
+    +'<div class="sec-title">Behaviors</div>'
+    +behaviorsHtml
+    // Lesson Updates
+    +(lessonSections?'<div class="sec-title">Lesson Updates</div>'+lessonSections:'')
+    // BIP updates
+    +(bipSections?'<div class="sec-title">BIP Updates</div>'+bipSections:'')
+    // Footer
+    +'<div class="footer">'
+    +'โรงเรียน ดูแลเด็ก แคร์โปรเพสชั่นแนล, 296/2 พระราม 3 ซอย 14, ถนน พระราม 3, บางโคล่, บางคอแหลม กรุงเทพฯ 10120<br>'
+    +'CARE CHILD PROFESSIONAL SCHOOL, 296/2 Rama3 Soi 14, Rama 3 Road, Bangkhlo, Bangkholaem, Bangkok 10120, Thailand<br>'
+    +'+66 (0) 2 689 1818, (0) 98 749 8793 | contact.info@carethailand.co.th | facebook.com/CAREThailandSchool | www.carethailand.co.th'
+    +'</div>'
+    +'</div>'
     +'</body></html>';
   // Use iframe to avoid popup blocker
   let _pf=document.getElementById('_print_frame');
@@ -2117,6 +2223,8 @@ function renderLessonSessionBlock(lesson){
 
 // ── Target session entry ──
 function renderTargetSessionEntry(lesson,sd,target){
+  // On-hold targets: no data input — the yellow renderHoldSection shows them below
+  if(target.status==='on_hold') return '';
   const id=lesson.id+'_'+sd.id+'_'+target.id;
   const graphId='sg_'+id;
   // build mini graph data
