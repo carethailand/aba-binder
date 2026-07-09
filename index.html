@@ -3210,7 +3210,10 @@ function renderLessonCard(lesson){
      +'<button class="status-btn '+(isHold?'hold-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'hold\')" title="Pause this lesson">⏸ Hold</button>'
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
-  const supBtns=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
+  const _reintroBtn=isMaint&&['supervisor','director'].includes(currentUser.role)
+    ?'<button class="btn btn-sm no-print" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button> '
+    :'';
+  const supBtns=['supervisor','director'].includes(currentUser.role)?_reintroBtn+'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">&#x270F; Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">'+'+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">'+'+ SD</button>':'';
   return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
@@ -3308,6 +3311,79 @@ function confirmMastery(lId,sId,tId){
   saveData();toast(allMastered?'🎉 All targets mastered! Consider advancing phase.':'✓ Target mastered',allMastered?4000:2500);render();
 }
 function rejectMastery(lId,sId,tId){const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';saveData();toast('Kept as in-progress');render();}
+function showReintroduceModal(lId){
+  const lesson=DB.lessons.find(x=>x.id===lId);
+  if(!lesson)return;
+  const masteredTargets=[];
+  lesson.sds.forEach(function(sd){
+    sd.targets.forEach(function(t){
+      if(t.status==='mastered')masteredTargets.push({sd,t});
+    });
+  });
+  if(!masteredTargets.length){
+    modal('<div style="padding:16px"><h3 style="margin-bottom:10px">Reintroduce: '+esc(lesson.name)+'</h3><p style="color:var(--muted)">No mastered targets to reintroduce.</p><button class="btn btn-outline" style="margin-top:12px" onclick="closeModal()">Close</button></div>');
+    return;
+  }
+  let rowsHtml='';
+  masteredTargets.forEach(function(item,i){
+    const t=item.t;
+    const steps=t.teachingSteps&&t.teachingSteps.length?t.teachingSteps:[];
+    const stepOpts=steps.length
+      ?'<select id="ri_step_'+i+'" style="font-size:.8rem;margin-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;padding:3px 6px"><option value="0">(start from Step 1)</option>'
+        +steps.map(function(s,si){return'<option value="'+si+'">Step '+(si+1)+': '+esc(s.slice(0,50))+'</option>';}).join('')
+        +'</select>'
+      :'<span style="font-size:.75rem;color:var(--muted)">No teaching steps</span>';
+    rowsHtml+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">'
+      +'<input type="checkbox" id="ri_chk_'+i+'" style="margin-top:2px;width:16px;height:16px;flex-shrink:0">'
+      +'<div style="flex:1">'
+      +'<div style="font-size:.88rem;font-weight:600">'+esc(t.name)+'</div>'
+      +'<div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">SD: '+esc(item.sd.sd||'')+'</div>'
+      +stepOpts
+      +'</div></label></div>';
+  });
+  window._reintroData={lId:lId,pairs:masteredTargets.map(function(x){return{sdId:x.sd.id,tId:x.t.id};})};
+  modal('<div style="max-height:80vh;overflow-y:auto">'
+    +'<h3 style="margin-bottom:4px">&#x1F504; Reintroduce: '+esc(lesson.name)+'</h3>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Select targets to reintroduce. Lesson will move back to <strong>Acquisition</strong>. Unchecked targets stay mastered.</p>'
+    +'<div style="margin-bottom:14px">'+rowsHtml+'</div>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-primary" onclick="saveReintroduce()">&#x2713; Confirm Reintroduce</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'</div></div>');
+}
+
+function saveReintroduce(){
+  const _rd=window._reintroData||{};
+  const lId=_rd.lId, pairs=_rd.pairs||[];
+  const lesson=DB.lessons.find(x=>x.id===lId);
+  if(!lesson)return;
+  let anySelected=false;
+  pairs.forEach(function(p,i){
+    const chk=document.getElementById('ri_chk_'+i);
+    if(!chk||!chk.checked)return;
+    anySelected=true;
+    const stepEl=document.getElementById('ri_step_'+i);
+    const stepIdx=stepEl?parseInt(stepEl.value)||0:0;
+    lesson.sds.forEach(function(sd){
+      if(sd.id!==p.sdId)return;
+      const t=sd.targets.find(function(x){return x.id===p.tId;});
+      if(!t)return;
+      t.status='in_progress';
+      t.dtStepIndex=stepIdx;
+      // clear step mastery records so advancement tracking restarts
+      t.stepMasteryRecords={};
+    });
+  });
+  if(!anySelected){alert('Please select at least one target to reintroduce.');return;}
+  lesson.phase='acquisition';
+  saveData();
+  closeModal();
+  render();
+  toast('Lesson reintroduced — moved back to Acquisition ✓');
+}
+
+
 function setLessonStatus(lId,status){
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   if(status==='maintenance'&&l.phase!=='maintenance'){
