@@ -1405,7 +1405,7 @@ function snapshotClient(){
     reinforcers:c.reinforcers||[],
     lessons:lessons.map(l=>({
       id:l.id,name:l.name,phase:l.phase,supNotes:l.supNotes||[],
-      sds:l.sds.map(sd=>({id:sd.id,targets:sd.targets.map(t=>({
+      sds:l.sds.map(sd=>({id:sd.id,notes:JSON.parse(JSON.stringify(sd.notes||[])),targets:sd.targets.map(t=>({
         id:t.id,name:t.name,status:t.status,dtStepIndex:t.dtStepIndex,
         teachingSteps:t.teachingSteps||[]
       }))}))
@@ -1563,6 +1563,17 @@ async function finishSupervision(){
         }
           if((snapT.dtStepIndex||0)!==(t.dtStepIndex||0))lItems.push({label:t.name+': step advanced to step '+((t.dtStepIndex||0)+1),value:'Lesson: '+l.name+'\nSD: '+(sd.sd||'—')+'\nStep: '+(t.teachingSteps&&t.teachingSteps[t.dtStepIndex||0]||'')});
         }
+      });
+    });
+    // New SD notes added during this supervision
+    l.sds.forEach(function(sd){
+      const snapSd2=snapL&&snapL.sds.find(function(x){return x.id===sd.id;});
+      const snapSDNotes=snapSd2?snapSd2.notes||[]:[];
+      const newSDNotes=(sd.notes||[]).filter(function(n){
+        return!snapSDNotes.find(function(o){return o.date===n.date&&o.text===n.text&&o.authorId===n.authorId;});
+      });
+      newSDNotes.forEach(function(n){
+        lItems.push({label:'SD note added ('+esc(sd.sd||'SD')+')',value:n.text});
       });
     });
     if(lItems.length)changes.push({section:'Program: '+l.name,items:lItems});
