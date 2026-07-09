@@ -2256,7 +2256,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   let html='<div class="target-block">';
   html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
   html+='<strong style="flex:1;font-size:.88rem">🎯 '+esc(target.name)+'</strong>';
-  html+='<label style="display:flex;align-items:center;gap:4px;font-size:.8rem;color:var(--muted);cursor:pointer"><input type="checkbox" id="na_'+id+'" onchange="toggleNA(\''+id+'\')"> N/A</label>';
+  // N/A checkbox removed — blank = not recorded
   if(target.dataType==='ta'){
     const _cm=target.chainingMode||'total';
     const _cmLabel=_cm==='forward'?'⬇ Forward Chaining':_cm==='backward'?'⬆ Backward Chaining':'↔ Total Task';
@@ -2819,10 +2819,7 @@ async function saveSession(){
             if(target.dataType==='checklist')entry._skipped=false; // FT is the only data needed
           }
 
-          const naEl=document.getElementById('na_'+id);
-          if(naEl&&naEl.checked){
-            ld.targets.push({targetId:target.id,targetName:target.name,sdId:sd.id,dataType:target.dataType,na:true});
-          } else if(!entry._skipped){
+          if(!entry._skipped){
             ld.targets.push(entry);
             // check mastery for percent/rating
             if(entry.pct!=null)checkMastery(lesson,target,date,entry.pct);
