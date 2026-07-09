@@ -3762,8 +3762,11 @@ function renderMaintenanceTab(){
       const id='mc_'+lesson.id+'_'+t.id;
       return '<div class="cl-row"><span style="flex:1;font-size:.87rem">'+esc(t.name)+'</span>'+badge+'<div class="cpi-group"><button class="cpi-btn plus" data-id="'+id+'" onclick="toggleCPI(this)">+</button><button class="cpi-btn P" data-id="'+id+'" onclick="toggleCPI(this)">P</button><button class="cpi-btn minus" data-id="'+id+'" onclick="toggleCPI(this)">−</button></div></div>';
     }).join('');
-    const schedule=lesson.maintenanceSchedule?'<span style="font-size:.78rem;color:var(--muted);margin-left:8px">📅 '+esc(lesson.maintenanceSchedule)+'</span>':'';
-    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
+    const schedule=lesson.maintenanceSchedule?'<span style="font-size:.78rem;color:var(--muted);margin-left:8px">&#x1F4C5; '+esc(lesson.maintenanceSchedule)+'</span>':'';
+    const _reintroMaintBtn=['supervisor','director'].includes(currentUser.role)
+      ?'<button class="btn btn-sm no-print" style="margin-left:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button>'
+      :'';
+    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+_reintroMaintBtn+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
   }).join('');
   return '<div style="margin-bottom:16px"><h2>🔁 Maintenance Lessons</h2><p style="font-size:.82rem;color:var(--muted)">Mark each mastered target with +, P, or − then End Session to save.</p></div>'+maintHtml;
 }
