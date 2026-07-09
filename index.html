@@ -2860,6 +2860,20 @@ async function saveSession(){
         });
       });
     });
+    // Change 1: auto-introduce not_started targets when TX records any data
+    lessonData.forEach(function(ld){
+      const _lesson=DB.lessons.find(function(l){return l.id===ld.lessonId;});
+      if(!_lesson)return;
+      (ld.targets||[]).forEach(function(te){
+        if(te.na)return;
+        _lesson.sds.forEach(function(sd2){
+          const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
+          if(!tgt||tgt.status!=='not_started')return;
+          tgt.status='in_progress';
+          if(!tgt.introducedDate)tgt.introducedDate=date;
+        });
+      });
+    });
     clearSessState();
     clearSessionDraft();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
