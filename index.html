@@ -416,6 +416,25 @@ async function loadFromSupabase(){
       return{id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:_bNotes,setting:_bSetting,txId:r.tx_id,txName:r.tx_name};
     });
 
+    // Migration: sd.note (string) → sd.notes[] (array with timestamp)
+    let _sdNoteMigrated=false;
+    DB.lessons.forEach(function(lesson){
+      lesson.sds.forEach(function(sd){
+        if(sd.note&&!(sd.notes&&sd.notes.length)){
+          sd.notes=[{date:'unknown',authorId:null,text:sd.note}];
+          delete sd.note;
+          _sdNoteMigrated=true;
+        }
+        if(!sd.notes)sd.notes=[];
+      });
+    });
+    if(_sdNoteMigrated){
+      console.log('Migrated sd.note strings to sd.notes[]');
+      await Promise.all(DB.lessons.filter(function(l){
+        return l.sds.some(function(sd){return sd.notes&&sd.notes.length;});
+      }).map(function(l){return sbUpsert('lessons',lessonToRow(l));}));
+    }
+
     // Migration: retroactively introduce not_started targets that already have firstTrialData
     let _migratedCount=0;
     DB.lessons.forEach(function(lesson){
@@ -2231,7 +2250,7 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(sd.note?'<div style="margin-bottom:10px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0;font-size:.82rem;white-space:normal">'+formatNoteText(sd.note)+'</div>':'');
+      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -2366,10 +2385,9 @@ function renderTargetSessionEntry(lesson,sd,target){
       html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Recent</div>';
       html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
       ftHist.forEach(function(ft){
-        const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
-        const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+        const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
         html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
+        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
         html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+(ft.txName?ft.txName.split(' ')[0]:'')+'</div>';
         html+='</div>';
       });
@@ -2398,12 +2416,11 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div>';
     html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
     ftHistory.forEach(function(ft){
-      const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
-      const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+      const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
       const shortDate=fmtDateShort(ft.date);
       const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
       html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
+      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
       html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+shortDate+'<br>'+txFirst+'</div>';
       html+='</div>';
     });
@@ -3133,11 +3150,10 @@ function renderLessonCard(lesson){
         if(!ftH.length)return'';
         let d='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
         ftH.forEach(function(ft){
-          const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
-          const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
+          const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
           const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
           d+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+ft.result+'</div>'
+            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+_ftLabel+'</div>'
             +'<div style="font-size:.63rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+txFirst+'</div>'
             +'</div>';
         });
@@ -3149,7 +3165,25 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(['supervisor','director'].includes(currentUser.role)?'<div style="margin-bottom:10px"><textarea rows="2" style="font-size:.8rem;resize:vertical;min-height:36px;background:#fffef5;border:1px dashed #fcd34d;border-radius:6px;padding:5px 8px;width:100%;box-sizing:border-box;color:#78350f" placeholder="SD note for TX (optional)..." onblur="saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',this.value)" onchange="saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',this.value)">'+esc(sd.note||'')+'</textarea></div>':(sd.note?'<div style="margin-bottom:10px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0;font-size:.82rem;white-space:normal">'+formatNoteText(sd.note)+'</div>':''))+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(['supervisor','director'].includes(currentUser.role)?(function(){
+      const _sdNotes=(sd.notes||[]);
+      const _noteFeed=_sdNotes.length?_sdNotes.slice().reverse().map(function(n,ni){
+        const _realIdx=_sdNotes.length-1-ni;
+        return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'
+          +'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px;display:flex;justify-content:space-between">'
+          +'<span>'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</span>'
+          +'<button class="btn btn-xs no-print" style="padding:0 5px;font-size:.68rem;background:#fee2e2;color:#991b1b;border:none;border-radius:3px;cursor:pointer" onclick="deleteSDNote(\''+lesson.id+'\',\''+sd.id+'\','+_realIdx+')">x</button>'
+          +'</div>'
+          +'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div>'
+          +'</div>';
+      }).join(''):'';
+      const _addArea='<div style="display:flex;gap:6px;margin-top:4px">'
+        +'<textarea id="sdnadd_'+sd.id+'" rows="2" style="flex:1;font-size:.8rem;resize:vertical;min-height:34px;background:#fffef5;border:1px dashed #fcd34d;border-radius:6px;padding:5px 8px;color:#78350f" placeholder="Add SD note for TX..."></textarea>'
+        +'<button class="btn btn-sm no-print" style="align-self:flex-end;white-space:nowrap;background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="(function(){var _v=document.getElementById(\'sdnadd_'+sd.id+'\').value;if(!_v.trim())return;saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',_v);document.getElementById(\'sdnadd_'+sd.id+'\').value=\'\';render();})()">+ Add</button>'
+        +'</div>';
+      return(_noteFeed||_addArea.length>10)?'<div style="margin-bottom:10px">'+_noteFeed+_addArea+'</div>':'';
+    }())
+    :(_sdNotes2=>(  _sdNotes2.length?'<div style="margin-bottom:10px">'+_sdNotes2.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0"><div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div><div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join('')+'</div>':''))((sd.notes||[]))+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3446,10 +3480,22 @@ function editSD(lId,sId){
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 function saveSDNote(lId,sId,val){
+  const _txt=(val||'').trim();if(!_txt)return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
-  sd.note=val.trim();
+  if(!sd.notes)sd.notes=[];
+  const _today=new Date().toISOString().slice(0,10);
+  // update existing entry for today from same author, otherwise push new
+  const _existing=sd.notes.find(function(n){return n.date===_today&&n.authorId===currentUser.id;});
+  if(_existing){_existing.text=_txt;}
+  else{sd.notes.push({date:_today,authorId:currentUser.id,authorName:currentUser.name,text:_txt});}
   saveData();
+}
+function deleteSDNote(lId,sId,idx){
+  const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
+  const sd=l.sds.find(x=>x.id===sId);if(!sd||!sd.notes)return;
+  sd.notes.splice(idx,1);
+  saveData();render();
 }
 function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
@@ -4528,6 +4574,8 @@ async function resetData(){
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
 function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt||'';}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function normFT(r){return r==='+'?'C':r==='-'?'I':r||'?';}
+function normFTCol(r){const n=normFT(r);return n==='C'?{c:'#1D9E75',bg:'#E1F5EE'}:n==='P'?{c:'#534AB7',bg:'#EEEDFE'}:n==='I'?{c:'#993C1D',bg:'#FAECE7'}:{c:'#5F5E5A',bg:'#F1EFE8'};}
 function formatNoteText(text){
   if(!text||!text.trim())return esc(text)||'';
   const lines=text.split(/\n+/).filter(function(s){return s.trim();});
