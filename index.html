@@ -416,6 +416,31 @@ async function loadFromSupabase(){
       return{id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:_bNotes,setting:_bSetting,txId:r.tx_id,txName:r.tx_name};
     });
 
+    // Migration: retroactively introduce not_started targets that already have firstTrialData
+    let _migratedCount=0;
+    DB.lessons.forEach(function(lesson){
+      lesson.sds.forEach(function(sd){
+        sd.targets.forEach(function(tgt){
+          if(tgt.status!=='not_started')return;
+          const _ftd=(tgt.firstTrialData||[]).filter(function(f){return f.result&&f.result!=='N/A';});
+          if(!_ftd.length)return;
+          tgt.status='in_progress';
+          if(!tgt.introducedDate){
+            // use earliest firstTrialData date
+            const _dates=_ftd.map(function(f){return f.date;}).sort();
+            tgt.introducedDate=_dates[0];
+          }
+          _migratedCount++;
+        });
+      });
+    });
+    if(_migratedCount>0){
+      console.log('Auto-introduced',_migratedCount,'not_started targets with existing data');
+      await Promise.all(DB.lessons.filter(function(l){
+        return l.sds.some(function(sd){return sd.targets.some(function(t){return t.introducedDate&&t.status==='in_progress';});});
+      }).map(function(l){return sbUpsert('lessons',lessonToRow(l));}));
+    }
+
     // Seed default users if none exist
     if(!DB.users.length){
       const def=defaultData();
