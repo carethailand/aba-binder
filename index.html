@@ -2222,7 +2222,7 @@ function renderLessonSessionBlock(lesson){
   const styleBadge='<span class="badge badge-gray">'+lesson.teachingStyle+'</span>';
   const phaseBadge='<span class="badge badge-'+(lesson.phase==='acquisition'?'blue':lesson.phase==='dt'?'purple':'green')+'">'+lesson.phase+'</span>';
   let body='';
-  if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong> '+esc(supNote.text)+'</div>';
+  if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong><div style="margin-top:4px;white-space:normal">'+formatNoteText(supNote.text)+'</div></div>';
 
   if(lesson.phase==='acquisition'){
     lesson.sds.forEach((sd,si)=>{
@@ -3060,7 +3060,7 @@ function renderHoldSection(lesson,sd,supView){
 function renderLessonCard(lesson){
   const phase=lesson.phase;
   const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
-  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
+  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
   const sdsHtml=lesson.sds.map((sd,si)=>{
@@ -4288,7 +4288,7 @@ function renderNotesTab(){
   const allNotes=[...supNotes,...sessNotes].sort((a,b)=>b.date.localeCompare(a.date));
   const feed=allNotes.map(n=>'<div class="note-entry '+(n.type==='supervisor'?'sup-note':'')+'">'
     +'<div class="note-meta">'+n.label+' · '+n.date+'</div>'
-    +'<div class="note-text">'+esc(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
+    +'<div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
   const addForm=isSup
     ?'<div class="card no-print"><h2>Add General Note</h2><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
     :'';
@@ -4343,7 +4343,7 @@ function renderReport(){
     const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">Not enough data.</p>')+'</div>').join('');
     return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+'</h4>'+graphs+'</div>';
   }).join('')||'<p style="color:var(--muted);font-size:.85rem">No BIPs defined.</p>';
-  const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('');
+  const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('');
   return '<div class="flex-end no-print" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print / PDF</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">General Notes</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
 }
 
@@ -4522,6 +4522,20 @@ async function resetData(){
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
 function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt||'';}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function formatNoteText(text){
+  if(!text||!text.trim())return esc(text)||'';
+  const lines=text.split(/\n+/).filter(function(s){return s.trim();});
+  return lines.map(function(line){
+    const isBullet=line.match(/^[-\u2022*]\s+/);
+    if(isBullet){
+      const txt=line.replace(/^[-\u2022*]\s+/,'');
+      return'<div style="display:flex;gap:7px;margin:0 0 5px 0;line-height:1.55"><span style="color:var(--sup);flex-shrink:0;margin-top:2px">\u25b8</span><span>'+esc(txt)+'</span></div>';
+    }
+    const lbM=line.match(/^([^:\n]{1,60}?):\s+(.+)$/);
+    if(lbM)return'<p style="margin:0 0 6px 0;line-height:1.55"><strong>'+esc(lbM[1])+':</strong> '+esc(lbM[2])+'</p>';
+    return'<p style="margin:0 0 6px 0;line-height:1.55">'+esc(line)+'</p>';
+  }).join('');
+}
 function modal(html){document.getElementById('modal-area').innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;overflow-y:auto;padding:20px"><div class="unlock-exempt" style="background:#fff;padding:26px;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto">'+html+'</div></div>';}
 function closeModal(){const m=document.getElementById('modal-area');if(m)m.innerHTML='';}
 function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',dur);}
