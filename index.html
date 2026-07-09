@@ -3165,25 +3165,28 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(['supervisor','director'].includes(currentUser.role)?(function(){
-      const _sdNotes=(sd.notes||[]);
-      const _noteFeed=_sdNotes.length?_sdNotes.slice().reverse().map(function(n,ni){
+    const _isSup=['supervisor','director'].includes(currentUser.role);
+    const _sdNotes=sd.notes||[];
+    let sdNotesHtml='';
+    if(_sdNotes.length){
+      sdNotesHtml+=_sdNotes.slice().reverse().map(function(n,ni){
         const _realIdx=_sdNotes.length-1-ni;
-        return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'
+        const _delBtn=_isSup?'<button class="btn btn-xs no-print" style="padding:0 5px;font-size:.68rem;background:#fee2e2;color:#991b1b;border:none;border-radius:3px;cursor:pointer" onclick="deleteSDNote(\''+lesson.id+'\',\''+sd.id+'\','+_realIdx+')">&#x2715;</button>':'';
+        return '<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'
           +'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px;display:flex;justify-content:space-between">'
-          +'<span>'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</span>'
-          +'<button class="btn btn-xs no-print" style="padding:0 5px;font-size:.68rem;background:#fee2e2;color:#991b1b;border:none;border-radius:3px;cursor:pointer" onclick="deleteSDNote(\''+lesson.id+'\',\''+sd.id+'\','+_realIdx+')">x</button>'
+          +'<span>'+esc(n.date)+(n.authorName?' &middot; '+esc(n.authorName.split(' ')[0]):'')+'</span>'+_delBtn
           +'</div>'
-          +'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div>'
-          +'</div>';
-      }).join(''):'';
-      const _addArea='<div style="display:flex;gap:6px;margin-top:4px">'
+          +'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';
+      }).join('');
+    }
+    if(_isSup){
+      sdNotesHtml+='<div style="display:flex;gap:6px;margin-top:4px">'
         +'<textarea id="sdnadd_'+sd.id+'" rows="2" style="flex:1;font-size:.8rem;resize:vertical;min-height:34px;background:#fffef5;border:1px dashed #fcd34d;border-radius:6px;padding:5px 8px;color:#78350f" placeholder="Add SD note for TX..."></textarea>'
-        +'<button class="btn btn-sm no-print" style="align-self:flex-end;white-space:nowrap;background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="(function(){var _v=document.getElementById(\'sdnadd_'+sd.id+'\').value;if(!_v.trim())return;saveSDNote(\''+lesson.id+'\',\''+sd.id+'\',_v);document.getElementById(\'sdnadd_'+sd.id+'\').value=\'\';render();})()">+ Add</button>'
+        +'<button class="btn btn-sm no-print" style="align-self:flex-end;white-space:nowrap;background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="addSDNote(\''+lesson.id+'\',\''+sd.id+'\')">+ Add</button>'
         +'</div>';
-      return(_noteFeed||_addArea.length>10)?'<div style="margin-bottom:10px">'+_noteFeed+_addArea+'</div>':'';
-    }())
-    :(_sdNotes2=>(  _sdNotes2.length?'<div style="margin-bottom:10px">'+_sdNotes2.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0"><div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div><div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join('')+'</div>':''))((sd.notes||[]))+tHtml+holdHtml+mastHtml+'</div></div>';
+    }
+    if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3478,6 +3481,13 @@ function editSD(lId,sId){
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function addSDNote(lId,sId){
+  const el=document.getElementById('sdnadd_'+sId);
+  if(!el||!el.value.trim())return;
+  saveSDNote(lId,sId,el.value);
+  el.value='';
+  render();
 }
 function saveSDNote(lId,sId,val){
   const _txt=(val||'').trim();if(!_txt)return;
