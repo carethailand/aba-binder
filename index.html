@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CARE Client Binder v2026-06-10-N</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
 
@@ -275,9 +276,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       </svg>
       <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-top:2px">Thailand · Client Binder</div>
     </div>
-    <label>Username<input type="text" id="l-user" placeholder="Username"></label>
+    <label>Email<input type="email" id="l-email" placeholder="you@example.com" autocomplete="email"></label>
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
-    <div class="login-err" id="l-err">Invalid username or password.</div>
+    <div class="login-err" id="l-err">Invalid email or password.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     
   </div>
@@ -293,6 +294,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <span id="nav-user"></span>
   <button class="btn-nav" id="btn-clients" onclick="showView('clients')">Clients</button>
   <button class="btn-nav" id="btn-admin" style="display:none" onclick="showView('admin')">⚙ Admin</button>
+  <button class="btn-nav" id="btn-change-pw" style="display:none" onclick="showChangePasswordModal()">🔑 Password</button>
   <button class="btn-nav" onclick="doLogout()">Log out</button>
 </div>
 
@@ -303,6 +305,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 const STORE_KEY='aba_v4';
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
+const _supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'care_auth'}});
 
 // Keepalive: ping Supabase once every 24h so the free-tier project never pauses
 (function keepAlive(){
@@ -368,97 +371,17 @@ function rowToSession(r){
   return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:_ld,bipData:_parseCol(r.bip_data),abcData:_parseCol(r.abc_data)};
 }
 
-function userToRow(u){return{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};}
-function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clients:(typeof r.assigned_clients==='string'&&r.assigned_clients?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:ac,active:r.active!==false};}
-function abcToRow(a){return{id:a.id,client_id:a.clientId,date:a.date,tx_id:a.txId||null,tx_name:a.txName||null,setting:a.setting||'therapy',a_text:a.a||'',b_text:a.b||'',c_text:a.c||'',frequency:a.frequency!=null?a.frequency:null,duration:a.duration!=null?a.duration:null,narrative:a.narrative||''};}
-function rowToABC(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',setting:r.setting||'therapy',a:r.a_text||'',b:r.b_text||'',c:r.c_text||'',frequency:r.frequency!=null?r.frequency:null,duration:r.duration!=null?r.duration:null,narrative:r.narrative||''};}
-
-// ── Load all data from Supabase ──
-async function loadFromSupabase(){
-  showSyncStatus('loading');
-  try{
-    // Fetch each table independently so one failure doesn't block login
-    const safe=async(table,params)=>{try{const r=await sbFetch(table,'GET',null,params);return Array.isArray(r)?r:[];}catch(e){console.warn('Load failed:',table,e);return [];}};
-    const users   = await safe('users','select=*');
-    const clients  = await safe('clients','select=*');
-    const lessons  = await safe('lessons','select=*');
-    const bips    = await safe('bips','select=*');
-    const sessions = await safe('sessions','select=*&order=date.asc');
-    const behaviors= await safe('behaviors','select=*&order=date.asc');
-    const abcRows  = await safe('abc_data','select=*&order=date.asc');
-
-    console.log('Loaded — users:',users.length,'clients:',clients.length,'lessons:',lessons.length);
-
-    DB.users   = users.map(rowToUser);
-    DB.clients  = clients.map(rowToClient);
-    DB.lessons  = lessons.map(rowToLesson);
-    DB.bips    = bips.map(rowToBIP);
-    DB.sessions = sessions.map(rowToSession);
-    DB.abcData  = abcRows.map(rowToABC);
-    DB.behaviors= behaviors.map(r=>{
-      let _bNotes=r.notes||'',_bSetting='therapy';
-      try{const _p=typeof r.notes==='string'&&r.notes.startsWith('{')?JSON.parse(r.notes):null;if(_p&&'setting' in _p){_bNotes=_p.text||'';_bSetting=_p.setting||'therapy';}}catch(e){}
-      return{id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:_bNotes,setting:_bSetting,txId:r.tx_id,txName:r.tx_name};
-    });
-
-    // Migration: sd.note (string) → sd.notes[] (array with timestamp)
-    let _sdNoteMigrated=false;
-    DB.lessons.forEach(function(lesson){
-      lesson.sds.forEach(function(sd){
-        if(sd.note&&!(sd.notes&&sd.notes.length)){
-          sd.notes=[{date:'unknown',authorId:null,text:sd.note}];
-          delete sd.note;
-          _sdNoteMigrated=true;
-        }
-        if(!sd.notes)sd.notes=[];
-      });
-    });
-    if(_sdNoteMigrated){
-      console.log('Migrated sd.note strings to sd.notes[]');
-      await Promise.all(DB.lessons.filter(function(l){
-        return l.sds.some(function(sd){return sd.notes&&sd.notes.length;});
-      }).map(function(l){return sbUpsert('lessons',lessonToRow(l));}));
-    }
-
-    // Migration: retroactively introduce not_started targets that already have firstTrialData
-    let _migratedCount=0;
-    DB.lessons.forEach(function(lesson){
-      lesson.sds.forEach(function(sd){
-        sd.targets.forEach(function(tgt){
-          if(tgt.status!=='not_started')return;
-          const _ftd=(tgt.firstTrialData||[]).filter(function(f){return f.result&&f.result!=='N/A';});
-          if(!_ftd.length)return;
-          tgt.status='in_progress';
-          if(!tgt.introducedDate){
-            // use earliest firstTrialData date
-            const _dates=_ftd.map(function(f){return f.date;}).sort();
-            tgt.introducedDate=_dates[0];
-          }
-          _migratedCount++;
-        });
-      });
-    });
-    if(_migratedCount>0){
-      console.log('Auto-introduced',_migratedCount,'not_started targets with existing data');
-      await Promise.all(DB.lessons.filter(function(l){
-        return l.sds.some(function(sd){return sd.targets.some(function(t){return t.introducedDate&&t.status==='in_progress';});});
-      }).map(function(l){return sbUpsert('lessons',lessonToRow(l));}));
-    }
-
-    // Seed default users if none exist
-    if(!DB.users.length){
-      const def=defaultData();
-      await Promise.all(def.users.map(u=>sbUpsert('users',userToRow(u))));
-      DB.users=def.users;
-      console.log('Seeded default users');
-    }
-    hideSyncStatus();
-    return true;
-  }catch(e){
-    console.error('loadFromSupabase fatal:',e);
-    showSyncStatus('error');
-    return false;
-  }
+function userToRow(u){
+  return{id:u.id,name:u.name,email:u.email||null,auth_id:u.authId||null,
+    username:u.username||null,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};
+}
+function rowToUser(r){
+  const ac=Array.isArray(r.assigned_clients)?r.assigned_clients
+    :(typeof r.assigned_clients==='string'&&r.assigned_clients
+      ?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);
+  return{id:r.id,name:r.name,email:r.email||null,authId:r.auth_id||null,
+    username:r.username||null,password:r.password||null,
+    role:r.role,assignedClients:ac,active:r.active!==false};
 }
 
 async function sbSaveClient(cObj){
@@ -1835,57 +1758,66 @@ async function printSupPDF(){
 
 // ── AUTH ──
 async function doLogin(){
-  const u=document.getElementById('l-user').value.trim();
-  const p=document.getElementById('l-pass').value;
+  const emailVal=document.getElementById('l-email').value.trim();
+  const pw=document.getElementById('l-pass').value;
   const btn=document.querySelector('#login-screen .btn-primary');
-  if(btn){btn.textContent='Loading...';btn.disabled=true;}
-  // Load from Supabase first
+  const errEl=document.getElementById('l-err');
+  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
+  if(errEl)errEl.style.display='none';
+  function _loginErr(msg){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
+  }
+  function _loginSuccess(user,isLegacy){
+    currentUser=user;
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('nav').style.display='flex';
+    document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
+    document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
+    document.getElementById('btn-clients').style.display=user.role==='admin'?'none':'';
+    const _cpBtn=document.getElementById('btn-change-pw');if(_cpBtn)_cpBtn.style.display=user.authId?'':'none';
+    document.getElementById('app').style.display='block';
+    showView(user.role==='admin'?'admin':'clients');
+    if(isLegacy){
+      setTimeout(()=>{
+        const b=document.createElement('div');
+        b.id='auth-upgrade-banner';
+        b.style.cssText='position:fixed;top:54px;left:0;right:0;background:#f59e0b;color:#78350f;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;z-index:999;display:flex;align-items:center;justify-content:center;gap:12px';
+        b.innerHTML='🔒 Your account still uses the old login. <button onclick="showUpgradeModal()" style="background:#78350f;color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-weight:600">Upgrade Now</button>';
+        document.body.insertBefore(b,document.getElementById('app'));
+      },300);
+    }
+  }
+  const {data:authData,error:authErr}=await _supa.auth.signInWithPassword({email:emailVal,password:pw});
+  if(authErr&&authErr.message&&authErr.message.toLowerCase().includes('email not confirmed')){
+    _loginErr('Please check your email and click the confirmation link before logging in.');return;
+  }
+  if(!authErr&&authData&&authData.user){
+    const ok=await loadFromSupabase();
+    if(!ok){await _supa.auth.signOut();_loginErr('Connection error — check internet.');return;}
+    const user=DB.users.find(x=>x.authId===authData.user.id);
+    if(!user){await _supa.auth.signOut();_loginErr('Account not linked — contact your administrator.');return;}
+    if(user.active===false){await _supa.auth.signOut();_loginErr('Account deactivated. Contact your administrator.');return;}
+    _loginSuccess(user,false);
+    return;
+  }
   const ok=await loadFromSupabase();
-  console.log('loadFromSupabase returned:',ok,'users:',DB.users.length);
-  if(!ok){
-    if(btn){btn.textContent='Log In';btn.disabled=false;}
-    document.getElementById('l-err').textContent='Connection error — check internet and try again';
-    document.getElementById('l-err').style.display='block';
-    return;
-  }
-  if(!DB.users.length){
-    if(btn){btn.textContent='Log In';btn.disabled=false;}
-    document.getElementById('l-err').textContent='No users found in database — check Supabase setup';
-    document.getElementById('l-err').style.display='block';
-    return;
-  }
-  const user=DB.users.find(x=>x.username===u&&x.password===p);
-  console.log('Login attempt — username:',u,'match:',!!user,'all users:',DB.users.map(x=>x.username));
-  if(!user){
-    if(btn){btn.textContent='Log In';btn.disabled=false;}
-    document.getElementById('l-err').textContent='Invalid username or password';
-    document.getElementById('l-err').style.display='block';
-    return;
-  }
-  if(user.active===false){
-    if(btn){btn.textContent='Log In';btn.disabled=false;}
-    document.getElementById('l-err').textContent='This account has been deactivated. Contact your administrator.';
-    document.getElementById('l-err').style.display='block';
-    return;
-  }
-  currentUser=user;
-  document.getElementById('login-screen').style.display='none';
-  document.getElementById('nav').style.display='flex';
-  document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
-  document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
-  document.getElementById('btn-clients').style.display=user.role==='admin'?'none':'';
-  document.getElementById('app').style.display='block';
-  showView(user.role==='admin'?'admin':'clients');
+  if(!ok){_loginErr('Connection error — check internet and try again.');return;}
+  const legacyUser=DB.users.find(x=>(x.username===emailVal||x.email===emailVal)&&x.password===pw&&!x.authId);
+  if(!legacyUser){_loginErr('Invalid email or password.');return;}
+  if(legacyUser.active===false){_loginErr('Account deactivated. Contact your administrator.');return;}
+  _loginSuccess(legacyUser,true);
 }
-function doLogout(){
+async function doLogout(){
+  await _supa.auth.signOut().catch(()=>{});
   currentUser=null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('nav').style.display='none';
   document.getElementById('app').style.display='none';
-  // Reset login form
-  const lu=document.getElementById('l-user');if(lu)lu.value='';
+  const ub=document.getElementById('auth-upgrade-banner');if(ub)ub.remove();
+  const le=document.getElementById('l-email');if(le)le.value='';
   const lp=document.getElementById('l-pass');if(lp)lp.value='';
-  const le=document.getElementById('l-err');if(le)le.style.display='none';
+  const lerr=document.getElementById('l-err');if(lerr)lerr.style.display='none';
   const btn=document.querySelector('#login-screen .btn-primary');
   if(btn){btn.textContent='Log In';btn.disabled=false;}
   hideSyncStatus();
@@ -4518,18 +4450,22 @@ function renderAdmin(){
     const statusBtn=inactive
       ?'<button class="btn btn-sm" class="unlock-exempt" style="font-size:.72rem;background:#16a34a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
       :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
-    return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted)">'+esc(u.username)+'</td>'+'<td><span style="font-family:monospace;font-size:.82rem;background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">'+esc(u.password||'—')+'</span></td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
+    return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted);font-size:.8rem">'+esc(u.email||u.username||'—')+'</td>'+'<td>'+(u.authId?'<span style="font-size:.72rem;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-weight:600">✓ Secure</span>':('<span style="font-size:.72rem;background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:10px;font-weight:600">⚠ Legacy</span> '+'<button style="font-size:.7rem;background:#f59e0b;color:#fff;border:none;padding:2px 8px;border-radius:5px;cursor:pointer" data-uid="'+u.id+'" onclick="showSetupAuthModal(this.dataset.uid)">Upgrade</button>'))+'</td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
-    +'<div class="card"><h3 style="margin-bottom:12px">Add User</h3>'
-    +'<div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
-    +'<div class="fg"><label>Username<input id="au-u" type="text"></label></div>'
-    +'<div class="fg"><label>Password<input id="au-p" type="password"></label></div>'
+    +'<div class="card">'
+    +'<h3 style="margin-bottom:4px">Add New User</h3>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Creates a Supabase Auth account. Share the email &amp; temp password with the staff member.</p>'
+    +'<div class="form-row">'
+    +'<div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
+    +'<div class="fg"><label>Email<input id="au-email" type="email" placeholder="staff@clinic.com"></label></div>'
+    +'<div class="fg"><label>Temp Password<input id="au-p" type="text" placeholder="min 6 chars"></label></div>'
     +'<div class="fg-sm"><label>Role<select id="au-r"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="qcd">QCD</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label></div>'
-    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
+    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="createAuthUser()">Create Account</button></div>'
+    +'</div></div>'
     +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Password</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email / Username</th><th>Auth Status</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -4578,7 +4514,112 @@ function renderStorageBar(){
 }
 setTimeout(renderStorageBar,50);
 
-function saveUser(){const n=document.getElementById('au-n').value.trim(),u=document.getElementById('au-u').value.trim(),p=document.getElementById('au-p').value;if(!n||!u||!p){alert('All fields required');return;}if(DB.users.find(x=>x.username===u)){alert('Username taken');return;}const _nu={id:uid(),name:n,username:u,password:p,role:document.getElementById('au-r').value,assignedClients:[]};DB.users.push(_nu);sbSaveUser(_nu);toast('Added ✓');render();}
+async function createAuthUser(){
+  const n=document.getElementById('au-n').value.trim();
+  const emailEl=document.getElementById('au-email');
+  const email=emailEl?emailEl.value.trim():'';
+  const pw=document.getElementById('au-p').value;
+  const role=document.getElementById('au-r').value;
+  if(!n||!email||!pw){toast('All fields required','error');return;}
+  if(pw.length<6){toast('Password must be at least 6 characters','error');return;}
+  if(DB.users.find(x=>x.email===email)){toast('Email already in use','error');return;}
+  toast('Creating account…');
+  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
+  if(error){toast('⚠ '+error.message,'error',6000);return;}
+  const authId=data.user&&data.user.id;
+  if(!authId){toast('⚠ No ID returned — disable email confirmation in Supabase Auth → Settings → Auth','error',7000);return;}
+  const nu={id:uid(),name:n,email,authId,role,assignedClients:[],active:true};
+  DB.users.push(nu);
+  await sbSaveUser(nu);
+  toast(n+' added ✓ Share their email & temp password.','success',4000);
+  document.getElementById('au-n').value='';
+  if(emailEl)emailEl.value='';
+  document.getElementById('au-p').value='';
+  render();
+}
+function showSetupAuthModal(userId){
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  window._setupAuthId=userId;
+  modal('<div style="padding:8px">'
+    +'<h3 style="margin-bottom:8px">🔐 Upgrade Login for '+esc(u.name)+'</h3>'
+    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Enter their email and a temp password. They can change it after logging in.</p>'
+    +'<label style="display:block;margin-bottom:8px">Email<input id="sah-email" type="email" value="'+esc(u.email||'')+'" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<label style="display:block;margin-bottom:14px">Temp Password<input id="sah-pw" type="text" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-green" onclick="confirmSetupAuth()">Create Auth Account</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'</div></div>');
+}
+async function confirmSetupAuth(){
+  const email=document.getElementById('sah-email').value.trim();
+  const pw=document.getElementById('sah-pw').value;
+  const userId=window._setupAuthId;
+  if(!email||!pw||pw.length<6){toast('Email and password (min 6 chars) required','error');return;}
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  toast('Creating auth account…');
+  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
+  if(error){toast('⚠ '+error.message,'error',6000);return;}
+  const authId=data.user&&data.user.id;
+  if(!authId){toast('⚠ No auth ID — disable email confirmation in Supabase Auth settings','error',7000);return;}
+  u.email=email;u.authId=authId;u.password=null;
+  await sbSaveUser(u);
+  closeModal();
+  toast(u.name+' upgraded to secure login ✓','success',4000);
+  render();
+}
+function showUpgradeModal(){
+  const u=currentUser;if(!u)return;
+  modal('<div style="padding:8px">'
+    +'<h3 style="margin-bottom:8px">🔐 Upgrade Your Login</h3>'
+    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Set your email and a new password. You\'ll use these to log in from now on.</p>'
+    +'<label style="display:block;margin-bottom:8px">Your Email<input id="ug-email" type="email" value="'+esc(currentUser.email||'')+'" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<label style="display:block;margin-bottom:14px">New Password<input id="ug-pw" type="password" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-green" onclick="confirmUpgradeSelf()">Upgrade My Login</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Later</button>'
+    +'</div></div>');
+}
+async function confirmUpgradeSelf(){
+  const email=document.getElementById('ug-email').value.trim();
+  const pw=document.getElementById('ug-pw').value;
+  if(!email||!pw||pw.length<6){toast('Email and password (min 6 chars) required','error');return;}
+  toast('Upgrading…');
+  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
+  if(error){toast('⚠ '+error.message,'error',6000);return;}
+  const authId=data.user&&data.user.id;
+  if(!authId){toast('⚠ No auth ID — disable email confirmation in Supabase Auth settings','error',7000);return;}
+  currentUser.email=email;currentUser.authId=authId;currentUser.password=null;
+  await sbSaveUser(currentUser);
+  closeModal();
+  const b=document.getElementById('auth-upgrade-banner');if(b)b.remove();
+  const cpBtn=document.getElementById('btn-change-pw');if(cpBtn)cpBtn.style.display='';
+  toast('Login upgraded! Use your email next time ✓','success',5000);
+}
+async function sendPasswordReset(email){
+  if(!email){toast('No email on file for this user','error');return;}
+  const {error}=await _supa.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
+  if(error){toast('⚠ '+error.message,'error',5000);return;}
+  toast('Password reset email sent to '+email+' ✓','success',4000);
+}
+function showChangePasswordModal(){
+  modal('<div style="padding:8px">'
+    +'<h3 style="margin-bottom:8px">🔑 Change Password</h3>'
+    +'<label style="display:block;margin-bottom:8px">New Password<input id="cp-pw" type="password" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
+    +'<label style="display:block;margin-bottom:14px">Confirm<input id="cp-pw2" type="password" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button class="btn btn-green" onclick="confirmChangePassword()">Save</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
+    +'</div></div>');
+}
+async function confirmChangePassword(){
+  const pw=document.getElementById('cp-pw').value;
+  const pw2=document.getElementById('cp-pw2').value;
+  if(!pw||pw.length<6){toast('Password must be at least 6 characters','error');return;}
+  if(pw!==pw2){toast('Passwords do not match','error');return;}
+  const {error}=await _supa.auth.updateUser({password:pw});
+  if(error){toast('⚠ '+error.message,'error',5000);return;}
+  closeModal();toast('Password updated ✓','success');
+}
 
 function deactivateUser(id){
   if(!currentUser||!['director','admin'].includes(currentUser.role)){toast('⚠ No permission');return;}
