@@ -384,6 +384,56 @@ function rowToUser(r){
     role:r.role,assignedClients:ac,active:r.active!==false};
 }
 
+function abcToRow(a){
+  return{id:a.id,client_id:a.clientId,date:a.date,tx_id:a.txId||null,tx_name:a.txName||null,
+    setting:a.setting||'therapy',a_text:a.a||'',b_text:a.b||'',c_text:a.c||'',
+    frequency:a.frequency!=null?a.frequency:null,duration:a.duration!=null?a.duration:null,
+    narrative:a.narrative||''};
+}
+function rowToABC(r){
+  return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',
+    setting:r.setting||'therapy',a:r.a_text||'',b:r.b_text||'',c:r.c_text||'',
+    frequency:r.frequency,duration:r.duration,narrative:r.narrative||''};
+}
+function rowToBehavior(r){
+  let notes='',setting='therapy';
+  try{if(r.notes){const n=typeof r.notes==='string'?JSON.parse(r.notes):r.notes;
+    if(n&&typeof n==='object'&&'text' in n){notes=n.text||'';setting=n.setting||'therapy';}
+    else{notes=r.notes||'';}}
+  }catch(e){notes=r.notes||'';}
+  return{id:r.id,clientId:r.client_id,bipId:r.bip_id||'',date:r.date,
+    function:r.func||'',count:r.count,duration:r.duration,
+    avgDuration:r.avg_duration,rate:r.rate,notes,setting,
+    txId:r.tx_id||'',txName:r.tx_name||''};
+}
+async function loadFromSupabase(){
+  showSyncStatus('loading');
+  try{
+    const _wt=(p,ms=14000)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
+    const [users,clients,lessons,bips,sessions,behaviors,abcData]=await _wt(Promise.all([
+      sbFetch('users','GET',null,'select=*'),
+      sbFetch('clients','GET',null,'select=*'),
+      sbFetch('lessons','GET',null,'select=*'),
+      sbFetch('bips','GET',null,'select=*'),
+      sbFetch('sessions','GET',null,'select=*&order=date.desc&limit=500'),
+      sbFetch('behaviors','GET',null,'select=*&order=date.desc&limit=1000'),
+      sbFetch('abc_data','GET',null,'select=*&order=date.desc&limit=500'),
+    ]));
+    if(users===null){hideSyncStatus();return false;}
+    DB.users=(users||[]).map(rowToUser);
+    DB.clients=(clients||[]).map(rowToClient);
+    DB.lessons=(lessons||[]).map(rowToLesson);
+    DB.bips=(bips||[]).map(rowToBIP);
+    DB.sessions=(sessions||[]).map(rowToSession);
+    DB.behaviors=(behaviors||[]).map(rowToBehavior);
+    DB.abcData=(abcData||[]).map(rowToABC);
+    hideSyncStatus();return true;
+  }catch(e){
+    console.error('loadFromSupabase failed',e);
+    hideSyncStatus();return false;
+  }
+}
+
 async function sbSaveClient(cObj){
   await sbUpsert('clients',clientToRow(cObj));
   hideSyncStatus();
