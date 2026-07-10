@@ -1788,7 +1788,17 @@ async function doLogin(){
       },300);
     }
   }
-  const {data:authData,error:authErr}=await _supa.auth.signInWithPassword({email:emailVal,password:pw});
+  let authData=null,authErr=null;
+  try{
+    const _r=await Promise.race([
+      _supa.auth.signInWithPassword({email:emailVal,password:pw}),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))
+    ]);
+    authData=_r.data;authErr=_r.error;
+  }catch(e){
+    if(e.message==='timeout'){_loginErr('Connection timed out — check internet and try again.');return;}
+    authErr=e;
+  }
   if(authErr&&authErr.message&&authErr.message.toLowerCase().includes('email not confirmed')){
     _loginErr('Please check your email and click the confirmation link before logging in.');return;
   }
