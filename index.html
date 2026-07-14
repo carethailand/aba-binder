@@ -1,15 +1,13 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-17-A -->
+<!-- BUILD v2026-06-10-N -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>CARE Client Binder v2026-06-10-N</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
 :root{--primary:#29ABE2;--primary-light:#eef2ff;--sup:#059669;--sup-light:#ecfdf5;--danger:#dc2626;--warn:#d97706;--warn-light:#fffbeb;--bg:#f8fafc;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--radius:10px;}
-
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 #nav{background:var(--primary);color:#fff;padding:0 20px;display:flex;align-items:center;gap:16px;height:54px;}
@@ -124,7 +122,7 @@ details.card[open]>summary .det-arrow{transform:rotate(90deg);}
 .note-entry{border-left:3px solid var(--border);padding:8px 12px;margin-bottom:8px;}
 .note-entry.sup-note{border-color:var(--sup);background:var(--sup-light);border-radius:0 7px 7px 0;}
 .note-meta{font-size:.75rem;color:var(--muted);margin-bottom:3px;}
-.note-text{font-size:.87rem;line-height:1.65;white-space:pre-wrap;word-break:break-word;}
+.note-text{font-size:.87rem;}
 /* Table */
 table{width:100%;border-collapse:collapse;font-size:.85rem;}
 th{background:var(--primary-light);color:var(--primary);font-weight:600;padding:8px 10px;text-align:left;}
@@ -163,82 +161,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 #sess-sticky.ss-active .ss-label{color:#15803d;}
 #sess-sticky .ss-val{font-size:.85rem;font-weight:700;color:#1e293b;}
 #sess-sticky input,#sess-sticky select{padding:3px 7px;font-size:.82rem;border-radius:5px;border:1px solid #d1d5db;width:auto;}
-
-/* ── Mobile responsive ── */
-@media (max-width: 600px) {
-  body{font-size:15px;}
-
-  /* Nav */
-  #nav{padding:0 12px;gap:8px;height:48px;}
-  #nav h1{font-size:.95rem;}
-  #nav-user{font-size:.78rem;}
-  .btn-nav{padding:4px 10px;font-size:.76rem;}
-
-  /* Session sticky bar */
-  #sess-sticky{padding:6px 10px;gap:6px;}
-  #sess-sticky .ss-label{font-size:.68rem;}
-  #sess-sticky .ss-val{font-size:.78rem;}
-  #sess-sticky input,#sess-sticky select{font-size:.76rem;padding:2px 5px;}
-  /* Stack the sticky bar into 2 rows */
-  #sess-sticky{flex-wrap:wrap;}
-
-  /* Client list */
-  .card-grid{grid-template-columns:1fr;}
-
-  /* Client header row */
-  #app > div > div:first-child{flex-wrap:wrap;gap:6px;}
-
-  /* Tabs — horizontal scroll instead of wrap */
-  .tabs{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:0;border-bottom:2px solid var(--border);padding-bottom:0;margin-bottom:12px;}
-  .tabs::-webkit-scrollbar{height:3px;}
-  .tab-btn{white-space:nowrap;flex-shrink:0;padding:8px 12px;font-size:.78rem;}
-
-  /* Lesson cards */
-  .lesson-header{padding:10px 12px;gap:6px;}
-  .lesson-header h3{font-size:.92rem;}
-
-  /* BIP tabs */
-  .bip-tab-nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .bip-tab-btn{white-space:nowrap;flex-shrink:0;font-size:.76rem;padding:5px 10px;}
-
-  /* Buttons in lesson/sd rows */
-  .btn-sm{padding:4px 8px;font-size:.74rem;}
-  .btn-xs{padding:2px 6px;font-size:.7rem;}
-
-  /* Modal */
-  .modal-box{margin:8px;padding:14px;max-height:90vh;overflow-y:auto;}
-
-  /* Graph month row */
-  div[style*="align-items:center"][style*="gap:8px"]{flex-wrap:wrap;}
-
-  /* Supervisor/session group headers on client list */
-  .card-grid{margin-bottom:4px;}
-
-  /* SD header buttons wrap */
-  .sd-header{flex-wrap:wrap;}
-
-  /* Sticky bar — compact 2-row layout */
-  #sess-sticky{padding:5px 8px;gap:4px;row-gap:5px;}
-  #sess-sticky .ss-label{font-size:.65rem;letter-spacing:.02em;}
-  #sess-sticky .ss-val{font-size:.8rem;}
-  #sess-sticky input[type="date"]{width:110px!important;font-size:.74rem;}
-  #sess-sticky input[type="number"]{width:46px!important;font-size:.74rem;}
-  #sess-sticky select{font-size:.74rem;padding:2px 2px;}
-  #sess-sticky button{font-size:.74rem!important;padding:5px 10px!important;}
-  #sess-sticky div[style*="flex:1"]{display:none;}
-
-  /* Client view header row */
-  div.no-print.btn-outline{font-size:.78rem;padding:4px 8px;}
-
-  /* Hide pipe separators on mobile */
-  #sess-sticky span[style*="color:#fca5a5"],
-  #sess-sticky span[style*="color:#86efac"]{display:none;}
-
-  /* Make the Start/End buttons full-width on their own row */
-  #sess-sticky button[onclick*="startSession"],
-  #sess-sticky button[onclick*="startSupervision"]{width:100%;margin-top:2px;}
-}
-
 @media print{#nav,.tabs,.no-print,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}}
 
 /* ── Session-locked read-only mode ── */
@@ -246,7 +168,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .session-locked textarea,
 .session-locked select{pointer-events:none;opacity:.55;background:#f8fafc;}
 .session-locked button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
-.session-locked .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
 .session-locked .no-session-banner{display:flex;}
 .no-session-banner{display:none;align-items:center;gap:8px;background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#92400e;}
 
@@ -255,7 +176,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-mode textarea,
 .view-only-mode select{pointer-events:none;opacity:.55;background:#f8fafc;}
 .view-only-mode button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
-.view-only-mode .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
 .view-only-mode .view-only-banner{display:flex;}
 .view-only-mode .no-session-banner{display:none!important;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#9d174d;}
@@ -276,9 +196,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
       </svg>
       <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#94a3b8;margin-top:2px">Thailand · Client Binder</div>
     </div>
-    <label>Email<input type="email" id="l-email" placeholder="you@example.com" autocomplete="email"></label>
+    <label>Username<input type="text" id="l-user" placeholder="Username"></label>
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
-    <div class="login-err" id="l-err">Invalid email or password.</div>
+    <div class="login-err" id="l-err">Invalid username or password.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     
   </div>
@@ -294,7 +214,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <span id="nav-user"></span>
   <button class="btn-nav" id="btn-clients" onclick="showView('clients')">Clients</button>
   <button class="btn-nav" id="btn-admin" style="display:none" onclick="showView('admin')">⚙ Admin</button>
-  <button class="btn-nav" id="btn-change-pw" style="display:none" onclick="showChangePasswordModal()">🔑 Password</button>
   <button class="btn-nav" onclick="doLogout()">Log out</button>
 </div>
 
@@ -305,7 +224,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 const STORE_KEY='aba_v4';
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
-const _supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'care_auth'}});
 
 // Keepalive: ping Supabase once every 24h so the free-tier project never pauses
 (function keepAlive(){
@@ -363,74 +281,51 @@ function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teaching
 function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy'}),created_date:b.createdDate||null};}
 function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy';try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett};}
 
-function sessionToRow(s){const _ld=s.lessonData||[];const _bd=s.bipData||[];const _ad=s.abcData||[];return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:_ld,bip_data:_bd,abc_data:_ad};}
-function rowToSession(r){
-  // lesson_data / bip_data / abc_data may come back as a string if column is text, not jsonb
-  function _parseCol(v){if(!v)return[];if(Array.isArray(v))return v;try{const p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(e){return[];}}
-  const _ld=_parseCol(r.lesson_data);
-  return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:_ld,bipData:_parseCol(r.bip_data),abcData:_parseCol(r.abc_data)};
-}
+function sessionToRow(s){return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:s.lessonData||[],bip_data:s.bipData||[],abc_data:s.abcData||[]};}
+function rowToSession(r){return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:r.lesson_data||[],bipData:r.bip_data||[],abcData:r.abc_data||[]};}
 
-function userToRow(u){
-  return{id:u.id,name:u.name,email:u.email||null,auth_id:u.authId||null,
-    username:u.username||null,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};
-}
-function rowToUser(r){
-  const ac=Array.isArray(r.assigned_clients)?r.assigned_clients
-    :(typeof r.assigned_clients==='string'&&r.assigned_clients
-      ?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);
-  return{id:r.id,name:r.name,email:r.email||null,authId:r.auth_id||null,
-    username:r.username||null,password:r.password||null,
-    role:r.role,assignedClients:ac,active:r.active!==false};
-}
+function userToRow(u){return{id:u.id,name:u.name,username:u.username,password:u.password,role:u.role,assigned_clients:u.assignedClients||[],active:u.active!==false};}
+function rowToUser(r){const ac=Array.isArray(r.assigned_clients)?r.assigned_clients:(typeof r.assigned_clients==='string'&&r.assigned_clients?r.assigned_clients.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);return{id:r.id,name:r.name,username:r.username,password:r.password,role:r.role,assignedClients:ac,active:r.active!==false};}
 
-function abcToRow(a){
-  return{id:a.id,client_id:a.clientId,date:a.date,tx_id:a.txId||null,tx_name:a.txName||null,
-    setting:a.setting||'therapy',a_text:a.a||'',b_text:a.b||'',c_text:a.c||'',
-    frequency:a.frequency!=null?a.frequency:null,duration:a.duration!=null?a.duration:null,
-    narrative:a.narrative||''};
-}
-function rowToABC(r){
-  return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',
-    setting:r.setting||'therapy',a:r.a_text||'',b:r.b_text||'',c:r.c_text||'',
-    frequency:r.frequency,duration:r.duration,narrative:r.narrative||''};
-}
-function rowToBehavior(r){
-  let notes='',setting='therapy';
-  try{if(r.notes){const n=typeof r.notes==='string'?JSON.parse(r.notes):r.notes;
-    if(n&&typeof n==='object'&&'text' in n){notes=n.text||'';setting=n.setting||'therapy';}
-    else{notes=r.notes||'';}}
-  }catch(e){notes=r.notes||'';}
-  return{id:r.id,clientId:r.client_id,bipId:r.bip_id||'',date:r.date,
-    function:r.func||'',count:r.count,duration:r.duration,
-    avgDuration:r.avg_duration,rate:r.rate,notes,setting,
-    txId:r.tx_id||'',txName:r.tx_name||''};
-}
+// ── Load all data from Supabase ──
 async function loadFromSupabase(){
   showSyncStatus('loading');
   try{
-    const _wt=(p,ms=14000)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
-    const [users,clients,lessons,bips,sessions,behaviors,abcData]=await _wt(Promise.all([
-      sbFetch('users','GET',null,'select=*'),
-      sbFetch('clients','GET',null,'select=*'),
-      sbFetch('lessons','GET',null,'select=*'),
-      sbFetch('bips','GET',null,'select=*'),
-      sbFetch('sessions','GET',null,'select=*&order=date.desc&limit=500'),
-      sbFetch('behaviors','GET',null,'select=*&order=date.desc&limit=1000'),
-      sbFetch('abc_data','GET',null,'select=*&order=date.desc&limit=500'),
-    ]));
-    if(users===null){hideSyncStatus();return false;}
-    DB.users=(users||[]).map(rowToUser);
-    DB.clients=(clients||[]).map(rowToClient);
-    DB.lessons=(lessons||[]).map(rowToLesson);
-    DB.bips=(bips||[]).map(rowToBIP);
-    DB.sessions=(sessions||[]).map(rowToSession);
-    DB.behaviors=(behaviors||[]).map(rowToBehavior);
-    DB.abcData=(abcData||[]).map(rowToABC);
-    hideSyncStatus();return true;
+    // Fetch each table independently so one failure doesn't block login
+    const safe=async(table,params)=>{try{const r=await sbFetch(table,'GET',null,params);return Array.isArray(r)?r:[];}catch(e){console.warn('Load failed:',table,e);return [];}};
+    const users   = await safe('users','select=*');
+    const clients  = await safe('clients','select=*');
+    const lessons  = await safe('lessons','select=*');
+    const bips    = await safe('bips','select=*');
+    const sessions = await safe('sessions','select=*&order=date.asc');
+    const behaviors= await safe('behaviors','select=*&order=date.asc');
+
+    console.log('Loaded — users:',users.length,'clients:',clients.length,'lessons:',lessons.length);
+
+    DB.users   = users.map(rowToUser);
+    DB.clients  = clients.map(rowToClient);
+    DB.lessons  = lessons.map(rowToLesson);
+    DB.bips    = bips.map(rowToBIP);
+    DB.sessions = sessions.map(rowToSession);
+    DB.behaviors= behaviors.map(r=>{
+      let _bNotes=r.notes||'',_bSetting='therapy';
+      try{const _p=typeof r.notes==='string'&&r.notes.startsWith('{')?JSON.parse(r.notes):null;if(_p&&'setting' in _p){_bNotes=_p.text||'';_bSetting=_p.setting||'therapy';}}catch(e){}
+      return{id:r.id,clientId:r.client_id,bipId:r.bip_id,date:r.date,function:r.func,count:r.count,duration:r.duration,avgDuration:r.avg_duration,rate:r.rate,notes:_bNotes,setting:_bSetting,txId:r.tx_id,txName:r.tx_name};
+    });
+
+    // Seed default users if none exist
+    if(!DB.users.length){
+      const def=defaultData();
+      await Promise.all(def.users.map(u=>sbUpsert('users',userToRow(u))));
+      DB.users=def.users;
+      console.log('Seeded default users');
+    }
+    hideSyncStatus();
+    return true;
   }catch(e){
-    console.error('loadFromSupabase failed',e);
-    hideSyncStatus();return false;
+    console.error('loadFromSupabase fatal:',e);
+    showSyncStatus('error');
+    return false;
   }
 }
 
@@ -456,10 +351,18 @@ async function sbDeleteUser(id){
   render();
 }
 async function sbSaveUser(uObj){
-  await sbUpsert('users',userToRow(uObj));
-}
-async function sbSaveABC(aObj){
-  await sbUpsert('abc_data',abcToRow(aObj));
+  if(uObj.password){
+    // New user — full upsert including password
+    await sbUpsert('users',userToRow(uObj));
+  } else {
+    // Existing user edit — PATCH only the safe fields, never touch password
+    await sbFetch('users','PATCH',{
+      name:uObj.name,
+      role:uObj.role,
+      assigned_clients:uObj.assignedClients||[],
+      active:uObj.active!==false
+    },'id=eq.'+uObj.id);
+  }
 }
 async function deleteRecord(table,id){
   await sbFetch(table,'DELETE',null,'id=eq.'+id);
@@ -482,8 +385,7 @@ async function flushSave(){
     await Promise.all([
       ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
-      // behaviors saved individually at log time — do NOT bulk re-save (would overwrite manual corrections with stale null values)
-      ...(DB.abcData||[]).map(a=>sbUpsert('abc_data',abcToRow(a))),
+      ...(DB.behaviors||[]).map(b=>sbUpsert('behaviors',{id:b.id,client_id:b.clientId,bip_id:b.bipId,date:b.date,func:b.function,count:b.count||null,duration:b.duration||null,avg_duration:b.avgDuration||null,rate:b.rate||null,notes:JSON.stringify({text:b.notes||'',setting:b.setting||'therapy'}),tx_id:b.txId||null,tx_name:b.txName||null})),
     ]);
     hideSyncStatus();
   }catch(e){
@@ -550,19 +452,18 @@ async function runArchive(){
 
   const archSessions=DB.sessions.filter(s=>s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate);
   const archBehaviors=(DB.behaviors||[]).filter(b=>b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate);
-  const archABC=(DB.abcData||[]).filter(a=>a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate);
   const clientLessons=DB.lessons.filter(l=>l.clientId===clientId);
   const clientBips=(DB.bips||[]).filter(b=>b.clientId===clientId);
 
-  if(!archSessions.length&&!archBehaviors.length&&!archABC.length){
-    toast('No session, behavior, or ABC data found for that period.','error');return;
+  if(!archSessions.length&&!archBehaviors.length){
+    toast('No session or behavior data found for that period.','error');return;
   }
 
   closeModal();
   toast('Generating offline archive…');
 
   // Build offline HTML
-  const html=buildOfflineArchiveHTML(client,clientLessons,clientBips,archSessions,archBehaviors,archABC,fromVal,toVal);
+  const html=buildOfflineArchiveHTML(client,clientLessons,clientBips,archSessions,archBehaviors,fromVal,toVal);
   const blob=new Blob([html],{type:'text/html'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
@@ -577,12 +478,9 @@ async function runArchive(){
         toast('Deleting archived records from database…');
         for(const s of archSessions) await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
         for(const bx of archBehaviors) await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
-        const archABC=(DB.abcData||[]).filter(a=>a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate);
-        for(const ax of archABC) await sbFetch('abc_data','DELETE',null,'id=eq.'+ax.id);
         DB.sessions=DB.sessions.filter(s=>!(s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate));
         DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate));
-        DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate));
-        toast('✓ Archive complete — '+archSessions.length+' sessions, '+archBehaviors.length+' behavior records, and '+archABC.length+' ABC entries removed from database.');
+        toast('✓ Archive complete — '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records removed from database.');
         render();
       })();
     } else {
@@ -591,7 +489,7 @@ async function runArchive(){
   },1500);
 }
 
-function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,abcEntries,fromVal,toVal){
+function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,fromVal,toVal){
   const esc2=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const fmtD=d=>{if(!d)return'';const p=d.split('-');return p.length<3?d:p[2]+'.'+p[1]+'.'+p[0].slice(2);};
   const sortedSess=sessions.slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -736,7 +634,7 @@ function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,abcEntri
       bipTabHtml+='<div style="font-size:.75rem;font-weight:600;color:#475569;margin-bottom:4px">📈 Frequency (count)</div>';
       bipTabHtml+=svgLine(freqPts,{suffix:'',color:'#ef4444'});
       // Duration line chart — only if data exists
-      const durLogs=logs.filter(b=>b.duration!=null);
+      const durLogs=logs.filter(b=>b.duration!=null&&b.duration>0);
       if(durLogs.length){
         const durPts=durLogs.map(b=>({l:fmtD(b.date)+'\n'+((b.txName||'').split(' ')[0]),v:b.duration}));
         bipTabHtml+='<div style="font-size:.75rem;font-weight:600;color:#475569;margin:12px 0 4px">⏱ Duration (minutes)</div>';
@@ -756,12 +654,6 @@ function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,abcEntri
   const allNotes=(client.notes||[]).filter(n=>n.date>=fromVal+'-01'&&n.date<=toVal+'-31').sort((a,b)=>a.date.localeCompare(b.date));
   const notesTabHtml=allNotes.length?allNotes.map(n=>'<div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px"><div style="font-size:.75rem;color:#64748b;margin-bottom:4px">'+fmtD(n.date)+' · '+esc2(n.authorName||'')+'<span style="margin-left:8px;background:'+(n.type==='supervisor'?'#dbeafe':'#f0fdf4')+';color:'+(n.type==='supervisor'?'#1e40af':'#166534')+';border-radius:4px;padding:1px 6px;font-size:.68rem">'+esc2(n.type)+'</span></div><div style="font-size:.85rem;line-height:1.5">'+esc2(n.text)+'</div></div>').join(''):'<div style="color:#94a3b8;padding:12px">No notes for this period.</div>';
 
-
-  /* ── ABC TAB ── */
-  const _sortedABC=(abcEntries||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
-  const abcTabHtml=_sortedABC.length
-    ?'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:100%;font-size:.8rem"><thead><tr style="background:#f8fafc"><th style="padding:6px 10px;text-align:left;border-bottom:1px solid #e2e8f0">Date</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">TX</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">A</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">B</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">C</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Freq</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Dur</th><th style="padding:6px 10px;border-bottom:1px solid #e2e8f0">Narrative</th></tr></thead><tbody>'+_sortedABC.map(a=>'<tr><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+fmtD(a.date)+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.txName||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.a||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.b||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9">'+esc2(a.c||'')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;text-align:center">'+(a.frequency!=null?a.frequency:'—')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;text-align:center">'+(a.duration!=null?a.duration+'m':'—')+'</td><td style="padding:5px 10px;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:.75rem">'+esc2(a.narrative||'—')+'</td></tr>').join('')+'</tbody></table></div>'
-    :'<div style="color:#94a3b8;padding:12px">No ABC data for this period.</div>';
   return`<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -793,7 +685,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <button class="tab" onclick="show('session',this)">📝 Session</button>
   <button class="tab" onclick="show('bip',this)">🔔 Behavior</button>
   <button class="tab" onclick="show('notes',this)">💬 Notes</button>
-  <button class="tab" onclick="show('abc',this)">🔠 ABC Log</button>
 </div>
 <div id="checklist" class="pane active">
   <div class="banner">👁 Read-only offline archive — ${esc2(client.name)} · ${fromVal} to ${toVal}</div>
@@ -814,9 +705,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 <div id="notes" class="pane">
   ${notesTabHtml}
-</div>
-<div id="abc" class="pane">
-  ${abcTabHtml}
 </div>
 <script>
 function show(id,btn){
@@ -849,7 +737,7 @@ async function restoreArchive(file){
 
       // Save to Supabase
       for(const s of newSess) await sbUpsert('sessions',sessionToRow(s));
-      for(const bx of newBx) await sbUpsert('behaviors',{id:bx.id,client_id:bx.clientId,bip_id:bx.bipId,date:bx.date,func:bx.function,count:bx.count!=null?bx.count:null,duration:bx.duration!=null?bx.duration:null,avg_duration:bx.avgDuration!=null?bx.avgDuration:null,rate:bx.rate!=null?bx.rate:null,notes:bx.notes,tx_id:bx.txId,tx_name:bx.txName});
+      for(const bx of newBx) await sbUpsert('behaviors',{id:bx.id,client_id:bx.clientId,bip_id:bx.bipId,date:bx.date,func:bx.function,count:bx.count,duration:bx.duration,avg_duration:bx.avgDuration,rate:bx.rate,notes:bx.notes,tx_id:bx.txId,tx_name:bx.txName});
 
       DB.sessions=[...DB.sessions,...newSess].sort((a,b)=>a.date.localeCompare(b.date));
       DB.behaviors=[...DB.behaviors,...newBx].sort((a,b)=>a.date.localeCompare(b.date));
@@ -895,29 +783,14 @@ function confirmEndSession(){
   let unscored=0;
   lessons.forEach(l=>l.sds.forEach(sd=>sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(t=>{
     const id=l.id+'_'+sd.id+'_'+t.id;
-    if(t.dataType==='percent'){
-      const corEl=document.getElementById('cor_'+id);
-      if(!corEl||corEl.value.trim()==='')unscored++;
-    } else if(t.dataType==='rating'){
-      const sel=document.querySelector('.cpi-btn[data-id="rt_'+id+'"].rating-sel');
-      if(!sel)unscored++;
-    } else if(t.dataType==='tally'){
-      // tally defaults to 0 — always has a value, never unscored
-    } else if(t.dataType==='ta'){
-      // ta — check if any step button is selected
-      const anyStep=document.querySelector('.cpi-btn[data-id^="ta_'+id+'_"].sel');
-      if(!anyStep)unscored++;
-    } else if(t.dataType==='checklist'){
-      // checklist — needs a first trial selection
-      const ftSel=document.querySelector('.ft-btn[data-id="ft_'+id+'"].ft-sel');
-      if(!ftSel)unscored++;
-    }
+    const el=document.getElementById('pct_'+id)||document.getElementById('rating_'+id);
+    if(!el||el.value==='')unscored++;
   })));
   if(unscored>0){
     modal('<div style="text-align:center;padding:10px">'
       +'<div style="font-size:2rem;margin-bottom:10px">⚠️</div>'
       +'<h3 style="margin-bottom:8px">End Session?</h3>'
-      +'<p style="color:var(--muted);margin-bottom:16px"><strong>'+unscored+' target'+(unscored>1?'s have':' has')+' no data</strong> entered yet.<br>You can still save — unscored targets will be left blank.</p>'
+      +'<p style="color:var(--muted);margin-bottom:16px"><strong>'+unscored+' target'+(unscored>1?'s have':' has')+' no data</strong> entered yet.<br>You can still save — unscored targets will be marked N/A.</p>'
       +'<div style="display:flex;gap:8px;justify-content:center">'
       +'<button class="btn btn-danger" onclick="closeModal();saveSession()">End &amp; Save</button>'
       +'<button class="btn btn-outline" onclick="closeModal()">Keep Entering</button>'
@@ -936,11 +809,7 @@ function confirmDiscard(){
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
     +'</div></div>');
 }
-function discardSession(){
-  const _ss=getSessState();
-  if(_ss.clientId&&_ss.date)clearBIPDraft(_ss.clientId,_ss.date);
-  clearSessState();clearSessionDraft();render();
-}
+function discardSession(){clearSessState();clearSessionDraft();render();}
 
 function _undoSessionFirstTrials(sess){
   // Remove first-trial data pushed onto targets when this session was originally saved
@@ -973,47 +842,6 @@ function _sessionPickerRows(sessions){
   }).join('');
 }
 
-// ── Edit-session helpers (outer scope) ────────────────────────────────────
-// Build editable BIP behavior log rows for this session's date
-function buildBIPRows(sess){
-  const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
-  if(!bips.length)return'';
-  const logsOnDate=(DB.behaviors||[]).filter(function(b){return b.clientId===selectedClientId&&b.date===sess.date;});
-  if(!logsOnDate.length)return'<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fef2f2;border-radius:6px;border-left:3px solid #dc2626">🔔 Behavior (BIP)</div><div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No BIP logs recorded on this date.</div>';
-  let html='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fef2f2;border-radius:6px;border-left:3px solid #dc2626">🔔 Behavior (BIP)</div>';
-  logsOnDate.forEach(function(log){
-    const bip=bips.find(function(b){return b.id===log.bipId;});
-    const bipName=bip?bip.name:log.bipId;
-    const allMeas=bip?bipMeasList(bip):['frequency'];
-    const hasFreq=allMeas.includes('frequency')||allMeas.includes('rate');
-    const hasDur=allMeas.includes('duration');
-    html+='<div style="padding:7px 10px;border-bottom:1px solid #f1f5f9">'
-      +'<div style="font-size:.82rem;font-weight:600;margin-bottom:6px">'+esc(bipName)
-      +'<span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:8px">'+esc(log.txName||'')+'</span></div>'
-      +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">'
-      +(hasFreq?'<label style="font-size:.8rem">Count <input type="number" class="se-bip-count" data-bid="'+log.id+'" min="0" style="width:65px;margin-left:4px" value="'+(log.count!=null?log.count:'')+'"></label>':'')
-      +(hasDur?'<label style="font-size:.8rem">Duration <input type="text" class="se-bip-dur" data-bid="'+log.id+'" style="width:80px;margin-left:4px" placeholder="min or m:ss" value="'+(log.duration!=null?log.duration:'')+'"></label>':'')
-      +'<label style="font-size:.8rem">Notes <input type="text" class="se-bip-notes" data-bid="'+log.id+'" style="width:160px;margin-left:4px" value="'+esc(log.notes||'')+'"></label>'
-      +'<button class="btn btn-xs btn-danger" onclick="seDeleteBIPLog(\''+log.id+'\')">✕ Delete</button>'
-      +'</div>'
-      +'</div>';
-  });
-  return html;
-}
-function seDeleteBIPLog(logId){
-  if(!confirm('Delete this BIP log entry?'))return;
-  const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
-  if(!isSup){toast('Only supervisors can delete BIP logs.','error');return;}
-  DB.behaviors=(DB.behaviors||[]).filter(function(b){return b.id!==logId;});
-  sbFetch('behaviors','DELETE',null,'id=eq.'+logId);
-  const cont=document.getElementById('se-bip-section');
-  if(cont){
-    const sess=(DB.sessions||[]).find(function(s){return s.id===cont.dataset.sessId;});
-    if(sess)cont.innerHTML=buildBIPRows(sess);
-  }
-  toast('BIP log deleted.','success');
-}
-
 function editLastSession(){
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
@@ -1023,7 +851,7 @@ function editLastSession(){
     // Show picker modal — list recent sessions, let TX choose which to edit
     modal('<div>'
       +'<h3 style="margin-bottom:4px">✏ Edit a Session</h3>'
-      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session to edit. You can update individual values without losing any other data.</p>'
+      +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:14px">Select the session you want to correct. It will be removed and reloaded so you can re-enter the data.</p>'
       +_sessionPickerRows(sessions)
       +'<div style="margin-top:12px;text-align:right"><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
       +'</div>');
@@ -1041,274 +869,90 @@ function editLastSession(){
 }
 
 function _doEditSession(sess){
-  // Non-destructive inline editor — shows session data in a modal, saves back via upsert
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
-
-  // Build editable rows per lesson
-  function buildLessonRows(sess){
-    return lessons.map(function(lesson){
-      const ld=(sess.lessonData||[]).find(function(x){return x.lessonId===lesson.id;});
-      if(!ld&&lesson.phase==='maintenance')return'';
-      const _lid=lesson.id; // always use lesson.id as the data-lid key
-
-      // Merge: saved targets + any active targets not yet recorded
-      const savedTargets=ld?ld.targets||[]:[];
-      const hasData=savedTargets.filter(t=>t.dataType!=='maintenance').length>0;
-      const allActiveTargets=lesson.sds.flatMap(function(sd){
-        return sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).map(function(t){
-          const saved=savedTargets.find(function(te){return te.targetId===t.id;});
-          return saved||{targetId:t.id,targetName:t.name,sdId:sd.id,dataType:t.dataType,_missing:true};
-        });
-      });
-
-      const targetRows=allActiveTargets.map(function(te){
-        if(te.dataType==='maintenance')return'';
-        const tName=te.targetName||te.targetId;
-        const naChk='<label style="font-size:.78rem;color:var(--muted);display:flex;align-items:center;gap:4px"><input type="checkbox" class="se-na" data-lid="'+_lid+'" data-sid="'+te.sdId+'" data-tid="'+te.targetId+'"'+(te.na?' checked':'')+' onchange="seToggleNA(this)"> N/A</label>';
-        let inputHtml='';
-        if(te.na){
-          inputHtml='<span style="font-size:.78rem;color:var(--muted);font-style:italic">marked N/A</span>';
-        } else if(te.dataType==='percent'){
-          inputHtml='<input type="number" class="se-cor" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="cor" value="'+(te.correct!=null?te.correct:'')+'">'
-            +' / <input type="number" class="se-tot" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:55px" placeholder="tot" value="'+(te.total!=null?te.total:'')+'">'
-            +'<span class="se-pct" style="margin-left:8px;font-weight:700;color:var(--primary);min-width:40px">'+(te.pct!=null?te.pct+'%':'')+'</span>';
-        } else if(te.dataType==='rating'){
-          const _rLesson=DB.lessons.find(l=>l.id===_lid);
-          const max=(_rLesson&&_rLesson.ratingScale&&_rLesson.ratingScale.max)||5;
-          const opts=Array.from({length:max},(_,i)=>i+1).map(v=>'<option value="'+v+'"'+(te.rating===v?' selected':'')+'>'+v+'</option>').join('');
-          inputHtml='<select class="se-rating" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option>'+opts+'</select>';
-        } else if(te.dataType==='tally'){
-          inputHtml='<input type="number" class="se-tally" data-lid="'+_lid+'" data-tid="'+te.targetId+'" min="0" style="width:70px" value="'+(te.count!=null?te.count:'')+'">';
-        } else if(te.dataType==='checklist'){
-          inputHtml='<label style="font-size:.82rem">First trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="C"'+(te.firstTrial==='C'?' selected':'')+'>C</option><option value="P"'+(te.firstTrial==='P'?' selected':'')+'>P</option><option value="I"'+(te.firstTrial==='I'?' selected':'')+'>I</option><option value="N/A"'+(te.firstTrial==='N/A'?' selected':'')+'>N/A</option></select></label>';
-        } else if(te.dataType==='ta'){
-          const stepRows=(te.steps||[]).map(function(st,si){
-            if(st.mastered)return'<div style="font-size:.75rem;color:#059669">✓ '+esc(st.step||'Step '+(si+1))+'</div>';
-            const res=st.result||'';
-            return'<div style="font-size:.78rem;display:flex;align-items:center;gap:6px;margin:2px 0">'
-              +'<span style="flex:1">'+esc(st.step||'Step '+(si+1))+'</span>'
-              +'<select class="se-ta-step" data-lid="'+_lid+'" data-tid="'+te.targetId+'" data-si="'+si+'">'
-              +'<option value="">—</option>'
-              +'<option value="+"'+(res==='+'?' selected':'')+'>+</option>'
-              +'<option value="P"'+(res==='P'?' selected':'')+'>P</option>'
-              +'<option value="-"'+(res==='-'?' selected':'')+'>−</option>'
-              +'</select>'
-              +'</div>';
-          }).join('');
-          inputHtml='<div style="margin-top:4px">'+stepRows+'</div>';
-        }
-        let ftHtml='';
-        if(te.dataType==='percent'||te.dataType==='ta'){
-          ftHtml='<label style="font-size:.75rem;margin-left:12px">1st trial: <select class="se-ft" data-lid="'+_lid+'" data-tid="'+te.targetId+'"><option value="">—</option><option value="+"'+(te.firstTrial==='+'?' selected':'')+'>+</option><option value="P"'+(te.firstTrial==='P'?' selected':'')+'>P</option><option value="-"'+(te.firstTrial==='-'?' selected':'')+'>−</option></select></label>';
-        }
-        return'<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 10px;border-bottom:1px solid #f1f5f9;flex-wrap:wrap">'
-          +'<div style="flex:1;min-width:120px;font-size:.83rem;font-weight:500">'+esc(tName)+(te._missing?'<span style="font-size:.7rem;color:#f59e0b;margin-left:6px">not recorded</span>':'')+'</div>'
-          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">'+inputHtml+ftHtml+'</div>'
-          +naChk
-          +'</div>';
-      }).join('');
-
-      const noteVal=(ld&&ld.note||'');
-      const noteRow='<div style="padding:6px 10px 8px"><label style="font-size:.76rem;color:var(--muted)">Lesson note <input type="text" class="se-lnote" data-lid="'+_lid+'" style="font-size:.8rem;margin-left:6px;width:220px" value="'+esc(noteVal)+'"></label></div>';
-
-      // Wrap in <details> — open if lesson has saved data
-      const statusBadge=hasData
-        ?'<span style="font-size:.7rem;background:#dcfce7;color:#16a34a;border-radius:10px;padding:1px 8px;margin-left:8px">data recorded</span>'
-        :'<span style="font-size:.7rem;background:#fef9c3;color:#92400e;border-radius:10px;padding:1px 8px;margin-left:8px">not recorded</span>';
-      return'<details style="border:1px solid #e2e8f0;border-radius:8px;margin-bottom:8px;overflow:hidden"'+(hasData?' open':'')+'>'
-        +'<summary style="display:flex;align-items:center;gap:6px;cursor:pointer;padding:8px 12px;background:#f8fafc;list-style:none;user-select:none">'
-        +'<span style="font-size:.85rem">▶</span>'
-        +'<span style="font-weight:700;font-size:.88rem;flex:1">'+esc(lesson.name)+'</span>'
-        +'<span style="font-size:.74rem;color:var(--muted)">'+lesson.phase+'</span>'
-        +statusBadge
-        +'</summary>'
-        +'<div>'+targetRows+noteRow+'</div>'
-        +'</details>';
-    }).join('');
-  }
-
-  const sessDate=fmtDateShort(sess.date);
-
-
-  // buildBIPRows is defined as an outer function (before editLastSession)
-
-  const notesRow='<div style="margin:10px 0"><label style="font-size:.85rem;font-weight:600">Session Notes</label><textarea class="se-sess-notes" rows="3" style="font-size:.83rem;margin-top:4px">'+esc(sess.notes||'')+'</textarea></div>';
-  const pnRow=sess.setting==='school'?'<div style="margin:8px 0"><label style="font-size:.85rem;font-weight:600">Parent Note</label><textarea class="se-parent-note" rows="2" style="font-size:.83rem;margin-top:4px">'+esc(sess.parentNote||'')+'</textarea></div>':'';
-
-  modal('<div style="max-height:75vh;overflow-y:auto">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
-    +'<h3 style="flex:1;margin:0">✏ Edit Session — '+sessDate+'</h3>'
-    +'<span style="font-size:.78rem;color:var(--muted)">'+esc(sess.txName||'')+'</span>'
-    +'</div>'
-    +'<div style="background:#eff6ff;border:1px solid #b3e0f5;border-radius:6px;padding:7px 12px;font-size:.8rem;color:#1a5276;margin-bottom:10px">'
-    +'✏ Edit individual values below. Only changed fields are updated — nothing is deleted.'
-    +'</div>'
-    +buildLessonRows(sess)
-    +'<div id="se-bip-section" data-sess-id="'+sess.id+'">'
-    +buildBIPRows(sess)
-    +'</div>'
-    +notesRow+pnRow
-    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
-    +'<button class="btn btn-primary" onclick="_saveEditedSession(\''+sess.id+'\')">💾 Save Changes</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
-    +'</div>'
-    +'</div>');
-
-  // Live % recalc
-  setTimeout(function(){
-    document.querySelectorAll('.se-cor,.se-tot').forEach(function(el){
-      el.addEventListener('input',function(){
-        const lid=el.dataset.lid,tid=el.dataset.tid;
-        const cor=parseFloat(document.querySelector('.se-cor[data-lid="'+lid+'"][data-tid="'+tid+'"]').value)||0;
-        const tot=parseFloat(document.querySelector('.se-tot[data-lid="'+lid+'"][data-tid="'+tid+'"]').value)||0;
-        const pctEl=el.closest('div').querySelector('.se-pct');
-        if(pctEl)pctEl.textContent=tot>0?Math.round(cor/tot*100)+'%':'';
-      });
-    });
-  },80);
-}
-
-function seToggleNA(cb){
-  const row=cb.closest('div[style]');
-  if(!row)return;
-  const inputs=row.querySelectorAll('input:not([type=checkbox]),select,textarea');
-  inputs.forEach(function(el){el.disabled=cb.checked;el.style.opacity=cb.checked?'.4':'1';});
-}
-
-async function _saveEditedSession(sessId){
-  const sess=DB.sessions.find(function(s){return s.id===sessId;});
-  if(!sess){toast('Session not found','error');return;}
-
-  // Update notes
-  const notesEl=document.querySelector('.se-sess-notes');
-  if(notesEl)sess.notes=notesEl.value.trim();
-  const pnEl=document.querySelector('.se-parent-note');
-  if(pnEl)sess.parentNote=pnEl.value.trim();
-
-  // Update lesson data
-  if(!sess.lessonData)sess.lessonData=[];
-  // Ensure every lesson that has DOM inputs is represented in lessonData
-  DB.lessons.filter(l=>l.clientId===selectedClientId).forEach(function(lesson){
-    let ld=sess.lessonData.find(function(x){return x.lessonId===lesson.id;});
-    if(!ld){
-      // Lesson wasn't in original session — create entry only if DOM has data
-      const hasAnyInput=document.querySelector('.se-cor[data-lid="'+lesson.id+'"],.se-tally[data-lid="'+lesson.id+'"],.se-rating[data-lid="'+lesson.id+'"],.se-ta-step[data-lid="'+lesson.id+'"],.se-ft[data-lid="'+lesson.id+'"]');
-      if(!hasAnyInput)return;
-      ld={lessonId:lesson.id,lessonName:lesson.name,targets:[]};
-      sess.lessonData.push(ld);
-    }
-    // Add any missing targets that now have data in DOM
-    lesson.sds.forEach(function(sd){
-      sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(function(t){
-        if(ld.targets.find(function(te){return te.targetId===t.id;}))return; // already exists
-        // Check if DOM has any value for this target
-        const corEl=document.querySelector('.se-cor[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const talEl=document.querySelector('.se-tally[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const rEl=document.querySelector('.se-rating[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const ftEl=document.querySelector('.se-ft[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const taEl=document.querySelector('.se-ta-step[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const naEl=document.querySelector('.se-na[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
-        const hasValue=(corEl&&corEl.value!=='')||(talEl&&talEl.value!=='')||(rEl&&rEl.value!=='')||(ftEl&&ftEl.value!=='')||(taEl&&taEl.value!=='')||(naEl&&naEl.checked);
-        if(hasValue)ld.targets.push({targetId:t.id,targetName:t.name,sdId:sd.id,dataType:t.dataType});
-      });
-    });
+  if(!confirm('Edit this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+esc(sess.txName||'')+'\n\nThe session will be removed and reloaded so you can correct the data. Click End & Save when done.\n\nContinue?'))return;
+  DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
+  sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
+  _undoSessionFirstTrials(sess);
+  setSessState({
+    clientId:selectedClientId,
+    date:sess.date,
+    sessTime:sess.sessTime||4,
+    sessType:sess.sessType||'individual',
+    setting:sess.setting||'therapy',
+    started:true,
+    editingSessionId:sess.id
   });
-  (sess.lessonData||[]).forEach(function(ld){
-    // lesson note
-    const lnEl=document.querySelector('.se-lnote[data-lid="'+ld.lessonId+'"]');
-    if(lnEl)ld.note=lnEl.value;
-    // targets
-    (ld.targets||[]).forEach(function(te){
-      // NA checkbox
-      const naEl=document.querySelector('.se-na[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-      if(naEl)te.na=naEl.checked;
-      if(te.na)return;
-      // percent
-      if(te.dataType==='percent'){
-        const corEl=document.querySelector('.se-cor[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-        const totEl=document.querySelector('.se-tot[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-        if(corEl&&corEl.value!==''){te.correct=parseInt(corEl.value)||0;te.total=parseInt(totEl&&totEl.value)||te.total;te.pct=te.total>0?Math.round(te.correct/te.total*100):null;}
-      }
-      // rating
-      if(te.dataType==='rating'){
-        const rEl=document.querySelector('.se-rating[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-        if(rEl&&rEl.value)te.rating=parseInt(rEl.value);
-      }
-      // tally
-      if(te.dataType==='tally'){
-        const talEl=document.querySelector('.se-tally[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-        if(talEl&&talEl.value!=='')te.count=parseInt(talEl.value);
-      }
-      // TA steps
-      if(te.dataType==='ta'){
-        document.querySelectorAll('.se-ta-step[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]').forEach(function(sel){
-          const si=parseInt(sel.dataset.si);
-          if(te.steps&&te.steps[si]&&!te.steps[si].mastered)te.steps[si].result=sel.value;
-        });
-      }
-      // first trial (percent, ta, checklist)
-      const ftEl=document.querySelector('.se-ft[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-      if(ftEl&&ftEl.value!==undefined)te.firstTrial=ftEl.value||null;
-    });
-  });
-
-  // Save BIP log edits
-  document.querySelectorAll('.se-bip-count,.se-bip-dur,.se-bip-notes').forEach(function(el){
-    const bid=el.dataset.bid;
-    const log=(DB.behaviors||[]).find(function(b){return b.id===bid;});
-    if(!log)return;
-    if(el.classList.contains('se-bip-count')&&el.value!==''){log.count=parseInt(el.value)||0;}
-    if(el.classList.contains('se-bip-dur')){
-      const rawDur=el.value.trim();
-      if(rawDur){
-        const mss=rawDur.match(/^(\d+):(\d{1,2})$/);
-        const sec=rawDur.match(/^(\d+)s$/i);
-        if(mss)log.duration=parseInt(mss[1])+(parseInt(mss[2])/60);
-        else if(sec)log.duration=parseInt(sec[1])/60;
-        else log.duration=parseFloat(rawDur)||0;
-        log.duration=Math.round(log.duration*100)/100;
-      }
-    }
-    if(el.classList.contains('se-bip-notes'))log.notes=el.value;
-    sbUpsert('behaviors',{id:log.id,client_id:log.clientId,bip_id:log.bipId,date:log.date,func:log.function,count:log.count!=null?log.count:null,duration:log.duration!=null?log.duration:null,avg_duration:log.avgDuration!=null?log.avgDuration:null,rate:log.rate!=null?log.rate:null,notes:JSON.stringify({text:log.notes||'',setting:log.setting||'therapy'}),tx_id:log.txId||null,tx_name:log.txName||null});
-  });
-
-  // Sync firstTrial values back onto target.firstTrialData in DB.lessons
-  // so the session tab and graphs reflect edits immediately
-  (sess.lessonData||[]).forEach(function(ld){
-    const lesson=DB.lessons.find(function(l){return l.id===ld.lessonId;});
-    if(!lesson)return;
-    (ld.targets||[]).forEach(function(te){
-      if(!te.firstTrial)return;
-      lesson.sds.forEach(function(sd){
-        const tgt=sd.targets.find(function(t){return t.id===te.targetId;});
-        if(!tgt)return;
-        if(!tgt.firstTrialData)tgt.firstTrialData=[];
-        // Remove existing entry for this date+tx then re-add with new value
-        tgt.firstTrialData=tgt.firstTrialData.filter(function(f){
-          return !(f.date===sess.date&&f.txId===sess.txId);
-        });
-        tgt.firstTrialData.push({date:sess.date,result:te.firstTrial,txId:sess.txId,txName:sess.txName});
-      });
-    });
-  });
-  // Save updated lessons to Supabase
-  const editedLessonIds=new Set((sess.lessonData||[]).map(function(ld){return ld.lessonId;}));
-  DB.lessons.filter(function(l){return editedLessonIds.has(l.id);}).forEach(function(l){
-    sbUpsert('lessons',lessonToRow(l));
-  });
-
-  // Upsert — keep same id, just update fields
-  const _rowToSave=sessionToRow(sess);
-  const result=await sbSaveSession(_rowToSave);
-  if(result===null){toast('⚠ Save failed — check connection','error',5000);return;}
-  closeModal();
-  toast('Session updated ✓');
+  window._editSessionData=sess;
+  clearSessionDraft();
   render();
+  setTimeout(function(){_restoreEditSession(sess);},120);
+  toast('Session loaded — correct the data then click End & Save');
 }
 
 function _restoreEditSession(sess){
-  // Legacy — kept for safety but no longer called by new flow
+  // Restore TX notes
+  const notesEl=document.getElementById('tx-sess-notes');
+  if(notesEl&&sess.notes)notesEl.value=sess.notes;
+  // Restore parent note (school)
+  const pnEl=document.getElementById('parent-note-input');
+  if(pnEl&&sess.parentNote)pnEl.value=sess.parentNote;
+  // Restore lesson data
+  if(!sess.lessonData)return;
+  sess.lessonData.forEach(function(ld){
+    (ld.targets||[]).forEach(function(te){
+      if(te.na){
+        const naEl=document.getElementById('na_'+ld.lessonId+'_'+te.sdId+'_'+te.targetId);
+        if(naEl)naEl.checked=true;
+        return;
+      }
+      const id=ld.lessonId+'_'+te.sdId+'_'+te.targetId;
+      // percent data
+      if(te.dataType==='percent'&&te.correct!=null){
+        const corEl=document.getElementById('cor_'+id);
+        const totEl=document.getElementById('tot_'+id);
+        if(corEl)corEl.value=te.correct;
+        if(totEl)totEl.value=te.total;
+        calcPct(id);
+      }
+      // rating data
+      if(te.dataType==='rating'&&te.rating!=null){
+        const rBtn=document.querySelector('.cpi-btn[data-id="rt_'+id+'"][data-val="'+te.rating+'"]');
+        if(rBtn){rBtn.classList.add('rating-sel');rBtn.style.background='var(--primary)';rBtn.style.color='#fff';}
+      }
+      // tally data
+      if(te.dataType==='tally'&&te.count!=null){
+        const talEl=document.getElementById('tally_'+id);
+        if(talEl)talEl.value=te.count;
+      }
+      // task analysis steps
+      if(te.dataType==='ta'&&te.steps){
+        te.steps.forEach(function(st,i){
+          if(st.mastered||!st.result)return;
+          const val=st.result==='+' ? '+' : st.result==='-' ? '-' : 'P';
+          const btn=document.querySelector('.cpi-btn[data-id="ta_'+id+'_'+i+'"][data-val="'+val+'"]');
+          if(btn){btn.classList.add('sel');btn.style.background='var(--primary)';btn.style.color='#fff';}
+        });
+      }
+      // first trial
+      if(te.firstTrial){
+        const ftBtn=document.querySelector('.ft-btn[data-id="ft_'+id+'"][data-val="'+te.firstTrial+'"]');
+        if(ftBtn){ftBtn.classList.add('ft-sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
+      }
+    });
+    // DT lesson
+    if(ld.dtData){
+      const dtId='dt_'+ld.lessonId;
+      const corEl=document.getElementById('dtcor_'+dtId);
+      const totEl=document.getElementById('dttot_'+dtId);
+      if(corEl&&ld.dtData.correct!=null)corEl.value=ld.dtData.correct;
+      if(totEl&&ld.dtData.total!=null)totEl.value=ld.dtData.total;
+      if(ld.dtData.firstTrial){
+        const ftVal=ld.dtData.firstTrial==='+' ? '+' : '-';
+        const ftBtn=document.querySelector('.cpi-btn[data-id="dtft_'+dtId+'"][data-val="'+ftVal+'"]');
+        if(ftBtn){ftBtn.classList.add('sel');ftBtn.style.background='var(--primary)';ftBtn.style.color='#fff';}
+      }
+    }
+  });
 }
 
 function deleteLastSession(){
@@ -1336,22 +980,11 @@ function deleteLastSession(){
 }
 
 async function _doDeleteSession(sess){
-  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis will also delete ABC data and BIP logs from this date. Cannot be undone.'))return;
-  // Remove from local DB
+  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis cannot be undone.'))return;
   DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
   _undoSessionFirstTrials(sess);
-  // Also remove abc_data and behaviors for this client+date
-  const abcsToDelete=(DB.abcData||[]).filter(a=>a.clientId===sess.clientId&&a.date===sess.date);
-  const behaviorsToDelete=(DB.behaviors||[]).filter(b=>b.clientId===sess.clientId&&b.date===sess.date);
-  DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===sess.clientId&&a.date===sess.date));
-  DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===sess.clientId&&b.date===sess.date));
-  // Delete from Supabase
   await sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
-  await Promise.all([
-    ...abcsToDelete.map(a=>sbFetch('abc_data','DELETE',null,'id=eq.'+a.id)),
-    ...behaviorsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)),
-  ]);
-  toast('Session deleted ✓'+(abcsToDelete.length?' ('+abcsToDelete.length+' ABC entries removed)':'')+(behaviorsToDelete.length?' ('+behaviorsToDelete.length+' BIP logs removed)':''));
+  toast('Session deleted ✓');
   render();
 }
 
@@ -1372,14 +1005,14 @@ function snapshotClient(){
   // Deep snapshot of everything changeable for this client
   const c=DB.clients.find(x=>x.id===selectedClientId);
   if(!c)return{clientNotes:[],reinforcers:[],lessons:[],bips:[]};
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   const bips=(DB.bips||[]).filter(b=>b.clientId===selectedClientId);
   return JSON.parse(JSON.stringify({
     clientNotes:c.notes||[],
     reinforcers:c.reinforcers||[],
     lessons:lessons.map(l=>({
       id:l.id,name:l.name,phase:l.phase,supNotes:l.supNotes||[],
-      sds:l.sds.map(sd=>({id:sd.id,notes:JSON.parse(JSON.stringify(sd.notes||[])),targets:sd.targets.map(t=>({
+      sds:l.sds.map(sd=>({id:sd.id,targets:sd.targets.map(t=>({
         id:t.id,name:t.name,status:t.status,dtStepIndex:t.dtStepIndex,
         teachingSteps:t.teachingSteps||[]
       }))}))
@@ -1445,7 +1078,7 @@ function makeSVGSparkline(scores,masteryPct){
     +dots+labels
     +'</svg>';
 }
-async function finishSupervision(){
+function finishSupervision(){
   const sv=getSupState();
   if(!sv.started){clearSupState();render();return;}
   if(!sv.snap)console.warn('No snapshot found — changes list may be incomplete.');
@@ -1539,17 +1172,6 @@ async function finishSupervision(){
         }
       });
     });
-    // New SD notes added during this supervision
-    l.sds.forEach(function(sd){
-      const snapSd2=snapL&&snapL.sds.find(function(x){return x.id===sd.id;});
-      const snapSDNotes=snapSd2?snapSd2.notes||[]:[];
-      const newSDNotes=(sd.notes||[]).filter(function(n){
-        return!snapSDNotes.find(function(o){return o.date===n.date&&o.text===n.text&&o.authorId===n.authorId;});
-      });
-      newSDNotes.forEach(function(n){
-        lItems.push({label:'SD note added ('+esc(sd.sd||'SD')+')',value:n.text});
-      });
-    });
     if(lItems.length)changes.push({section:'Program: '+l.name,items:lItems});
   });
 
@@ -1636,143 +1258,37 @@ async function finishSupervision(){
     +'</div></div>');
 }
 
-async function printSupPDF(){
+function printSupPDF(){
   const {changes,sv,clientName}=window._supChanges||{};
   if(!changes)return;
   const _isSchoolSup=(sv&&sv.setting||'therapy')==='school';
   const c=DB.clients.find(x=>x.id===selectedClientId);
   const totalChanges=changes.reduce((a,s)=>a+s.items.length,0);
-
-  // Find TX who ran session that day
-  const todaySess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.date===sv.date).sort((a,b)=>a.sessTime-b.sessTime);
-  const txNames=[...new Set(todaySess.map(s=>s.txName).filter(Boolean))];
-  const txNameStr=txNames.join(', ')||'—';
-
-  // Format date as D.M.YY
-  const _fmtDate=function(d){if(!d)return'—';const p=d.split('-');return parseInt(p[2])+'.'+parseInt(p[1])+'.'+(p[0].slice(2));};
-
-  // General section: client notes added today by supervisor
-  const todayNotes=(c.notes||[]).filter(n=>n.date===sv.date&&n.type==='supervisor');
-  const generalHtml=todayNotes.length
-    ? todayNotes.map(n=>{
-        const lines=n.text.split(/\n+/).filter(s=>s.trim());
-        return lines.map(l=>'<div style="font-size:.88rem;line-height:1.65;margin-bottom:3px">'+esc(l)+'</div>').join('');
-      }).join('<div style="margin-top:8px"></div>')
-    :'<div style="font-size:.85rem;color:#94a3b8;font-style:italic">No general notes recorded.</div>';
-
-  // Behaviors section: BIP logs from today
-  const todayBehaviors=(DB.behaviors||[]).filter(b=>b.clientId===selectedClientId&&b.date===sv.date);
-  let behaviorsHtml='';
-  if(todayBehaviors.length){
-    todayBehaviors.forEach(function(b){
-      const bip=(DB.bips||[]).find(x=>x.id===b.bipId);
-      const name=bip?bip.name:b.bipId;
-      let parts=[];
-      if(b.count!=null)parts.push(b.count+' time'+(b.count!==1?'s':''));
-      if(b.duration!=null){
-        const mins=Math.floor(b.duration);const secs=Math.round((b.duration-mins)*60);
-        parts.push('Duration: '+(mins>0?mins+'m ':'')+secs+'s');
+  const sectionsHtml=changes.map(sec=>{
+    const itemsHtml=sec.items.map(it=>{
+      let bodyHtml='';
+      if(it.html){
+        bodyHtml=it.html;
+      } else {
+        const paras=(it.value||'').split(/\n+/).filter(s=>s.trim());
+        bodyHtml=paras.map(p=>'<p style="font-size:.83rem;margin:0 0 5px 0;line-height:1.55">'+esc(p)+'</p>').join('');
       }
-      if(b.notes)parts.push(b.notes);
-      behaviorsHtml+='<div style="font-size:.88rem;line-height:1.65;margin-bottom:4px">- '+esc(name)+': '+esc(parts.join(' | '))+'</div>';
-    });
-  } else {
-    behaviorsHtml='<div style="font-size:.85rem;color:#94a3b8;font-style:italic">No behavior data recorded.</div>';
-  }
-
-  // Lesson updates sections — reformatted to match clinical style
-  const lessonSections=changes.filter(s=>s.section.toLowerCase().startsWith('program:')).map(sec=>{
-    const lessonName=sec.section.replace(/^program:\s*/i,'');
-    const itemsHtml=sec.items.map(it=>{
-      const label=it.label||'';
-      let bodyText=it.value||'';
-      // Clean up the body — remove redundant "Lesson:" prefix lines
-      const lines=bodyText.split(/\n+/).filter(s=>s.trim()).filter(s=>!s.match(/^Lesson:/));
-      const bodyHtml=lines.map(l=>{
-        const _lbM=l.match(/^([A-Za-z][^:]{1,40}?):\s+(.+)$/);
-        if(_lbM)return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px"><strong>'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</div>';
-        return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px">'+esc(l)+'</div>';
-      }).join('');
-      return'<div style="margin-bottom:8px">'
-        +'<div style="font-size:.82rem;font-weight:700;color:#334155;margin-bottom:3px">'+esc(label)+'</div>'
-        +(it.html
-          ?'<div style="font-size:.85rem;line-height:1.6">'+it.html+'</div>'
-          :(bodyHtml||''))
+      return '<div style="margin-bottom:10px;border:1px solid #e5e7eb;border-radius:6px;overflow:hidden;page-break-inside:avoid">'
+        +'<div style="background:#eff6ff;padding:4px 10px;font-size:.76rem;font-weight:700;color:#29ABE2;border-bottom:1px solid #e5e7eb">'+esc(it.label)+'</div>'
+        +(bodyHtml?'<div style="padding:7px 10px">'+bodyHtml+'</div>':'')
         +'</div>';
     }).join('');
-    return'<div style="margin-bottom:18px;page-break-inside:avoid">'
-      +'<div style="font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#29ABE2;border-bottom:1.5px solid #bae6fd;padding-bottom:4px;margin-bottom:10px">'+esc(lessonName)+'</div>'
-      +itemsHtml
-      +'</div>';
+    return '<div style="margin-bottom:16px;page-break-inside:avoid"><div style="font-size:.78rem;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #ccc">'+esc(sec.section)+'</div>'+itemsHtml+'</div>';
   }).join('');
-
-  // BIP changes
-  const bipSections=changes.filter(s=>s.section.toLowerCase().startsWith('bip:')).map(sec=>{
-    const bipName=sec.section.replace(/^bip:\s*/i,'');
-    const itemsHtml=sec.items.map(it=>{
-      return'<div style="margin-bottom:8px">'
-        +(it.html?'<div style="font-size:.85rem;line-height:1.6">'+it.html+'</div>':'<div style="font-size:.87rem">'+esc(it.value||'')+'</div>')
-        +'</div>';
-    }).join('');
-    return'<div style="margin-bottom:18px;page-break-inside:avoid">'
-      +'<div style="font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#dc2626;border-bottom:1.5px solid #fca5a5;padding-bottom:4px;margin-bottom:10px">BIP: '+esc(bipName)+'</div>'
-      +itemsHtml
-      +'</div>';
-  }).join('');
-
-  // Client notes section (non-supervisor notes)
-  const clientNoteChanges=changes.filter(s=>s.section==='Client Notes').map(sec=>{
-    return sec.items.map(it=>it.value||'').join('\n');
-  }).join('\n');
-
-  const _supHtml='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Overlap Notes — '+clientName+'</title>'
-    +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">'
-    +'<style>'
-    +'*{box-sizing:border-box;margin:0;padding:0}'
-    +'body{font-family:"Sarabun",system-ui,sans-serif;color:#1e293b;background:#fff}'
-    +'.page{padding:36px 48px;max-width:760px;margin:0 auto}'
-    +'.letterhead{text-align:center;padding-bottom:14px;margin-bottom:18px;border-bottom:2px solid #29ABE2}'
-    +'.letterhead h1{font-size:1.15rem;font-weight:700;color:#29ABE2;letter-spacing:.03em}'
-    +'.letterhead h2{font-size:.95rem;font-weight:600;margin-top:4px;color:#334155}'
-    +'.meta{width:100%;border-collapse:collapse;margin-bottom:20px}'
-    +'.meta td{font-size:.9rem;padding:3px 0}'
-    +'.meta td:first-child{font-weight:700;width:140px;color:#334155}'
-    +'.sec-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#64748b;border-bottom:1.5px solid #e2e8f0;padding-bottom:5px;margin:20px 0 10px}'
-    +'.lesson-title{font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#29ABE2;border-bottom:1.5px solid #bae6fd;padding-bottom:4px;margin:18px 0 10px}'
-    +'.footer{margin-top:36px;border-top:1px solid #e2e8f0;padding-top:12px;text-align:center;font-size:.7rem;color:#64748b;line-height:1.7}'
-    +'@media print{.page{padding:20px 28px}}'
-    +'</style></head><body>'
-    +'<div class="page">'
-    // Letterhead
-    +'<div class="letterhead">'
-    +'<h1>CARE CHILD PROFESSIONAL SCHOOL</h1>'
-    +'<h2>'+(_isSchoolSup?'School Observation Notes':'Overlap Notes')+'</h2>'
-    +'</div>'
-    // Session info table
-    +'<table class="meta">'
-    +'<tr><td>Client:</td><td>'+esc(clientName)+'</td></tr>'
-    +'<tr><td>Date:</td><td>'+_fmtDate(sv.date)+'</td></tr>'
-    +'<tr><td>Therapist:</td><td>'+esc(txNameStr)+'</td></tr>'
-    +'<tr><td>Overlapped by:</td><td>'+esc(currentUser.name)+'</td></tr>'
-    +'<tr><td>Type:</td><td>'+esc(sv.supType||'overlap')+'</td></tr>'
-    +'</table>'
-    // General
-    +'<div class="sec-title">General</div>'
-    +generalHtml
-    // Behaviors
-    +'<div class="sec-title">Behaviors</div>'
-    +behaviorsHtml
-    // Lesson Updates
-    +(lessonSections?'<div class="sec-title">Lesson Updates</div>'+lessonSections:'')
-    // BIP updates
-    +(bipSections?'<div class="sec-title">BIP Updates</div>'+bipSections:'')
-    // Footer
-    +'<div class="footer">'
-    +'โรงเรียน ดูแลเด็ก แคร์โปรเพสชั่นแนล, 296/2 พระราม 3 ซอย 14, ถนน พระราม 3, บางโคล่, บางคอแหลม กรุงเทพฯ 10120<br>'
-    +'CARE CHILD PROFESSIONAL SCHOOL, 296/2 Rama3 Soi 14, Rama 3 Road, Bangkhlo, Bangkholaem, Bangkok 10120, Thailand<br>'
-    +'+66 (0) 2 689 1818, (0) 98 749 8793 | contact.info@carethailand.co.th | facebook.com/CAREThailandSchool | www.carethailand.co.th'
-    +'</div>'
-    +'</div>'
+  const _supHtml='<!DOCTYPE html><html><head><title>Supervision — '+clientName+'</title>'
+    +'<style>body{font-family:system-ui,sans-serif;padding:30px;max-width:700px;margin:0 auto;color:#1e293b}'
+    +'h1{font-size:1.3rem;color:#29ABE2;margin-bottom:4px}'
+    +'.meta{font-size:.82rem;color:#64748b;margin-bottom:20px}'
+    +'@media print{body{padding:15px}}</style></head><body>'
+    +'<h1>Supervision Summary</h1>'
+    +'<div class="meta">Client: <strong>'+esc(clientName)+'</strong> &nbsp;|&nbsp; '+(_isSchoolSup?'🏫 School Observation':'Supervision')+' &nbsp;|&nbsp; Type: '+(sv.supType||'overlap')+' &nbsp;|&nbsp; Date: '+sv.date+' &nbsp;|&nbsp; Supervisor: '+esc(currentUser.name)+'<br>'+totalChanges+' change'+(totalChanges!==1?'s':'')+' recorded</div>'
+    +sectionsHtml
+    +'<p style="margin-top:30px;font-size:.75rem;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px">Generated by ABA Binder · '+new Date().toLocaleString()+'</p>'
     +'</body></html>';
   // Use iframe to avoid popup blocker
   let _pf=document.getElementById('_print_frame');
@@ -1790,17 +1306,6 @@ async function printSupPDF(){
     c.supNotif={date:sv.date,supType:sv.supType||'overlap',count:totalChanges,by:currentUser.name};
     saveData();
   }
-  // Retry any pending BIP logs from this supervision visit
-  const _svState=getSupState();
-  const _pendingSupBIP=getPendingBIPLogs(_svState.clientId||selectedClientId,_svState.date||'');
-  if(_pendingSupBIP.length){
-    showSaveStatus('saving','Syncing '+_pendingSupBIP.length+' pending BIP log(s)...');
-    for(const _pe of _pendingSupBIP){
-      const _r=await sbUpsert('behaviors',{id:_pe.id,client_id:_pe.clientId,bip_id:_pe.bipId,date:_pe.date,func:_pe.function,count:_pe.count!=null?_pe.count:null,duration:_pe.duration!=null?_pe.duration:null,avg_duration:_pe.avgDuration!=null?_pe.avgDuration:null,rate:_pe.rate!=null?_pe.rate:null,notes:JSON.stringify({text:_pe.notes||'',setting:_pe.setting||'therapy'}),tx_id:_pe.txId||null,tx_name:_pe.txName||null});
-      if(_r!==null)clearBIPDraft(_pe.clientId,_pe.date);
-    }
-    showSaveStatus('saved','BIP logs synced ✓');
-  }
   closeModal();
   clearSupState();
   render();
@@ -1808,76 +1313,57 @@ async function printSupPDF(){
 
 // ── AUTH ──
 async function doLogin(){
-  const emailVal=document.getElementById('l-email').value.trim();
-  const pw=document.getElementById('l-pass').value;
+  const u=document.getElementById('l-user').value.trim();
+  const p=document.getElementById('l-pass').value;
   const btn=document.querySelector('#login-screen .btn-primary');
-  const errEl=document.getElementById('l-err');
-  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
-  if(errEl)errEl.style.display='none';
-  function _loginErr(msg){
+  if(btn){btn.textContent='Loading...';btn.disabled=true;}
+  // Load from Supabase first
+  const ok=await loadFromSupabase();
+  console.log('loadFromSupabase returned:',ok,'users:',DB.users.length);
+  if(!ok){
     if(btn){btn.textContent='Log In';btn.disabled=false;}
-    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
-  }
-  function _loginSuccess(user,isLegacy){
-    currentUser=user;
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('nav').style.display='flex';
-    document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
-    document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
-    document.getElementById('btn-clients').style.display=user.role==='admin'?'none':'';
-    const _cpBtn=document.getElementById('btn-change-pw');if(_cpBtn)_cpBtn.style.display=user.authId?'':'none';
-    document.getElementById('app').style.display='block';
-    showView(user.role==='admin'?'admin':'clients');
-    if(isLegacy){
-      setTimeout(()=>{
-        const b=document.createElement('div');
-        b.id='auth-upgrade-banner';
-        b.style.cssText='position:fixed;top:54px;left:0;right:0;background:#f59e0b;color:#78350f;text-align:center;padding:8px 16px;font-size:.85rem;font-weight:600;z-index:999;display:flex;align-items:center;justify-content:center;gap:12px';
-        b.innerHTML='🔒 Your account still uses the old login. <button onclick="showUpgradeModal()" style="background:#78350f;color:#fff;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;font-weight:600">Upgrade Now</button>';
-        document.body.insertBefore(b,document.getElementById('app'));
-      },300);
-    }
-  }
-  let authData=null,authErr=null;
-  try{
-    const _r=await Promise.race([
-      _supa.auth.signInWithPassword({email:emailVal,password:pw}),
-      new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),10000))
-    ]);
-    authData=_r.data;authErr=_r.error;
-  }catch(e){
-    if(e.message==='timeout'){_loginErr('Connection timed out — check internet and try again.');return;}
-    authErr=e;
-  }
-  if(authErr&&authErr.message&&authErr.message.toLowerCase().includes('email not confirmed')){
-    _loginErr('Please check your email and click the confirmation link before logging in.');return;
-  }
-  if(!authErr&&authData&&authData.user){
-    const ok=await loadFromSupabase();
-    if(!ok){await _supa.auth.signOut();_loginErr('Connection error — check internet.');return;}
-    const user=DB.users.find(x=>x.authId===authData.user.id);
-    if(!user){await _supa.auth.signOut();_loginErr('Account not linked — contact your administrator.');return;}
-    if(user.active===false){await _supa.auth.signOut();_loginErr('Account deactivated. Contact your administrator.');return;}
-    _loginSuccess(user,false);
+    document.getElementById('l-err').textContent='Connection error — check internet and try again';
+    document.getElementById('l-err').style.display='block';
     return;
   }
-  const ok=await loadFromSupabase();
-  if(!ok){_loginErr('Connection error — check internet and try again.');return;}
-  const legacyUser=DB.users.find(x=>(x.username===emailVal||x.email===emailVal)&&x.password===pw&&!x.authId);
-  if(!legacyUser){_loginErr('Invalid email or password.');return;}
-  if(legacyUser.active===false){_loginErr('Account deactivated. Contact your administrator.');return;}
-  _loginSuccess(legacyUser,true);
+  if(!DB.users.length){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    document.getElementById('l-err').textContent='No users found in database — check Supabase setup';
+    document.getElementById('l-err').style.display='block';
+    return;
+  }
+  const user=DB.users.find(x=>x.username===u&&x.password===p);
+  console.log('Login attempt — username:',u,'match:',!!user,'all users:',DB.users.map(x=>x.username));
+  if(!user){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    document.getElementById('l-err').textContent='Invalid username or password';
+    document.getElementById('l-err').style.display='block';
+    return;
+  }
+  if(user.active===false){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    document.getElementById('l-err').textContent='This account has been deactivated. Contact your administrator.';
+    document.getElementById('l-err').style.display='block';
+    return;
+  }
+  currentUser=user;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('nav').style.display='flex';
+  document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
+  document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
+  document.getElementById('btn-clients').style.display=user.role==='admin'?'none':'';
+  document.getElementById('app').style.display='block';
+  showView(user.role==='admin'?'admin':'clients');
 }
-async function doLogout(){
-  await _supa.auth.signOut().catch(()=>{});
+function doLogout(){
   currentUser=null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('nav').style.display='none';
   document.getElementById('app').style.display='none';
-  const ub=document.getElementById('auth-upgrade-banner');if(ub)ub.remove();
-  const le=document.getElementById('l-email');if(le)le.value='';
+  // Reset login form
+  const lu=document.getElementById('l-user');if(lu)lu.value='';
   const lp=document.getElementById('l-pass');if(lp)lp.value='';
-  const lerr=document.getElementById('l-err');if(lerr)lerr.style.display='none';
+  const le=document.getElementById('l-err');if(le)le.style.display='none';
   const btn=document.querySelector('#login-screen .btn-primary');
   if(btn){btn.textContent='Log In';btn.disabled=false;}
   hideSyncStatus();
@@ -1958,52 +1444,14 @@ function renderClientList(){
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&visibleClients.length===0){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
   }
-
-  function clientCard(c){
+  const cards=visibleClients.map(c=>{
     const n=DB.lessons.filter(l=>l.clientId===c.id).length;
     const last=DB.sessions.filter(s=>s.clientId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const flags=countFlags(c.id);
-    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
-  }
-
+    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')"><h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⚑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
+  }).join('');
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
-  const header='<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div>';
-
-  // TX roles: flat list (only see their assigned clients anyway)
-  if(currentUser&&['junior','senior'].includes(currentUser.role)){
-    return header+'<div class="card-grid">'+visibleClients.map(clientCard).join('')+'</div><div id="modal-area"></div>';
-  }
-
-  // Supervisor/director/admin: group by assigned supervisor
-  const supUsers=(DB.users||[]).filter(function(u){return['supervisor','director'].includes(u.role);});
-  const supMap={};
-  supUsers.forEach(function(u){supMap[u.id]=u.name;});
-
-  const UNASSIGNED='__unassigned__';
-  const groups={};
-  visibleClients.forEach(function(c){
-    const sid=c.supervisor||UNASSIGNED;
-    if(!groups[sid])groups[sid]=[];
-    groups[sid].push(c);
-  });
-
-  // Sort: supervisors A-Z, Unassigned last
-  const supIds=Object.keys(groups).filter(function(k){return k!==UNASSIGNED;}).sort(function(a,b){
-    return (supMap[a]||'').localeCompare(supMap[b]||'');
-  });
-  if(groups[UNASSIGNED])supIds.push(UNASSIGNED);
-
-  let html=header;
-  supIds.forEach(function(sid){
-    const label=sid===UNASSIGNED?'Unassigned':(supMap[sid]||'Unknown Supervisor');
-    const clients=groups[sid].slice().sort(function(a,b){return a.name.localeCompare(b.name);});
-    html+='<div style="margin-bottom:24px">'
-      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">'+esc(label)+'</div>'
-      +'<div class="card-grid">'+clients.map(clientCard).join('')+'</div>'
-      +'</div>';
-  });
-  html+='<div id="modal-area"></div>';
-  return html;
+  return '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div><div class="card-grid">'+cards+'</div><div id="modal-area"></div>';
 }
 function countFlags(cid){return DB.lessons.filter(l=>l.clientId===cid).reduce((s,l)=>s+l.sds.reduce((s2,sd)=>s2+sd.targets.filter(t=>t.status==='flagged').length,0),0);}
 function showAddClient(){modal('<h3 style="margin-bottom:14px">Add Client</h3><label>Name<input id="nc-n" type="text"></label><label style="margin-top:10px">DOB<input id="nc-d" type="date"></label><label style="margin-top:10px">Diagnosis<input id="nc-dx" type="text" value="ASD"></label><div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="addNewClient()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
@@ -2052,7 +1500,7 @@ function renderClientView(){
       const _isTxRole=['junior','senior','qcd'].includes(currentUser&&currentUser.role);
       const _lastSessBtns=(_lastSess&&_isTxRole)?
         '<button style="background:#4f46e5;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="editLastSession()" title="Edit the most recent session data">✏ Edit Last</button>'
-        
+        +'<button style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="deleteLastSession()" title="Delete the most recent session">🗑 Delete Last</button>'
         :'';
       stickyBar='<div id="sess-sticky" class="ss-idle">'
         +'<span class="ss-label">⚠ SESSION NOT STARTED</span>'
@@ -2121,7 +1569,7 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eff6ff;border:1p'+'x solid #b3e0f5;color:#1a7fad;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':((['supervisor','director'].includes(currentUser&&currentUser.role||''))?'':(isSessionActive()?'':' class="session-locked"')))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 View only — start a session to record data</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
@@ -2143,26 +1591,6 @@ function isSessionActive(){
   if(!currentUser)return false;
   const isSup=['supervisor','director'].includes(currentUser.role);
   return isSup?!!getSupState().started:!!getSessState().started;
-}
-
-// ── Session guard — call at top of any data-entry function ──
-function requireActiveSession(){
-  const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
-  if(isSup){
-    const sv=getSupState();
-    if(!sv.started||sv.clientId!==selectedClientId){
-      toast('⚠ Start a supervision session first before recording data.','error',3500);
-      return false;
-    }
-    return true;
-  } else {
-    const ss=getSessState();
-    if(!ss.started||ss.clientId!==selectedClientId){
-      toast('⚠ Start a session first before recording data.','error',3500);
-      return false;
-    }
-    return true;
-  }
 }
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
@@ -2217,7 +1645,7 @@ function renderSessionEntry(){
   const ss_check=getSessState();
 
   const today=new Date().toISOString().slice(0,10);
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
@@ -2245,7 +1673,7 @@ function renderLessonSessionBlock(lesson){
   const styleBadge='<span class="badge badge-gray">'+lesson.teachingStyle+'</span>';
   const phaseBadge='<span class="badge badge-'+(lesson.phase==='acquisition'?'blue':lesson.phase==='dt'?'purple':'green')+'">'+lesson.phase+'</span>';
   let body='';
-  if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong><div style="margin-top:4px;white-space:normal">'+formatNoteText(supNote.text)+'</div></div>';
+  if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong> '+esc(supNote.text)+'</div>';
 
   if(lesson.phase==='acquisition'){
     lesson.sds.forEach((sd,si)=>{
@@ -2254,7 +1682,7 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
+      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>';
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -2266,20 +1694,18 @@ function renderLessonSessionBlock(lesson){
 
   // general note for lesson
   body+='<div style="margin-top:10px"><label>Lesson note (optional)</label><input type="text" id="lnote_'+lesson.id+'" placeholder="Overall note for this lesson..."></div>';
-  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
+  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+styleBadge+' '+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
 }
 
 // ── Target session entry ──
 function renderTargetSessionEntry(lesson,sd,target){
-  // On-hold targets: no data input — the yellow renderHoldSection shows them below
-  if(target.status==='on_hold') return '';
   const id=lesson.id+'_'+sd.id+'_'+target.id;
   const graphId='sg_'+id;
   // build mini graph data
   let html='<div class="target-block">';
   html+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
   html+='<strong style="flex:1;font-size:.88rem">🎯 '+esc(target.name)+'</strong>';
-  // N/A checkbox removed — blank = not recorded
+  html+='<label style="display:flex;align-items:center;gap:4px;font-size:.8rem;color:var(--muted);cursor:pointer"><input type="checkbox" id="na_'+id+'" onchange="toggleNA(\''+id+'\')"> N/A</label>';
   if(target.dataType==='ta'){
     const _cm=target.chainingMode||'total';
     const _cmLabel=_cm==='forward'?'⬇ Forward Chaining':_cm==='backward'?'⬆ Backward Chaining':'↔ Total Task';
@@ -2291,7 +1717,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   }
   if(target.teachingSteps&&target.teachingSteps.length){
     const curStep=target.teachingSteps[target.dtStepIndex||0]||target.teachingSteps[0];
-    html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;white-space:normal;word-break:break-word" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
+    html+='<span style="font-size:.75rem;background:#e8f6fd;color:#1a7fad;padding:2px 8px;border-radius:4px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
   }
   html+='<span class="target-status status-'+target.status+'">'+target.status.replace(/_/g,' ')+'</span>';
   if(target.dataType!=='checklist'){html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';}
@@ -2389,9 +1815,10 @@ function renderTargetSessionEntry(lesson,sd,target){
       html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Recent</div>';
       html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
       ftHist.forEach(function(ft){
-        const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
+        const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+        const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
         html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
+        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
         html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+(ft.txName?ft.txName.split(' ')[0]:'')+'</div>';
         html+='</div>';
       });
@@ -2420,11 +1847,12 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div>';
     html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
     ftHistory.forEach(function(ft){
-      const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
+      const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+      const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
       const shortDate=fmtDateShort(ft.date);
       const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
       html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
+      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+ft.result+'</div>';
       html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+shortDate+'<br>'+txFirst+'</div>';
       html+='</div>';
     });
@@ -2633,53 +2061,6 @@ function isStepMastered(target,stepIdx){
 
 // ── Session draft: save/restore in-progress form data when switching tabs ──
 const SESS_DRAFT_KEY='sess_draft_v1';
-const BIP_DRAFT_KEY='bip_draft_v1';
-
-function getBIPDraft(){try{return JSON.parse(localStorage.getItem(BIP_DRAFT_KEY))||{};}catch(e){return{};}}
-function saveBIPDraft(entry){
-  const draft=getBIPDraft();
-  if(!draft.pending)draft.pending=[];
-  draft.pending.push(entry);
-  try{localStorage.setItem(BIP_DRAFT_KEY,JSON.stringify(draft));}catch(e){console.warn('BIP draft save failed',e);}
-}
-function clearBIPDraft(clientId,date){
-  const draft=getBIPDraft();
-  if(!draft.pending){localStorage.removeItem(BIP_DRAFT_KEY);return;}
-  draft.pending=draft.pending.filter(function(e){return!(e.clientId===clientId&&e.date===date);});
-  if(!draft.pending.length)localStorage.removeItem(BIP_DRAFT_KEY);
-  else localStorage.setItem(BIP_DRAFT_KEY,JSON.stringify(draft));
-}
-function getPendingBIPLogs(clientId,date){
-  const draft=getBIPDraft();
-  return(draft.pending||[]).filter(function(e){return e.clientId===clientId&&e.date===date;});
-}
-
-// ── Save status indicator ──
-function showSaveStatus(state,msg){
-  let el=document.getElementById('save-status-badge');
-  if(!el){
-    el=document.createElement('div');
-    el.id='save-status-badge';
-    el.style.cssText='position:fixed;bottom:54px;right:16px;padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:600;z-index:9999;transition:opacity .4s;cursor:default;box-shadow:0 2px 8px rgba(0,0,0,.15)';
-    document.body.appendChild(el);
-  }
-  if(state==='saving'){
-    el.style.background='#fef3c7';el.style.color='#92400e';
-    el.textContent='⟳ Saving...';el.style.opacity='1';
-  } else if(state==='saved'){
-    el.style.background='#dcfce7';el.style.color='#15803d';
-    el.textContent='✓ '+(msg||'Saved');el.style.opacity='1';
-    setTimeout(function(){el.style.opacity='0';},6000);
-  } else if(state==='pending'){
-    el.style.background='#fef9c3';el.style.color='#854d0e';
-    el.textContent='⚠ '+(msg||'Unsaved logs — will sync at End Session');el.style.opacity='1';
-  } else if(state==='error'){
-    el.style.background='#fee2e2';el.style.color='#991b1b';
-    el.textContent='✕ '+(msg||'Save failed — check connection');el.style.opacity='1';
-  } else {
-    el.style.opacity='0';
-  }
-}
 
 function saveSessionDraft(){
   if(!selectedClientId)return;
@@ -2840,7 +2221,10 @@ async function saveSession(){
             if(target.dataType==='checklist')entry._skipped=false; // FT is the only data needed
           }
 
-          if(!entry._skipped){
+          const naEl=document.getElementById('na_'+id);
+          if(naEl&&naEl.checked){
+            ld.targets.push({targetId:target.id,targetName:target.name,sdId:sd.id,dataType:target.dataType,na:true});
+          } else if(!entry._skipped){
             ld.targets.push(entry);
             // check mastery for percent/rating
             if(entry.pct!=null)checkMastery(lesson,target,date,entry.pct);
@@ -2876,75 +2260,48 @@ async function saveSession(){
   if(_pnEl)updateSessState('parentNote',_pnEl.value.trim());
   const _pnVal=(document.getElementById('parent-note-input')||{}).value||ss_save.parentNote||'';
   const newSess={id:uid(),clientId:selectedClientId,date,txId:currentUser.id,txName:currentUser.name,sessTime,sessType:ss_save.sessType||'overlap',setting:ss_save.setting||'therapy',parentNote:_pnVal,notes:txNotes,lessonData};
-  // Save to Supabase FIRST — only commit to local state if it succeeds
+  DB.sessions.push(newSess);
+  // Persist first trial results onto target.firstTrialData[]
+  lessonData.forEach(function(ld){
+    const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
+    if(!lesson2)return;
+    (ld.targets||[]).forEach(function(te){
+      if(te.na||!te.firstTrial)return;
+      lesson2.sds.forEach(function(sd2){
+        const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
+        if(!tgt)return;
+        if(!tgt.firstTrialData)tgt.firstTrialData=[];
+        tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
+      });
+    });
+  });
+  clearSessState();
+  clearSessionDraft();
+  // flash checklist checkmarks immediately
+  lessonData.forEach(ld=>{
+    (ld.targets||[]).filter(t=>t.dataType!=='maintenance').forEach(t=>{
+      const el=document.getElementById('cl_'+ld.lessonId+'_'+t.targetId);
+      if(el){el.className='cl-check done';el.textContent='✓';}
+    });
+  });
+  // Save to Supabase — await so we know if it succeeded
   toast('Saving session…');
-  showSaveStatus('saving','Saving session...');
-  let _sessCommitted=false;
   try{
     const saveResult=await sbSaveSession(sessionToRow(newSess));
     if(saveResult===null){
-      showSaveStatus('error','Session save failed — check connection');
       toast('⚠ Session save failed — check your connection and try again','error',6000);
-      // Do NOT clear state — TX can retry by pressing End Session again
+      // Put session back so TX can retry
+      DB.sessions.pop();
       return;
     }
-    // Supabase confirmed save — now commit to local state
-    DB.sessions.push(newSess);_sessCommitted=true;
-    // Persist first trial results onto target.firstTrialData[]
-    lessonData.forEach(function(ld){
-      const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
-      if(!lesson2)return;
-      (ld.targets||[]).forEach(function(te){
-        if(te.na||!te.firstTrial)return;
-        lesson2.sds.forEach(function(sd2){
-          const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
-          if(!tgt)return;
-          if(!tgt.firstTrialData)tgt.firstTrialData=[];
-          tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
-        });
-      });
-    });
-    // Change 1: auto-introduce not_started targets when TX records any data
-    lessonData.forEach(function(ld){
-      const _lesson=DB.lessons.find(function(l){return l.id===ld.lessonId;});
-      if(!_lesson)return;
-      (ld.targets||[]).forEach(function(te){
-        if(te.na)return;
-        _lesson.sds.forEach(function(sd2){
-          const tgt=sd2.targets.find(function(t){return t.id===te.targetId;});
-          if(!tgt||tgt.status!=='not_started')return;
-          tgt.status='in_progress';
-          if(!tgt.introducedDate)tgt.introducedDate=date;
-        });
-      });
-    });
-    clearSessState();
-    clearSessionDraft();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
     await flushSave();
-
-    // Retry any pending BIP logs that failed to save during session
-    const _pendingBIP=getPendingBIPLogs(newSess.clientId,newSess.date);
-    if(_pendingBIP.length){
-      showSaveStatus('saving','Syncing '+_pendingBIP.length+' pending BIP log(s)...');
-      let _failCount=0;
-      for(const _pe of _pendingBIP){
-        const _r=await sbUpsert('behaviors',{id:_pe.id,client_id:_pe.clientId,bip_id:_pe.bipId,date:_pe.date,func:_pe.function,count:_pe.count!=null?_pe.count:null,duration:_pe.duration!=null?_pe.duration:null,avg_duration:_pe.avgDuration!=null?_pe.avgDuration:null,rate:_pe.rate!=null?_pe.rate:null,notes:JSON.stringify({text:_pe.notes||'',setting:_pe.setting||'therapy'}),tx_id:_pe.txId||null,tx_name:_pe.txName||null});
-        if(_r!==null){clearBIPDraft(_pe.clientId,_pe.date);}
-        else{_failCount++;}
-      }
-      if(_failCount>0){showSaveStatus('error',_failCount+' BIP log(s) still failed — check connection');}
-      else{showSaveStatus('saved','All BIP logs synced ✓');}
-    } else {
-      showSaveStatus('saved','Session saved ✓');
-    }
-
-    toast('Session saved ✓');
-    selectedTab='checklist';render();
+    toast('Session saved ✓ — returning to client list');
+    setTimeout(()=>showView('clients'),800);
   }catch(e){
     console.error('saveSession error',e);
     toast('⚠ Save error: '+e.message,'error',6000);
-    if(_sessCommitted)DB.sessions.pop();
+    DB.sessions.pop();
   }
 }
 
@@ -3008,7 +2365,7 @@ function checkDTStepAdvance(lesson,date,ftResult,pct){
 // LESSONS VIEW
 // ════════════════════════════════════════════════
 function renderLessonsView(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddLesson()">+ Add Lesson</button>':'';
   const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
   const maint=lessons.filter(l=>l.phase==='maintenance');
@@ -3082,7 +2439,7 @@ function renderHoldSection(lesson,sd,supView){
 function renderLessonCard(lesson){
   const phase=lesson.phase;
   const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
-  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
+  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
   const sdsHtml=lesson.sds.map((sd,si)=>{
@@ -3155,10 +2512,11 @@ function renderLessonCard(lesson){
         if(!ftH.length)return'';
         let d='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
         ftH.forEach(function(ft){
-          const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
+          const col=ft.result==='C'?'#1D9E75':ft.result==='P'?'#534AB7':ft.result==='I'?'#993C1D':'#5F5E5A';
+          const bg=ft.result==='C'?'#E1F5EE':ft.result==='P'?'#EEEDFE':ft.result==='I'?'#FAECE7':'#F1EFE8';
           const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
           d+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+_ftLabel+'</div>'
+            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+ft.result+'</div>'
             +'<div style="font-size:.63rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+txFirst+'</div>'
             +'</div>';
         });
@@ -3170,28 +2528,7 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-    const _isSup=['supervisor','director'].includes(currentUser.role);
-    const _sdNotes=sd.notes||[];
-    let sdNotesHtml='';
-    if(_sdNotes.length){
-      sdNotesHtml+=_sdNotes.slice().reverse().map(function(n,ni){
-        const _realIdx=_sdNotes.length-1-ni;
-        const _delBtn=_isSup?'<button class="btn btn-xs no-print" style="padding:0 5px;font-size:.68rem;background:#fee2e2;color:#991b1b;border:none;border-radius:3px;cursor:pointer" onclick="deleteSDNote(\''+lesson.id+'\',\''+sd.id+'\','+_realIdx+')">&#x2715;</button>':'';
-        return '<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'
-          +'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px;display:flex;justify-content:space-between">'
-          +'<span>'+esc(n.date)+(n.authorName?' &middot; '+esc(n.authorName.split(' ')[0]):'')+'</span>'+_delBtn
-          +'</div>'
-          +'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';
-      }).join('');
-    }
-    if(_isSup){
-      sdNotesHtml+='<div style="display:flex;gap:6px;margin-top:4px">'
-        +'<textarea id="sdnadd_'+sd.id+'" rows="2" style="flex:1;font-size:.8rem;resize:vertical;min-height:34px;background:#fffef5;border:1px dashed #fcd34d;border-radius:6px;padding:5px 8px;color:#78350f" placeholder="Add SD note for TX..."></textarea>'
-        +'<button class="btn btn-sm no-print" style="align-self:flex-end;white-space:nowrap;background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="addSDNote(\''+lesson.id+'\',\''+sd.id+'\')">+ Add</button>'
-        +'</div>';
-    }
-    if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:10px"><em>R: '+esc(sd.response)+'</em></p>'+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3204,11 +2541,8 @@ function renderLessonCard(lesson){
      +'<button class="status-btn '+(isHold?'hold-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'hold\')" title="Pause this lesson">⏸ Hold</button>'
      :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
 
-  const _reintroBtn=isMaint&&['supervisor','director'].includes(currentUser.role)
-    ?'<button class="btn btn-sm no-print" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button> '
-    :'';
-  const supBtns=['supervisor','director'].includes(currentUser.role)?_reintroBtn+'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">&#x270F; Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">'+'+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">'+'+ SD</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  const supBtns=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">✏ Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">' + '+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">' + '+ SD</button>':'';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3><span class="badge badge-gray">'+lesson.teachingStyle+'</span>'+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function fmtDateShort(d){
@@ -3231,7 +2565,7 @@ function drawLessonChart(lesson,sd,target){
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(!graphMonth||s.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
-const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataType==='tally'?t.count/(s.sessTime||4):t.count):null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
+const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataType==='tally'?t.count/(s.sessTime||2):t.count):null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
   if(!labels.length){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">📊 No session data yet for this target.</p>';return;}
   if(wrapEl)wrapEl.style.border='1px solid #29ABE2';
   const isRating=target.dataType==='rating';
@@ -3276,8 +2610,8 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   }};
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#29ABE2',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
-    {label:'Mastery '+masteryLine+(isRating?'':isTally?'/hr':'%'),data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
-  ]},plugins:[phaseLinePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:10,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+    {label:'Mastery '+masteryLine+(isRating?'':('%')),data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
+  ]},plugins:[phaseLinePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:10,callback:v=>isRating?v:v+'%'},title:{display:true,text:isRating?'Rating':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── Mastery actions ──
@@ -3305,79 +2639,6 @@ function confirmMastery(lId,sId,tId){
   saveData();toast(allMastered?'🎉 All targets mastered! Consider advancing phase.':'✓ Target mastered',allMastered?4000:2500);render();
 }
 function rejectMastery(lId,sId,tId){const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';saveData();toast('Kept as in-progress');render();}
-function showReintroduceModal(lId){
-  const lesson=DB.lessons.find(x=>x.id===lId);
-  if(!lesson)return;
-  const masteredTargets=[];
-  lesson.sds.forEach(function(sd){
-    sd.targets.forEach(function(t){
-      if(t.status==='mastered')masteredTargets.push({sd,t});
-    });
-  });
-  if(!masteredTargets.length){
-    modal('<div style="padding:16px"><h3 style="margin-bottom:10px">Reintroduce: '+esc(lesson.name)+'</h3><p style="color:var(--muted)">No mastered targets to reintroduce.</p><button class="btn btn-outline" style="margin-top:12px" onclick="closeModal()">Close</button></div>');
-    return;
-  }
-  let rowsHtml='';
-  masteredTargets.forEach(function(item,i){
-    const t=item.t;
-    const steps=t.teachingSteps&&t.teachingSteps.length?t.teachingSteps:[];
-    const stepOpts=steps.length
-      ?'<select id="ri_step_'+i+'" style="font-size:.8rem;margin-top:4px;width:100%;border:1px solid var(--border);border-radius:6px;padding:3px 6px"><option value="0">(start from Step 1)</option>'
-        +steps.map(function(s,si){return'<option value="'+si+'">Step '+(si+1)+': '+esc(s.slice(0,50))+'</option>';}).join('')
-        +'</select>'
-      :'<span style="font-size:.75rem;color:var(--muted)">No teaching steps</span>';
-    rowsHtml+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer">'
-      +'<input type="checkbox" id="ri_chk_'+i+'" style="margin-top:2px;width:16px;height:16px;flex-shrink:0">'
-      +'<div style="flex:1">'
-      +'<div style="font-size:.88rem;font-weight:600">'+esc(t.name)+'</div>'
-      +'<div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">SD: '+esc(item.sd.sd||'')+'</div>'
-      +stepOpts
-      +'</div></label></div>';
-  });
-  window._reintroData={lId:lId,pairs:masteredTargets.map(function(x){return{sdId:x.sd.id,tId:x.t.id};})};
-  modal('<div style="max-height:80vh;overflow-y:auto">'
-    +'<h3 style="margin-bottom:4px">&#x1F504; Reintroduce: '+esc(lesson.name)+'</h3>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Select targets to reintroduce. Lesson will move back to <strong>Acquisition</strong>. Unchecked targets stay mastered.</p>'
-    +'<div style="margin-bottom:14px">'+rowsHtml+'</div>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button class="btn btn-primary" onclick="saveReintroduce()">&#x2713; Confirm Reintroduce</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
-    +'</div></div>');
-}
-
-function saveReintroduce(){
-  const _rd=window._reintroData||{};
-  const lId=_rd.lId, pairs=_rd.pairs||[];
-  const lesson=DB.lessons.find(x=>x.id===lId);
-  if(!lesson)return;
-  let anySelected=false;
-  pairs.forEach(function(p,i){
-    const chk=document.getElementById('ri_chk_'+i);
-    if(!chk||!chk.checked)return;
-    anySelected=true;
-    const stepEl=document.getElementById('ri_step_'+i);
-    const stepIdx=stepEl?parseInt(stepEl.value)||0:0;
-    lesson.sds.forEach(function(sd){
-      if(sd.id!==p.sdId)return;
-      const t=sd.targets.find(function(x){return x.id===p.tId;});
-      if(!t)return;
-      t.status='in_progress';
-      t.dtStepIndex=stepIdx;
-      // clear step mastery records so advancement tracking restarts
-      t.stepMasteryRecords={};
-    });
-  });
-  if(!anySelected){alert('Please select at least one target to reintroduce.');return;}
-  lesson.phase='acquisition';
-  saveData();
-  closeModal();
-  render();
-  toast('Lesson reintroduced — moved back to Acquisition ✓');
-}
-
-
 function setLessonStatus(lId,status){
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   if(status==='maintenance'&&l.phase!=='maintenance'){
@@ -3550,49 +2811,19 @@ function saveAddSDTarget(lId){
 function editSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   const existingSteps=(sd.teachingSteps||[]).join('\n');
-  const curStyle=sd.teachingStyle||'DTT';
-  const styleOpts=['DTT','NET','DTT+NET','Other'].map(s=>'<option value="'+s+'"'+(s===curStyle?' selected':'')+'>'+s+'</option>').join('');
   modal('<h3 style="margin-bottom:12px">Edit SD</h3>'
     +'<label>SD text<textarea id="esd-sd" rows="2">'+esc(sd.sd)+'</textarea></label>'
     +'<label style="margin-top:8px">Response<textarea id="esd-r" rows="2">'+esc(sd.response)+'</textarea></label>'
-    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Style</label>'
-    +'<select id="esd-ts" style="width:100%;margin-bottom:10px">'+styleOpts+'</select></div>'
-    +'<div><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
+    +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem;display:block;margin-bottom:4px">Teaching Steps <span style="font-weight:400;color:var(--muted);font-size:.78rem">(one per line — pre-fills all targets)</span></label>'
     +'<textarea id="esd-tsteps" rows="4" style="font-size:.82rem">'+esc(existingSteps)+'</textarea></div>'
     +'<div style="display:flex;gap:8px;margin-top:14px">'
     +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function addSDNote(lId,sId){
-  const el=document.getElementById('sdnadd_'+sId);
-  if(!el||!el.value.trim())return;
-  saveSDNote(lId,sId,el.value);
-  el.value='';
-  render();
-}
-function saveSDNote(lId,sId,val){
-  const _txt=(val||'').trim();if(!_txt)return;
-  const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
-  const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
-  if(!sd.notes)sd.notes=[];
-  const _today=new Date().toISOString().slice(0,10);
-  // update existing entry for today from same author, otherwise push new
-  const _existing=sd.notes.find(function(n){return n.date===_today&&n.authorId===currentUser.id;});
-  if(_existing){_existing.text=_txt;}
-  else{sd.notes.push({date:_today,authorId:currentUser.id,authorName:currentUser.name,text:_txt});}
-  saveData();
-}
-function deleteSDNote(lId,sId,idx){
-  const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
-  const sd=l.sds.find(x=>x.id===sId);if(!sd||!sd.notes)return;
-  sd.notes.splice(idx,1);
-  saveData();render();
-}
 function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   sd.sd=document.getElementById('esd-sd').value.trim()||sd.sd;
   sd.response=document.getElementById('esd-r').value.trim();
-  sd.teachingStyle=(document.getElementById('esd-ts')||{value:'DTT'}).value||'DTT';
   sd.teachingSteps=(document.getElementById('esd-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
   saveData();closeModal();render();
 }
@@ -3756,11 +2987,8 @@ function renderMaintenanceTab(){
       const id='mc_'+lesson.id+'_'+t.id;
       return '<div class="cl-row"><span style="flex:1;font-size:.87rem">'+esc(t.name)+'</span>'+badge+'<div class="cpi-group"><button class="cpi-btn plus" data-id="'+id+'" onclick="toggleCPI(this)">+</button><button class="cpi-btn P" data-id="'+id+'" onclick="toggleCPI(this)">P</button><button class="cpi-btn minus" data-id="'+id+'" onclick="toggleCPI(this)">−</button></div></div>';
     }).join('');
-    const schedule=lesson.maintenanceSchedule?'<span style="font-size:.78rem;color:var(--muted);margin-left:8px">&#x1F4C5; '+esc(lesson.maintenanceSchedule)+'</span>':'';
-    const _reintroMaintBtn=['supervisor','director'].includes(currentUser.role)
-      ?'<button class="btn btn-sm no-print" style="margin-left:8px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button>'
-      :'';
-    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+_reintroMaintBtn+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
+    const schedule=lesson.maintenanceSchedule?'<span style="font-size:.78rem;color:var(--muted);margin-left:8px">📅 '+esc(lesson.maintenanceSchedule)+'</span>':'';
+    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
   }).join('');
   return '<div style="margin-bottom:16px"><h2>🔁 Maintenance Lessons</h2><p style="font-size:.82rem;color:var(--muted)">Mark each mastered target with +, P, or − then End Session to save.</p></div>'+maintHtml;
 }
@@ -3772,11 +3000,9 @@ function renderMaintenanceTab(){
 // PROGRAM CHECKLIST TAB
 // ════════════════════════════════════════════════
 function renderProgramChecklist(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
   // get all sessions sorted oldest→newest, limit last 30
-  // Determine current context setting — show therapy sessions on therapy checklist, school on school
-  const _clSetting=(getSessState().setting||'therapy');
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(s.setting||'therapy')===_clSetting)
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId)
     .sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
 
   if(!lessons.length)return'<div class="empty-state">No lessons yet.</div>';
@@ -3798,8 +3024,7 @@ function renderProgramChecklist(){
       if(ld.dtData){map[ld.lessonId]='ran';}
       else if(nonMaint.length>0){
         const allNA=nonMaint.every(t=>t.na);
-        const hasRealData=nonMaint.some(t=>!t.na&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null));
-        map[ld.lessonId]=allNA?'na':(hasRealData?'ran':'na');
+        map[ld.lessonId]=allNA?'na':'ran';
       }
     });
     sessionLessons[s.id]=map;
@@ -3952,13 +3177,7 @@ function renderBehaviorTab(){
       }
       if(!val)return'';
       const paras=val.split(/\n+/).filter(s=>s.trim());
-      const paraHtml=paras.map(p=>{
-        const isBullet=p.match(/^[-•*]\s+/);
-        if(isBullet){const txt=p.replace(/^[-•*]\s+/,'');return'<div style="display:flex;gap:7px;margin:0 0 6px 0;font-size:.84rem;line-height:1.55"><span style="color:#29ABE2;flex-shrink:0;margin-top:2px">▸</span><span>'+esc(txt)+'</span></div>';}
-        const _lbM=p.match(/^([A-Za-z][^:]{1,50}?):\s+(.+)$/);
-        if(_lbM)return'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55"><strong style="color:#1e293b">'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</p>';
-        return'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55">'+esc(p)+'</p>';
-      }).join('');
+      const paraHtml=paras.map(p=>'<p style="font-size:.84rem;margin:0 0 8px 0;line-height:1.55">'+esc(p)+'</p>').join('');
       return '<div style="'+boxStyle+'">'
         +'<div style="'+hdrStyle+'">'+label+'</div>'
         +'<div style="padding:10px 12px">'+paraHtml+'</div></div>';
@@ -3987,7 +3206,7 @@ function renderBehaviorTab(){
         +'</select></div>'
       :'';
     const freqField='<div class="fg-sm"><label>Count</label><input type="number" id="bxfreq_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
-    const durField='<div class="fg-sm"><label>Duration</label><input type="text" id="bxdur_'+bip.id+'" min="0" placeholder="e.g. 1:15" style="width:90px"><div style="font-size:.7rem;color:var(--muted);margin-top:2px">0:05 = 5 sec · 1:15 = 1 min 15 sec</div></div>';
+    const durField='<div class="fg-sm"><label>Total Duration (min)</label><input type="number" id="bxdur_'+bip.id+'" min="0" step="1" placeholder="0" style="width:80px"></div>';
     const rateField='<div class="fg-sm"><label>Count (for rate)</label><input type="number" id="bxcnt_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
     const logFields=allMeas.map(m=>m==='frequency'?freqField:m==='duration'?durField:rateField).join('');
     const logForm='<div style="background:#f8fafc;border-radius:8px;padding:10px;margin-bottom:12px">'
@@ -4000,7 +3219,7 @@ function renderBehaviorTab(){
     // Graph canvases — one per measurement, stacked
     const graphHtml=allMeas.map(m=>'<div style="margin-bottom:16px">'
       +'<div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+';margin-bottom:4px">'+measLabels[m]+'</div>'
-      +(logs.length>=1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
+      +(logs.length>1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
         :'<p style="font-size:.78rem;color:var(--muted)">Graph shows after 2+ entries.</p>')
       +'</div>').join('');
     const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+logForm+graphHtml+'</div>';
@@ -4015,35 +3234,17 @@ function renderBehaviorTab(){
       +'</div>';
 
     // ── TX: single-page read view ──
-    const _bipSecColors={Prevention:'#16a34a',Teaching:'#7c3aed',Response:'#dc2626',Data:'#0369a1'};
-    const txSectionHdr=(label,icon)=>{
-      const col=_bipSecColors[label]||'#1e293b';
-      return '<div style="display:flex;align-items:center;gap:6px;margin:18px 0 8px;padding:5px 10px;background:'+col+'18;border-radius:6px;border-left:3px solid '+col+'">'
-        +'<span style="font-size:.95rem">'+icon+'</span>'
-        +'<span style="font-size:.78rem;font-weight:800;color:'+col+';letter-spacing:.05em;text-transform:uppercase">'+label+'</span>'
-        +'</div>';
-    };
+    const txSectionHdr=(label,icon)=>'<div style="display:flex;align-items:center;gap:6px;margin:16px 0 8px">'
+      +'<span style="font-size:1rem">'+icon+'</span>'
+      +'<span style="font-size:.82rem;font-weight:800;color:#1e293b;letter-spacing:.04em;text-transform:uppercase">'+label+'</span>'
+      +'<div style="flex:1;height:1px;background:#e5e7eb;margin-left:6px"></div></div>';
     const txBlock=(label,val)=>{
       if(!val||!val.trim())return'';
-      const lines=val.split(/\n+/).filter(s=>s.trim());
-      // Group lines: plain text → <p>, dash-prefixed → styled list items
-      let bodyHtml='';
-      lines.forEach(function(line){
-        const isBullet=line.match(/^[-•*]\s+/);
-        if(isBullet){
-          const txt=line.replace(/^[-•*]\s+/,'');
-          bodyHtml+='<div style="display:flex;gap:7px;margin:0 0 6px 0;font-size:.84rem;line-height:1.55">'
-            +'<span style="color:#29ABE2;flex-shrink:0;margin-top:2px">▸</span>'
-            +'<span>'+esc(txt)+'</span></div>';
-        } else {
-          const _lbM=line.match(/^([A-Za-z][^:]{1,50}?):\s+(.+)$/);
-          if(_lbM){bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;color:#374151"><strong style="color:#1e293b">'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</p>';}
-          else{bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;font-weight:500;color:#374151">'+esc(line)+'</p>';}
-        }
-      });
-      return '<div style="margin-bottom:12px;border-left:3px solid #29ABE2;padding:6px 0 2px 12px">'
-        +'<div style="font-size:.72rem;font-weight:800;color:#29ABE2;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">'+label+'</div>'
-        +bodyHtml+'</div>';
+      const paras=val.split(/\n+/).filter(s=>s.trim());
+      const paraHtml=paras.map(p=>'<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6">'+esc(p)+'</p>').join('');
+      return '<div style="margin-bottom:10px;border-left:3px solid #29ABE2;padding-left:12px">'
+        +'<div style="font-size:.75rem;font-weight:700;color:#29ABE2;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em">'+label+'</div>'
+        +paraHtml+'</div>';
     };
     const txBody=
       // Overview row
@@ -4092,7 +3293,6 @@ function renderBehaviorTab(){
 // BIP — log
 // ═══════════════════════════════════════════════════════
 function logBIP(bipId){
-  if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   const isSup2=['supervisor','director'].includes(currentUser.role);
@@ -4120,34 +3320,17 @@ function logBIP(bipId){
     entry.rate=sessHrs>0?Math.round(cnt/sessHrs*10)/10:null;
   }
   if(allMeas.includes('duration')){
-    // Parse duration: accepts plain minutes (e.g. "2", "1.5") or m:ss (e.g. "1:30") or bare seconds (e.g. "90s" or "90")
-    const _rawDur=(durEl&&durEl.value||'').trim();
-    let totalDur=0;
-    if(_rawDur){
-      const _mss=_rawDur.match(/^(\d+):(\d{1,2})$/);
-      const _sec=_rawDur.match(/^(\d+)s$/i);
-      if(_mss) totalDur=parseInt(_mss[1])+(parseInt(_mss[2])/60);
-      else if(_sec) totalDur=parseInt(_sec[1])/60;
-      else totalDur=parseFloat(_rawDur)||0;
-    }
-    totalDur=Math.round(totalDur*100)/100;
+    const totalDur=parseFloat(durEl&&durEl.value)||0;
     entry.duration=totalDur;
     const occurrences=entry.count||parseInt(cntEl&&cntEl.value)||1;
-    entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*100)/100:0;
+    entry.avgDuration=totalDur>0?Math.round(totalDur/occurrences*10)/10:0;
   }
   DB.behaviors.push(entry);
-  // Always save to local draft first — data is safe even if network fails
-  saveBIPDraft(entry);
-  showSaveStatus('saving');
-  sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count!=null?entry.count:null,duration:entry.duration!=null?entry.duration:null,avg_duration:entry.avgDuration!=null?entry.avgDuration:null,rate:entry.rate!=null?entry.rate:null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
+  sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count||null,duration:entry.duration||null,avg_duration:entry.avgDuration||null,rate:entry.rate||null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null})
     .then(function(r){
       if(r===null){
-        // Keep in draft — will retry at End Session
-        showSaveStatus('pending','BIP log saved locally — will sync at End Session');
-      } else {
-        // Successfully saved to Supabase — remove from pending draft
-        clearBIPDraft(entry.clientId,entry.date);
-        showSaveStatus('saved','BIP log saved');
+        DB.behaviors=DB.behaviors.filter(function(b){return b.id!==entry.id;});
+        toast('⚠ Behavior log failed to save — check connection','error',5000);
       }
     });
   toast('Logged '+esc(bip.name)+' ('+bipFnLabel(fn)+')');
@@ -4290,9 +3473,9 @@ function editBIP(bipId){
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+fnChecks+'</div></div>'
     +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem">Measurement</label>'
     +'<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:6px">'
-    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mfreq"'+(meas.includes('frequency')?' checked':'')+'>  Frequency</label>'
-    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mdur"'+(meas.includes('duration')?' checked':'')+'>  Duration</label>'
-    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mrate"'+(meas.includes('rate')?' checked':'')+'>  Rate</label>'
+    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mfreq"'+(meas.includes('frequency')?' checked':'')+' > Frequency</label>'
+    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mdur"'+(meas.includes('duration')?' checked':'')+' > Duration</label>'
+    +'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-mrate"'+(meas.includes('rate')?' checked':'')+' > Rate</label>'
     +'</div></div>'
     +'<div style="display:flex;gap:10px;margin-top:10px">'
     +'<label style="flex:1">Goal<input id="eb-goal" type="text" value="'+esc(bip.goal||'')+'"></label>'
@@ -4341,23 +3524,14 @@ function _doDeleteBIP(bipId){
 }
 
 function renderABCTab(){
-  const isSup=['supervisor','director'].includes(currentUser.role);
   const abcs=DB.abcData.filter(x=>x.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date));
-  const rows=abcs.slice(0,50).map(a=>'<tr>'
-    +'<td>'+fmtDateShort(a.date)+'</td>'
-    +'<td>'+esc(a.txName)+'</td>'
-    +'<td>'+esc(a.a)+'</td>'
-    +'<td>'+esc(a.b)+'</td>'
-    +'<td>'+esc(a.c)+'</td>'
+  const rows=abcs.slice(0,30).map(a=>'<tr><td>'+a.date+'</td><td>'+esc(a.txName)+'</td><td>'+esc(a.a)+'</td><td>'+esc(a.b)+'</td><td>'+esc(a.c)+'</td>'
     +'<td>'+(a.frequency!=null?a.frequency+' count':'—')+'</td>'
     +'<td>'+(a.duration!=null?a.duration+' min':'—')+'</td>'
     +'<td style="font-size:.78rem;max-width:160px;white-space:normal">'+(a.narrative?esc(a.narrative):'—')+'</td>'
-    +(isSup?'<td><button class="btn btn-xs btn-danger no-print" onclick="deleteABCEntry(\''+a.id+'\')">✕</button></td>':'')
-    +'</tr>').join('')||'<tr><td colspan="9" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
-  const _abcSS=getSessState();
-  const defaultDate=_abcSS.date||new Date().toISOString().slice(0,10);
+    +'</tr>').join('')||'<tr><td colspan="8" style="text-align:center;color:var(--muted)">No data yet.</td></tr>';
   return '<div class="card no-print"><h2>Log ABC</h2>'
-    +'<div class="form-row"><div class="fg-sm"><label>Date</label><input type="date" id="abc-date" value="'+defaultDate+'"></div></div>'
+    +''
     +'<div class="form-row"><div class="fg"><label>A — Antecedent</label><input type="text" id="abc-a" placeholder="What happened before..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>B — Behavior</label><input type="text" id="abc-b" placeholder="What the client did..."></div></div>'
     +'<div class="form-row"><div class="fg"><label>C — Consequence</label><input type="text" id="abc-c" placeholder="What happened after..."></div></div>'
@@ -4366,34 +3540,21 @@ function renderABCTab(){
     +'<div class="fg-sm"><label>Duration (min)</label><input type="number" id="abc-dur" min="0" step="1" placeholder="optional" style="width:90px"></div>'
     +'</div>'
     +'<div class="form-row"><div class="fg"><label>Narrative</label><textarea id="abc-narrative" rows="2" placeholder="Free-form description of the episode..."></textarea></div></div>'
-    +'<button class="btn btn-primary" onclick="logABC()">Save ABC Entry</button></div>'
-    +'<div class="card"><h2>ABC Log</h2><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Tx</th><th>A</th><th>B</th><th>C</th><th>Freq</th><th>Dur</th><th>Narrative</th>'+(isSup?'<th></th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+    +'<button class="btn btn-primary" onclick="logABC()">Save</button></div>'
+    +'<div class="card"><h2>ABC Log</h2><div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Tx</th><th>A</th><th>B</th><th>C</th><th>Freq</th><th>Dur</th><th>Narrative</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
 }
-
 function logABC(){
-  if(!requireActiveSession())return;
   const freq=document.getElementById('abc-freq').value;
   const dur=document.getElementById('abc-dur').value;
-  const dateEl=document.getElementById('abc-date');
   const _finalSS=getSessState();
-  const entryDate=dateEl?dateEl.value:(_finalSS.date||new Date().toISOString().slice(0,10));
-  const a=document.getElementById('abc-a').value.trim();
-  const b=document.getElementById('abc-b').value.trim();
-  const c=document.getElementById('abc-c').value.trim();
-  if(!a&&!b&&!c){toast('Fill in at least A, B, or C.','error');return;}
-  const entry={id:uid(),clientId:selectedClientId,date:entryDate,setting:_finalSS.setting||'therapy',parentNote:_finalSS.parentNote||'',txId:currentUser.id,txName:currentUser.name,a,b,c,
+  const entry={id:uid(),clientId:selectedClientId,date:(_finalSS.date||new Date().toISOString().slice(0,10)),setting:_finalSS.setting||'therapy',parentNote:_finalSS.parentNote||'',txId:currentUser.id,txName:currentUser.name,
+    a:document.getElementById('abc-a').value.trim(),b:document.getElementById('abc-b').value.trim(),c:document.getElementById('abc-c').value.trim(),
     narrative:document.getElementById('abc-narrative').value.trim()};
   if(freq!=='')entry.frequency=parseInt(freq);
   if(dur!=='')entry.duration=Math.round(parseFloat(dur));
-  DB.abcData.push(entry);sbSaveABC(entry);toast('ABC entry saved ✓');render();
+  DB.abcData.push(entry);saveData();toast('Saved ✓');render();
 }
-function deleteABCEntry(id){
-  if(!['supervisor','director'].includes(currentUser.role)){toast('⚠ No permission');return;}
-  if(!confirm('Delete this ABC entry?'))return;
-  sbFetch('abc_data','DELETE',null,'id=eq.'+id);
-  DB.abcData=DB.abcData.filter(a=>a.id!==id);
-  toast('Deleted ✓');render();
-}
+
 function renderNotesTab(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
   const today=new Date().toISOString().slice(0,10);
@@ -4434,7 +3595,7 @@ function renderNotesTab(){
   const allNotes=[...supNotes,...sessNotes].sort((a,b)=>b.date.localeCompare(a.date));
   const feed=allNotes.map(n=>'<div class="note-entry '+(n.type==='supervisor'?'sup-note':'')+'">'
     +'<div class="note-meta">'+n.label+' · '+n.date+'</div>'
-    +'<div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
+    +'<div class="note-text">'+esc(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
   const addForm=isSup
     ?'<div class="card no-print"><h2>Add General Note</h2><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
     :'';
@@ -4443,7 +3604,6 @@ function renderNotesTab(){
 }
 
 function saveReinforcer(){
-  if(!requireActiveSession())return;
   const name=(document.getElementById('r-name').value||'').trim();
   if(!name){alert('Enter a reinforcer name');return;}
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -4459,7 +3619,7 @@ function deleteReinforcer(idx){
   saveData();render();
 }
 
-function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -4489,7 +3649,7 @@ function renderReport(){
     const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">Not enough data.</p>')+'</div>').join('');
     return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+'</h4>'+graphs+'</div>';
   }).join('')||'<p style="color:var(--muted);font-size:.85rem">No BIPs defined.</p>';
-  const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('');
+  const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('');
   return '<div class="flex-end no-print" style="margin-bottom:12px"><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Print / PDF</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">General Notes</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
 }
 
@@ -4510,22 +3670,18 @@ function renderAdmin(){
     const statusBtn=inactive
       ?'<button class="btn btn-sm" class="unlock-exempt" style="font-size:.72rem;background:#16a34a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
       :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
-    return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted);font-size:.8rem">'+esc(u.email||u.username||'—')+'</td>'+'<td>'+(u.authId?'<span style="font-size:.72rem;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-weight:600">✓ Secure</span>':('<span style="font-size:.72rem;background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:10px;font-weight:600">⚠ Legacy</span> '+'<button style="font-size:.7rem;background:#f59e0b;color:#fff;border:none;padding:2px 8px;border-radius:5px;cursor:pointer" data-uid="'+u.id+'" onclick="showSetupAuthModal(this.dataset.uid)">Upgrade</button>'))+'</td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
+    return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted)">'+esc(u.username)+'</td>'+'<td><span style="font-family:monospace;font-size:.82rem;background:#f8fafc;padding:2px 6px;border-radius:4px;border:1px solid var(--border)">'+esc(u.password||'—')+'</span></td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
   }).join('');
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
-    +'<div class="card">'
-    +'<h3 style="margin-bottom:4px">Add New User</h3>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Creates a Supabase Auth account. Share the email &amp; temp password with the staff member.</p>'
-    +'<div class="form-row">'
-    +'<div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
-    +'<div class="fg"><label>Email<input id="au-email" type="email" placeholder="staff@clinic.com"></label></div>'
-    +'<div class="fg"><label>Temp Password<input id="au-p" type="text" placeholder="min 6 chars"></label></div>'
+    +'<div class="card"><h3 style="margin-bottom:12px">Add User</h3>'
+    +'<div class="form-row"><div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
+    +'<div class="fg"><label>Username<input id="au-u" type="text"></label></div>'
+    +'<div class="fg"><label>Password<input id="au-p" type="password"></label></div>'
     +'<div class="fg-sm"><label>Role<select id="au-r"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="qcd">QCD</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label></div>'
-    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="createAuthUser()">Create Account</button></div>'
-    +'</div></div>'
+    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="saveUser()">Add</button></div></div></div>'
     +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email / Username</th><th>Auth Status</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
     +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -4574,112 +3730,7 @@ function renderStorageBar(){
 }
 setTimeout(renderStorageBar,50);
 
-async function createAuthUser(){
-  const n=document.getElementById('au-n').value.trim();
-  const emailEl=document.getElementById('au-email');
-  const email=emailEl?emailEl.value.trim():'';
-  const pw=document.getElementById('au-p').value;
-  const role=document.getElementById('au-r').value;
-  if(!n||!email||!pw){toast('All fields required','error');return;}
-  if(pw.length<6){toast('Password must be at least 6 characters','error');return;}
-  if(DB.users.find(x=>x.email===email)){toast('Email already in use','error');return;}
-  toast('Creating account…');
-  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
-  if(error){toast('⚠ '+error.message,'error',6000);return;}
-  const authId=data.user&&data.user.id;
-  if(!authId){toast('⚠ No ID returned — disable email confirmation in Supabase Auth → Settings → Auth','error',7000);return;}
-  const nu={id:uid(),name:n,email,authId,role,assignedClients:[],active:true};
-  DB.users.push(nu);
-  await sbSaveUser(nu);
-  toast(n+' added ✓ Share their email & temp password.','success',4000);
-  document.getElementById('au-n').value='';
-  if(emailEl)emailEl.value='';
-  document.getElementById('au-p').value='';
-  render();
-}
-function showSetupAuthModal(userId){
-  const u=DB.users.find(x=>x.id===userId);if(!u)return;
-  window._setupAuthId=userId;
-  modal('<div style="padding:8px">'
-    +'<h3 style="margin-bottom:8px">🔐 Upgrade Login for '+esc(u.name)+'</h3>'
-    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Enter their email and a temp password. They can change it after logging in.</p>'
-    +'<label style="display:block;margin-bottom:8px">Email<input id="sah-email" type="email" value="'+esc(u.email||'')+'" style="display:block;width:100%;margin-top:4px"></label>'
-    +'<label style="display:block;margin-bottom:14px">Temp Password<input id="sah-pw" type="text" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button class="btn btn-green" onclick="confirmSetupAuth()">Create Auth Account</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
-    +'</div></div>');
-}
-async function confirmSetupAuth(){
-  const email=document.getElementById('sah-email').value.trim();
-  const pw=document.getElementById('sah-pw').value;
-  const userId=window._setupAuthId;
-  if(!email||!pw||pw.length<6){toast('Email and password (min 6 chars) required','error');return;}
-  const u=DB.users.find(x=>x.id===userId);if(!u)return;
-  toast('Creating auth account…');
-  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
-  if(error){toast('⚠ '+error.message,'error',6000);return;}
-  const authId=data.user&&data.user.id;
-  if(!authId){toast('⚠ No auth ID — disable email confirmation in Supabase Auth settings','error',7000);return;}
-  u.email=email;u.authId=authId;u.password=null;
-  await sbSaveUser(u);
-  closeModal();
-  toast(u.name+' upgraded to secure login ✓','success',4000);
-  render();
-}
-function showUpgradeModal(){
-  const u=currentUser;if(!u)return;
-  modal('<div style="padding:8px">'
-    +'<h3 style="margin-bottom:8px">🔐 Upgrade Your Login</h3>'
-    +'<p style="font-size:.83rem;color:var(--muted);margin-bottom:14px">Set your email and a new password. You\'ll use these to log in from now on.</p>'
-    +'<label style="display:block;margin-bottom:8px">Your Email<input id="ug-email" type="email" value="'+esc(currentUser.email||'')+'" style="display:block;width:100%;margin-top:4px"></label>'
-    +'<label style="display:block;margin-bottom:14px">New Password<input id="ug-pw" type="password" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button class="btn btn-green" onclick="confirmUpgradeSelf()">Upgrade My Login</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Later</button>'
-    +'</div></div>');
-}
-async function confirmUpgradeSelf(){
-  const email=document.getElementById('ug-email').value.trim();
-  const pw=document.getElementById('ug-pw').value;
-  if(!email||!pw||pw.length<6){toast('Email and password (min 6 chars) required','error');return;}
-  toast('Upgrading…');
-  const {data,error}=await _supa.auth.signUp({email,password:pw,options:{emailRedirectTo:null}});
-  if(error){toast('⚠ '+error.message,'error',6000);return;}
-  const authId=data.user&&data.user.id;
-  if(!authId){toast('⚠ No auth ID — disable email confirmation in Supabase Auth settings','error',7000);return;}
-  currentUser.email=email;currentUser.authId=authId;currentUser.password=null;
-  await sbSaveUser(currentUser);
-  closeModal();
-  const b=document.getElementById('auth-upgrade-banner');if(b)b.remove();
-  const cpBtn=document.getElementById('btn-change-pw');if(cpBtn)cpBtn.style.display='';
-  toast('Login upgraded! Use your email next time ✓','success',5000);
-}
-async function sendPasswordReset(email){
-  if(!email){toast('No email on file for this user','error');return;}
-  const {error}=await _supa.auth.resetPasswordForEmail(email,{redirectTo:window.location.href});
-  if(error){toast('⚠ '+error.message,'error',5000);return;}
-  toast('Password reset email sent to '+email+' ✓','success',4000);
-}
-function showChangePasswordModal(){
-  modal('<div style="padding:8px">'
-    +'<h3 style="margin-bottom:8px">🔑 Change Password</h3>'
-    +'<label style="display:block;margin-bottom:8px">New Password<input id="cp-pw" type="password" style="display:block;width:100%;margin-top:4px" placeholder="min 6 chars"></label>'
-    +'<label style="display:block;margin-bottom:14px">Confirm<input id="cp-pw2" type="password" style="display:block;width:100%;margin-top:4px"></label>'
-    +'<div style="display:flex;gap:8px">'
-    +'<button class="btn btn-green" onclick="confirmChangePassword()">Save</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button>'
-    +'</div></div>');
-}
-async function confirmChangePassword(){
-  const pw=document.getElementById('cp-pw').value;
-  const pw2=document.getElementById('cp-pw2').value;
-  if(!pw||pw.length<6){toast('Password must be at least 6 characters','error');return;}
-  if(pw!==pw2){toast('Passwords do not match','error');return;}
-  const {error}=await _supa.auth.updateUser({password:pw});
-  if(error){toast('⚠ '+error.message,'error',5000);return;}
-  closeModal();toast('Password updated ✓','success');
-}
+function saveUser(){const n=document.getElementById('au-n').value.trim(),u=document.getElementById('au-u').value.trim(),p=document.getElementById('au-p').value;if(!n||!u||!p){alert('All fields required');return;}if(DB.users.find(x=>x.username===u)){alert('Username taken');return;}const _nu={id:uid(),name:n,username:u,password:p,role:document.getElementById('au-r').value,assignedClients:[]};DB.users.push(_nu);sbSaveUser(_nu);toast('Added ✓');render();}
 
 function deactivateUser(id){
   if(!currentUser||!['director','admin'].includes(currentUser.role)){toast('⚠ No permission');return;}
@@ -4760,7 +3811,7 @@ function defaultData(){
 async function resetData(){
   showSyncStatus('saving');
   // Delete all clinical data from Supabase (keep users)
-  const tables=['sessions','behaviors','abc_data','lessons','bips','clients'];
+  const tables=['sessions','behaviors','lessons','bips','clients'];
   for(const t of tables){
     const rows=await sbFetch(t,'GET',null,'select=id');
     if(rows&&rows.length) await Promise.all(rows.map(r=>sbFetch(t,'DELETE',null,'id=eq.'+r.id)));
@@ -4777,36 +3828,9 @@ async function resetData(){
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
 function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt||'';}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function normFT(r){return r==='+'?'C':r==='-'?'I':r||'?';}
-function normFTCol(r){const n=normFT(r);return n==='C'?{c:'#1D9E75',bg:'#E1F5EE'}:n==='P'?{c:'#534AB7',bg:'#EEEDFE'}:n==='I'?{c:'#993C1D',bg:'#FAECE7'}:{c:'#5F5E5A',bg:'#F1EFE8'};}
-function formatNoteText(text){
-  if(!text||!text.trim())return esc(text)||'';
-  const lines=text.split(/\n+/).filter(function(s){return s.trim();});
-  return lines.map(function(line){
-    const isBullet=line.match(/^[-\u2022*]\s+/);
-    if(isBullet){
-      const txt=line.replace(/^[-\u2022*]\s+/,'');
-      return'<div style="display:flex;gap:7px;margin:0 0 5px 0;line-height:1.55"><span style="color:var(--sup);flex-shrink:0;margin-top:2px">\u25b8</span><span>'+esc(txt)+'</span></div>';
-    }
-    const lbM=line.match(/^([^:\n]{1,60}?):\s+(.+)$/);
-    if(lbM)return'<p style="margin:0 0 6px 0;line-height:1.55"><strong>'+esc(lbM[1])+':</strong> '+esc(lbM[2])+'</p>';
-    return'<p style="margin:0 0 6px 0;line-height:1.55">'+esc(line)+'</p>';
-  }).join('');
-}
 function modal(html){document.getElementById('modal-area').innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;overflow-y:auto;padding:20px"><div class="unlock-exempt" style="background:#fff;padding:26px;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto">'+html+'</div></div>';}
 function closeModal(){const m=document.getElementById('modal-area');if(m)m.innerHTML='';}
-function toast(msg,typeOrDur,dur){
-  // Accepts: toast(msg) | toast(msg,dur) | toast(msg,type) | toast(msg,type,dur)
-  let duration=2500;
-  if(typeof typeOrDur==='number'){duration=typeOrDur;}
-  else if(typeof typeOrDur==='string'&&typeof dur==='number'){duration=dur;}
-  const el=document.getElementById('toast');
-  if(!el)return;
-  el.textContent=msg;
-  el.style.background=(typeOrDur==='error')?'#dc2626':(typeOrDur==='success')?'#059669':'#1e293b';
-  el.style.display='block';
-  setTimeout(()=>el.style.display='none',duration);
-}
+function toast(msg,dur=2500){const el=document.getElementById('toast');el.textContent=msg;el.style.display='block';setTimeout(()=>el.style.display='none',dur);}
 </script>
 </body>
 </html>
