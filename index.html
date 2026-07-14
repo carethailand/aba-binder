@@ -1921,10 +1921,22 @@ function setTab(t){
   selectedTab=t;render();
 }
 function render(){
+  // Capture which lesson cards are open before re-render (so sup edits don't collapse them)
+  const _openLids=new Set();
+  document.querySelectorAll('details.lesson-card[open]').forEach(d=>{if(d.dataset.lid)_openLids.add(d.dataset.lid);});
+
   const app=document.getElementById('app');
   if(currentView==='clients')app.innerHTML=(currentUser&&currentUser.role==='admin')?renderAdmin():renderClientList();
   else if(currentView==='client')app.innerHTML=renderClientView();
   else if(currentView==='admin')app.innerHTML=renderAdmin();
+
+  // Restore open lesson cards
+  if(_openLids.size){
+    document.querySelectorAll('details.lesson-card').forEach(d=>{
+      if(d.dataset.lid&&_openLids.has(d.dataset.lid))d.open=true;
+    });
+  }
+
   // Restore in-progress session form data after re-render
   if(currentView==='client'&&selectedTab==='session'){
     requestAnimationFrame(()=>restoreSessionDraft());
