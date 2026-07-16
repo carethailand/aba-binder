@@ -386,8 +386,8 @@ function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolIn
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
-function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy'}),created_date:b.createdDate||null};}
-function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy';try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett};}
+function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[]}),created_date:b.createdDate||null};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[];try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist};}
 
 function sessionToRow(s){const _ld=s.lessonData||[];const _bd=s.bipData||[];const _ad=s.abcData||[];return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:_ld,bip_data:_bd,abc_data:_ad};}
 function rowToSession(r){
@@ -471,7 +471,13 @@ async function sbSaveBIP(bObj){
   await sbUpsert('bips',bipToRow(bObj));
 }
 async function sbSaveSession(rowObj){
-  return await sbUpsert('sessions',rowObj);
+  // Retry up to 3 times (helps on flaky mobile/iPad connections)
+  for(let _att=1;_att<=3;_att++){
+    const _r=await sbUpsert('sessions',rowObj);
+    if(_r!==null)return _r;
+    if(_att<3)await new Promise(res=>setTimeout(res,800*_att));
+  }
+  return null;
 }
 async function sbDeleteUser(id){
   const url=SUPABASE_URL+'/rest/v1/users?id=eq.'+id;
@@ -895,6 +901,7 @@ let currentView='clients';
 let selectedClientId=null;
 let graphMonth=''; // date filter: 'YYYY-MM' = that month only, '' = all
 let selectedTab='checklist';
+let adminSection='staff'; // admin sub-tab: 'staff' | 'data'
 // ── Session-in-progress state (persisted in sessionStorage so it survives tab switches) ──
 const SESS_KEY='aba_sess_'+location.pathname;
 function getSessState(){try{return JSON.parse(sessionStorage.getItem(SESS_KEY))||{};}catch(e){return{};}}
@@ -1041,7 +1048,7 @@ function seDeleteBIPLog(logId){
 }
 
 function editLastSession(){
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
   if(sessions.length===1){
     _doEditSession(sessions[0]);
@@ -1328,6 +1335,12 @@ async function _saveEditedSession(sessId){
   const _rowToSave=sessionToRow(sess);
   const result=await sbSaveSession(_rowToSave);
   if(result===null){toast('⚠ Save failed — check connection','error',5000);return;}
+  // Reload this client's sessions from Supabase so the graph reflects the edit
+  // (guards against any in-memory vs. DB mismatch)
+  const _freshSess=await sbFetch('sessions','GET',null,'select=*&client_id=eq.'+sess.clientId+'&order=date.desc&limit=500');
+  if(_freshSess&&Array.isArray(_freshSess)){
+    DB.sessions=DB.sessions.filter(function(s){return s.clientId!==sess.clientId;}).concat(_freshSess.map(rowToSession));
+  }
   closeModal();
   toast('Session updated ✓');
   render();
@@ -1338,7 +1351,7 @@ function _restoreEditSession(sess){
 }
 
 function deleteLastSession(){
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
   if(sessions.length===1){
     _doDeleteSession(sessions[0]);
@@ -1910,6 +1923,25 @@ async function doLogout(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('login-screen').style.display!=='none')doLogin();});
 
+// ── iPad / mobile: save draft when page is hidden (screen lock, app switch) ──
+document.addEventListener('visibilitychange',function(){
+  if(document.hidden&&selectedClientId&&currentView==='client'&&selectedTab==='session'){
+    saveSessionDraft();
+  }
+});
+
+// Auto-save session draft every 30 s while a session is in progress
+let _sessAutoSaveTimer=null;
+function _startSessAutoSave(){
+  if(_sessAutoSaveTimer)return;
+  _sessAutoSaveTimer=setInterval(function(){
+    if(selectedClientId&&currentView==='client'&&selectedTab==='session')saveSessionDraft();
+  },30000);
+}
+function _stopSessAutoSave(){
+  if(_sessAutoSaveTimer){clearInterval(_sessAutoSaveTimer);_sessAutoSaveTimer=null;}
+}
+
 // ── ROUTING ──
 function showView(v){currentView=v;render();}
 function selectClient(id){
@@ -1917,25 +1949,33 @@ function selectClient(id){
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
 if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab='checklist';showView('client');}
 function setTab(t){
-  if(selectedTab==='session'&&t!=='session')saveSessionDraft();
+  if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
+  if(t==='session')_startSessAutoSave();
   selectedTab=t;render();
 }
 function render(){
-  // Capture which lesson cards are open before re-render (so sup edits don't collapse them)
+  // B2: Capture which lesson cards are open before re-render
   const _openLids=new Set();
   document.querySelectorAll('details.lesson-card[open]').forEach(d=>{if(d.dataset.lid)_openLids.add(d.dataset.lid);});
+  // B3: Capture typed-but-not-submitted SD note drafts (sup tab inline textareas)
+  const _sdDrafts={};
+  document.querySelectorAll('[id^="sdnadd_"]').forEach(function(el){if(el.value.trim())_sdDrafts[el.id]=el.value;});
 
   const app=document.getElementById('app');
   if(currentView==='clients')app.innerHTML=(currentUser&&currentUser.role==='admin')?renderAdmin():renderClientList();
   else if(currentView==='client')app.innerHTML=renderClientView();
   else if(currentView==='admin')app.innerHTML=renderAdmin();
 
-  // Restore open lesson cards
+  // B2: Restore open lesson cards
   if(_openLids.size){
     document.querySelectorAll('details.lesson-card').forEach(d=>{
       if(d.dataset.lid&&_openLids.has(d.dataset.lid))d.open=true;
     });
   }
+  // B3: Restore SD note drafts
+  Object.keys(_sdDrafts).forEach(function(id){
+    const el=document.getElementById(id);if(el)el.value=_sdDrafts[id];
+  });
 
   // Restore in-progress session form data after re-render
   if(currentView==='client'&&selectedTab==='session'){
@@ -2260,7 +2300,7 @@ function renderSessionEntry(){
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
   const blocks=active.map(l=>renderLessonSessionBlock(l)).join('');
-  const maintBlock=maint.length?'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><h2 style="flex:1;margin:0">🔁 Maintenance Lessons</h2><span style="font-size:.8rem;color:var(--muted)">Check each mastered target with +, P, or −</span></div>'+maint.map(l=>renderMaintenanceEntry(l)).join('')+'</div>':'';
+  const maintBlock=maint.length?'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0">🔁 Maintenance Lessons</h2><button class="btn btn-outline btn-sm no-print" onclick="setTab(\'maintenance\')">Open Maintenance tab →</button></div><p style="font-size:.78rem;color:var(--muted);margin:0 0 10px">Maintenance data is recorded in the Maintenance tab.</p>'+maint.map(function(l){var _n=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status==='mastered';}).length;return '<div class="cl-row" style="align-items:center"><span style="flex:1">'+esc(l.name)+' <span class="badge badge-green" style="font-size:.68rem">MAINT</span></span><span style="font-size:.76rem;color:var(--muted)">'+esc(l.maintenanceSchedule||'schedule not set')+(_n?' · '+_n+' target'+(_n>1?'s':''):'')+'</span></div>';}).join('')+'</div>':'';
   const heldBanner=held.length?'<div class="alert" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d;margin-bottom:10px">⏸ '+held.length+' lesson'+(held.length>1?'s are':' is')+' on hold (not shown)</div>':'';
   const txNotesCard='<div class="card" style="margin-top:14px">'
     +'<h2 style="margin-bottom:8px">📝 Session Notes</h2>'
@@ -2557,6 +2597,12 @@ function drawSessionGraph(lesson,sd,target,canvasId){
     if(sgAfterIdx>=0)return{idx:sgAfterIdx,label:'Step '+(c.to+1)+': '+(sgSteps[c.to]||'')};
     return{idx:rawDates.length-1,label:'Step '+(c.to+1)+': '+(sgSteps[c.to]||'')};
   }).filter(Boolean);
+  const sgSdModLines=((sd&&sd.modHistory)||[]).map(function(m){
+    if(!m.date||!rawDates.length)return null;
+    const _ai=rawDates.findIndex(function(d){return d>=m.date;});
+    return _ai>=0?{idx:_ai}:null;
+  }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
+  const sgSdModPlugin=_makeModPlugin('sgSdMod',sgSdModLines);
   const sgPhasePlugin={id:'sgPhaseLines',afterDraw(chart){
     if(!sgPhaseLines.length)return;
     const ctx2=chart.ctx,xAxis=chart.scales.x,yAxis=chart.scales.y;
@@ -2581,7 +2627,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#29ABE2',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery',data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,fill:false}
-  ]},plugins:[sgPhasePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[sgPhasePlugin,sgSdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── DT Session Entry ──
@@ -2958,6 +3004,7 @@ async function saveSession(){
     });
     clearSessState();
     clearSessionDraft();
+    _stopSessAutoSave();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
     await flushSave();
 
@@ -3255,6 +3302,27 @@ function fmtDateShort(d){
   const parts=d.split('-');if(parts.length<3)return d;
   return parts[2]+'.'+parts[1]+'.'+parts[0].slice(2);
 }
+function _makeModPlugin(pid,lines){
+  return {id:pid,afterDraw:function(chart){
+    if(!lines||!lines.length)return;
+    const c2=chart.ctx,xA=chart.scales.x,yA=chart.scales.y;
+    lines.forEach(function(pl){
+      if(pl.idx>=xA.ticks.length)return;
+      const x=xA.getPixelForTick(pl.idx);
+      c2.save();
+      c2.strokeStyle='#8b5cf6';c2.lineWidth=2;c2.setLineDash([2,3]);
+      c2.beginPath();c2.moveTo(x,yA.top);c2.lineTo(x,yA.bottom);c2.stroke();
+      c2.setLineDash([]);
+      c2.font='bold 8px sans-serif';
+      const tag='✎ Plan edited';const tw=c2.measureText(tag).width+8;
+      c2.fillStyle='#8b5cf6';
+      c2.beginPath();c2.rect(x-tw/2,yA.top-1,tw,13);c2.fill();
+      c2.fillStyle='#fff';c2.textAlign='center';
+      c2.fillText(tag,x,yA.top+8);
+      c2.restore();
+    });
+  }};
+}
 function drawLessonChart(lesson,sd,target){
   if(target.dataType==='checklist')return; // no graph for First Trial targets
   const chartId='lch_'+lesson.id+'_'+sd.id+'_'+target.id;
@@ -3291,6 +3359,12 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
     if(afterIdx>=0)return{idx:afterIdx,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
     return null; // no session yet after this change — don't draw the line
   }).filter(Boolean);
+  const sdModLines=((sd&&sd.modHistory)||[]).map(function(m){
+    if(!m.date||!sessionDates.length)return null;
+    const _ai=sessionDates.findIndex(function(d){return d>=m.date;});
+    return _ai>=0?{idx:_ai}:null;
+  }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
+  const sdModPlugin=_makeModPlugin('sdMod',sdModLines);
   // Custom plugin: draw vertical phase change lines + labels
   const phaseLinePlugin={id:'phaseLines',afterDraw(chart){
     const ctx2=chart.ctx,xAxis=chart.scales.x,yAxis=chart.scales.y;
@@ -3315,7 +3389,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#29ABE2',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery '+masteryLine+(isRating?'':isTally?'/hr':'%'),data:labels.map(()=>masteryLine),borderColor:'#16a34a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
-  ]},plugins:[phaseLinePlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:10,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[phaseLinePlugin,sdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:10,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── Mastery actions ──
@@ -3628,10 +3702,13 @@ function deleteSDNote(lId,sId,idx){
 }
 function saveEditSD(lId,sId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
+  const _beforeSD=JSON.stringify({sd:sd.sd||'',response:sd.response||'',teachingStyle:sd.teachingStyle||'DTT',teachingSteps:sd.teachingSteps||[]});
   sd.sd=document.getElementById('esd-sd').value.trim()||sd.sd;
   sd.response=document.getElementById('esd-r').value.trim();
   sd.teachingStyle=(document.getElementById('esd-ts')||{value:'DTT'}).value||'DTT';
   sd.teachingSteps=(document.getElementById('esd-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const _afterSD=JSON.stringify({sd:sd.sd||'',response:sd.response||'',teachingStyle:sd.teachingStyle||'DTT',teachingSteps:sd.teachingSteps||[]});
+  if(_afterSD!==_beforeSD){if(!Array.isArray(sd.modHistory))sd.modHistory=[];sd.modHistory.push({date:new Date().toISOString().slice(0,10),by:currentUser.id,byName:currentUser.name});}
   saveData();closeModal();render();
 }
 // ── Edit lesson / target ──
@@ -3773,6 +3850,35 @@ function saveLessonNote(lId){const text=document.getElementById('sn-t').value.tr
 // ════════════════════════════════════════════════
 // MAINTENANCE TAB
 // ════════════════════════════════════════════════
+async function recordMaintMark(lessonId,targetId,result){
+  if(!requireActiveSession())return;
+  const lesson=DB.lessons.find(function(l){return l.id===lessonId;});
+  if(!lesson)return;
+  let tgt=null,sdId=null;
+  lesson.sds.forEach(function(sd){sd.targets.forEach(function(t){if(t.id===targetId){tgt=t;sdId=sd.id;}});});
+  if(!tgt)return;
+  const isSup=['supervisor','director'].includes(currentUser.role);
+  const st=isSup?getSupState():getSessState();
+  const date=st.date||new Date().toISOString().slice(0,10);
+  const setting=st.setting||'therapy';
+  const existing=DB.sessions.find(function(s){return s.clientId===selectedClientId&&s.date===date&&(s.setting||'therapy')===setting&&s.sessType==='maintenance';});
+  const rec=existing?JSON.parse(JSON.stringify(existing)):{id:uid(),clientId:selectedClientId,date:date,txId:currentUser.id,txName:currentUser.name,sessTime:st.sessTime||null,sessType:'maintenance',setting:setting,parentNote:null,notes:null,lessonData:[]};
+  rec.txId=currentUser.id;rec.txName=currentUser.name;
+  if(!rec.lessonData)rec.lessonData=[];
+  let ld=rec.lessonData.find(function(x){return x.lessonId===lessonId;});
+  if(!ld){ld={lessonId:lessonId,lessonName:lesson.name,targets:[]};rec.lessonData.push(ld);}
+  if(!ld.targets)ld.targets=[];
+  ld.targets=ld.targets.filter(function(t){return!(t.targetId===targetId&&t.dataType==='maintenance');});
+  ld.targets.push({targetId:targetId,targetName:tgt.name,sdId:sdId,dataType:'maintenance',result:result});
+  showSaveStatus('saving','Saving maintenance...');
+  const saveRes=await sbSaveSession(sessionToRow(rec));
+  if(saveRes===null){toast('⚠ Maintenance save failed — check connection','error',5000);showSaveStatus('error','Maintenance save failed');return;}
+  if(existing){const i=DB.sessions.indexOf(existing);if(i>=0)DB.sessions[i]=rec;else DB.sessions.push(rec);}
+  else{DB.sessions.push(rec);}
+  showSaveStatus('saved','Maintenance saved ✓');
+  toast('Maintenance saved ✓');
+  render();
+}
 function renderMaintenanceTab(){
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase==='maintenance');
   if(!lessons.length)return '<div class="empty-state">No lessons on maintenance yet.<br><small>Supervisor can move a lesson to Maintenance from the Program Edit tab.</small></div>';
@@ -3791,8 +3897,7 @@ function renderMaintenanceTab(){
         return null;
       })();
       const badge=lastResult?'<span class="badge badge-'+(lastResult.result==='+'?'green':lastResult.result==='-'?'red':'gray')+'" style="font-size:.72rem">'+lastResult.result+' '+lastResult.date.slice(5)+'</span>':'<span style="font-size:.75rem;color:var(--muted)">no data</span>';
-      const id='mc_'+lesson.id+'_'+t.id;
-      return '<div class="cl-row"><span style="flex:1;font-size:.87rem">'+esc(t.name)+'</span>'+badge+'<div class="cpi-group"><button class="cpi-btn plus" data-id="'+id+'" onclick="toggleCPI(this)">+</button><button class="cpi-btn P" data-id="'+id+'" onclick="toggleCPI(this)">P</button><button class="cpi-btn minus" data-id="'+id+'" onclick="toggleCPI(this)">−</button></div></div>';
+      return '<div class="cl-row"><span style="flex:1;font-size:.87rem">'+esc(t.name)+'</span>'+badge+'<div class="cpi-group"><button class="cpi-btn plus" onclick="recordMaintMark(\''+lesson.id+'\',\''+t.id+'\',\'+\')">+</button><button class="cpi-btn P" onclick="recordMaintMark(\''+lesson.id+'\',\''+t.id+'\',\'P\')">P</button><button class="cpi-btn minus" onclick="recordMaintMark(\''+lesson.id+'\',\''+t.id+'\',\'-\')">−</button></div></div>';
     }).join('');
     const schedule=lesson.maintenanceSchedule?'<span style="font-size:.78rem;color:var(--muted);margin-left:8px">&#x1F4C5; '+esc(lesson.maintenanceSchedule)+'</span>':'';
     const _reintroMaintBtn=['supervisor','director'].includes(currentUser.role)
@@ -3800,7 +3905,7 @@ function renderMaintenanceTab(){
       :'';
     return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+_reintroMaintBtn+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
   }).join('');
-  return '<div style="margin-bottom:16px"><h2>🔁 Maintenance Lessons</h2><p style="font-size:.82rem;color:var(--muted)">Mark each mastered target with +, P, or − then End Session to save.</p></div>'+maintHtml;
+  return '<div style="margin-bottom:16px"><h2>🔁 Maintenance Lessons</h2><p style="font-size:.82rem;color:var(--muted)">Tap +, P, or − to record — each mark saves immediately.</p></div>'+maintHtml;
 }
 
 // ════════════════════════════════════════════════
@@ -3814,7 +3919,7 @@ function renderProgramChecklist(){
   // get all sessions sorted oldest→newest, limit last 30
   // Determine current context setting — show therapy sessions on therapy checklist, school on school
   const _clSetting=(getSessState().setting||'therapy');
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(s.setting||'therapy')===_clSetting)
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')===_clSetting)
     .sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
 
   if(!lessons.length)return'<div class="empty-state">No lessons yet.</div>';
@@ -4213,6 +4318,13 @@ function drawBIPChart(bip){
   })();
   const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(b.setting||'therapy')===_chartSetting&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
   if(logs.length<1)return;
+  const _logDates=logs.map(function(b){return b.date;});
+  const bipModLines=((bip.modHistory)||[]).map(function(m){
+    if(!m.date||!_logDates.length)return null;
+    const _ai=_logDates.findIndex(function(d){return d>=m.date;});
+    return _ai>=0?{idx:_ai}:null;
+  }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
+  const bipModPlugin=_makeModPlugin('bipMod',bipModLines);
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#dc2626',duration:'#1a9fd4',rate:'#d97706'};
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
@@ -4243,7 +4355,7 @@ function drawBIPChart(bip){
     }
 
     const yLabel=measYLabels[meas]||meas;
-    new Chart(canvas,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,
+    new Chart(canvas,{type:'line',data:{labels,datasets},plugins:[bipModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},
       plugins:{legend:{display:allFns.length>1||bip.goalValue!=null,labels:{boxWidth:12,font:{size:10}}},
         tooltip:{callbacks:{title:ctx=>ctx[0].label}}},
       scales:{y:{beginAtZero:true,title:{display:true,text:yLabel,font:{size:10}}},
@@ -4343,6 +4455,7 @@ function editBIP(bipId){
 
 function saveEditBIP(bipId){
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
+  const _beforeBIP=JSON.stringify({name:bip.name,description:bip.description||'',measurements:bip.measurements||[],functions:bip.functions||[],goal:bip.goal||'',goalDeadline:bip.goalDeadline||'',goalValue:(bip.goalValue==null?null:bip.goalValue),baseline:bip.baseline||''});
   bip.name=document.getElementById('eb-n').value.trim()||bip.name;
   bip.description=document.getElementById('eb-d').value.trim();
   const eMeasIdMap={frequency:'eb-mfreq',duration:'eb-mdur',rate:'eb-mrate'};
@@ -4355,6 +4468,8 @@ function saveEditBIP(bipId){
   const gvalEl=document.getElementById('eb-gval');
   bip.goalValue=gvalEl&&gvalEl.value!==''?parseFloat(gvalEl.value):null;
   bip.baseline=document.getElementById('eb-base').value.trim();
+  const _afterBIP=JSON.stringify({name:bip.name,description:bip.description||'',measurements:bip.measurements||[],functions:bip.functions||[],goal:bip.goal||'',goalDeadline:bip.goalDeadline||'',goalValue:(bip.goalValue==null?null:bip.goalValue),baseline:bip.baseline||''});
+  if(_afterBIP!==_beforeBIP){if(!Array.isArray(bip.modHistory))bip.modHistory=[];bip.modHistory.push({date:new Date().toISOString().slice(0,10),by:currentUser.id,byName:currentUser.name});}
   saveData();render();closeModal();
 }
 
@@ -4534,6 +4649,18 @@ function renderReport(){
 // ════════════════════════════════════════════════
 // ADMIN
 // ════════════════════════════════════════════════
+function setAdminSection(s){adminSection=s;render();if(s==='data')setTimeout(renderStorageBar,60);}
+function showAddUserModal(){
+  modal('<div style="padding:6px">'
+    +'<h3 style="margin-bottom:4px">Add New User</h3>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Creates a Supabase Auth account. Share the email &amp; temp password with the staff member.</p>'
+    +'<label style="display:block;margin-bottom:8px">Full name<input id="au-n" type="text" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<label style="display:block;margin-bottom:8px">Email<input id="au-email" type="email" placeholder="staff@clinic.com" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<label style="display:block;margin-bottom:8px">Temp Password<input id="au-p" type="text" placeholder="min 6 chars" style="display:block;width:100%;margin-top:4px"></label>'
+    +'<label style="display:block;margin-bottom:14px">Role<select id="au-r" style="display:block;width:100%;margin-top:4px"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="qcd">QCD</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-green" onclick="createAuthUser()">Create Account</button></div>'
+    +'</div>');
+}
 function renderAdmin(){
   const userRows=DB.users.map(u=>{
     const ac=u.assignedClients||[];
@@ -4550,21 +4677,14 @@ function renderAdmin(){
       :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#dc2626;border-color:#fca5a5;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
     return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fef2f2':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fee2e2;color:#dc2626;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted);font-size:.8rem">'+esc(u.email||u.username||'—')+'</td>'+'<td>'+(u.authId?'<span style="font-size:.72rem;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px;font-weight:600">✓ Secure</span>':('<span style="font-size:.72rem;background:#fef9c3;color:#713f12;padding:2px 8px;border-radius:10px;font-weight:600">⚠ Legacy</span> '+'<button style="font-size:.7rem;background:#f59e0b;color:#fff;border:none;padding:2px 8px;border-radius:5px;cursor:pointer" data-uid="'+u.id+'" onclick="showSetupAuthModal(this.dataset.uid)">Upgrade</button>'))+'</td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
   }).join('');
-  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'
-    +'<div class="card">'
-    +'<h3 style="margin-bottom:4px">Add New User</h3>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Creates a Supabase Auth account. Share the email &amp; temp password with the staff member.</p>'
-    +'<div class="form-row">'
-    +'<div class="fg"><label>Full name<input id="au-n" type="text"></label></div>'
-    +'<div class="fg"><label>Email<input id="au-email" type="email" placeholder="staff@clinic.com"></label></div>'
-    +'<div class="fg"><label>Temp Password<input id="au-p" type="text" placeholder="min 6 chars"></label></div>'
-    +'<div class="fg-sm"><label>Role<select id="au-r"><option value="junior">Junior TX</option><option value="senior">Senior TX</option><option value="qcd">QCD</option><option value="supervisor">Supervisor</option><option value="director">Director</option><option value="admin">Admin</option></select></label></div>'
-    +'<div><label>&nbsp;</label><button class="btn btn-green" onclick="createAuthUser()">Create Account</button></div>'
-    +'</div></div>'
-    +'<div class="card"><h3 style="margin-bottom:8px">Users &amp; Client Access</h3>'
+  const _asNav='<div class="tabs" style="margin-bottom:16px">'
+    +'<button class="tab '+(adminSection==='staff'?'active':'')+'" onclick="setAdminSection(\'staff\')">👥 Staff &amp; Access</button>'
+    +'<button class="tab '+(adminSection==='data'?'active':'')+'" onclick="setAdminSection(\'data\')">💾 Data &amp; Storage</button>'
+    +'</div>';
+  const _asStaff='<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="flex:1;margin:0">Users &amp; Client Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email / Username</th><th>Auth Status</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>'
-    +'<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
+    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email / Username</th><th>Auth Status</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>';
+  const _asData='<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +'<button class="unlock-exempt btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
@@ -4575,8 +4695,8 @@ function renderAdmin(){
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Client Data</h4>'
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Select a client and date range to generate a read-only offline HTML archive. You will be asked whether to also remove that data from the database.</p>'
     +'<button class="unlock-exempt btn btn-outline" onclick="showArchiveModal()">📦 Archive Client Data…</button>'
-    +'</div></div>'
-    +'<div id="modal-area"></div>';
+    +'</div>';
+  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+_asNav+(adminSection==='data'?_asData:_asStaff)+'<div id="modal-area"></div>';
 }
 function changeRole(userId, newRole){
   const u=DB.users.find(x=>x.id===userId);
