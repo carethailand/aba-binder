@@ -4668,7 +4668,15 @@ function showAddUserModal(){
     +'</div>');
 }
 function renderAdmin(){
-  const userRows=DB.users.map(u=>{
+  const _roleRank={director:0,admin:1,supervisor:2,qcd:3,senior:4,junior:5};
+  const _sortedUsers=DB.users.slice().sort(function(a,b){
+    const ai=a.active===false?1:0,bi=b.active===false?1:0;
+    if(ai!==bi)return ai-bi;
+    const ar=_roleRank[a.role]!=null?_roleRank[a.role]:99,br=_roleRank[b.role]!=null?_roleRank[b.role]:99;
+    if(ar!==br)return ar-br;
+    return (a.name||'').localeCompare(b.name||'');
+  });
+  const userRows=_sortedUsers.map(u=>{
     const ac=u.assignedClients||[];
     const inactive=u.active===false;
     const chips=['junior','senior','qcd','supervisor'].includes(u.role)
