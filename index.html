@@ -280,6 +280,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
     <div class="login-err" id="l-err">Invalid email or password.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
+    <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#29ABE2;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
     
   </div>
 </div>
@@ -1846,6 +1847,11 @@ async function printSupPDF(){
 }
 
 // ── AUTH ──
+function doForgotPassword(){
+  const email=(document.getElementById('l-email')||{value:''}).value.trim();
+  if(!email){const e=document.getElementById('l-err');if(e){e.textContent='Enter your email above first, then tap Forgot password.';e.style.display='block';}return;}
+  sendPasswordReset(email);
+}
 async function doLogin(){
   const emailVal=document.getElementById('l-email').value.trim();
   const pw=document.getElementById('l-pass').value;
