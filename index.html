@@ -3551,6 +3551,7 @@ function showAddLesson(){
   '<div id="nl-rating-wrap" style="display:none"><div style="background:#f8fafc;border-radius:8px;padding:12px;margin-top:8px"><p style="font-size:.82rem;font-weight:600;margin-bottom:8px">Rating labels (1–5):</p>'+
   [1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:6px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="nl-rl'+i+'" placeholder="e.g. '+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+
   '</div></div>'+
+  '<div id="nl-tally-wrap" style="display:none"><div class="form-row" style="margin-top:6px"><div class="fg-sm"><label>Goal count<input id="nl-tally-goal" type="number" min="1" placeholder="e.g. 30"></label></div><div class="fg-sm"><label>Per (min)<input id="nl-tally-period" type="number" min="1" placeholder="e.g. 60"></label></div></div></div>'+
   '<label style="margin-top:8px">Initial supervisor note<textarea id="nl-snote" rows="2"></textarea></label>'+
   '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveNewLesson()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
@@ -3564,8 +3565,9 @@ function saveNewLesson(){
   const taSteps=dtype==='ta'?document.getElementById('nl-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
   const chain=dtype==='ta'?(document.getElementById('nl-chain').value||'total'):'total';
   const rl=dtype==='rating'?{min:1,max:5,labels:{1:document.getElementById('nl-rl1').value||'1',2:document.getElementById('nl-rl2').value||'2',3:document.getElementById('nl-rl3').value||'3',4:document.getElementById('nl-rl4').value||'4',5:document.getElementById('nl-rl5').value||'5'}}:null;
-  const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('nl-tally-goal').value)||null):null;
-  const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('nl-tally-period').value)||null):null;
+  const _nlTg=document.getElementById('nl-tally-goal'),_nlTp=document.getElementById('nl-tally-period');
+  const tallyGoal=dtype==='tally'&&_nlTg?(parseInt(_nlTg.value)||null):null;
+  const tallyPeriod=dtype==='tally'&&_nlTp?(parseInt(_nlTp.value)||null):null;
   const snote=document.getElementById('nl-snote').value.trim();
   DB.lessons.push({
     id:uid(),clientId:selectedClientId,name,teachingStyle:style,
