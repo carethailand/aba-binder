@@ -1861,18 +1861,7 @@ function doForgotPassword(){
   if(!email){const e=document.getElementById('l-err');if(e){e.textContent='Enter your email above first, then tap Forgot password.';e.style.display='block';}return;}
   sendPasswordReset(email);
 }
-async function doLogin(){
-  const emailVal=document.getElementById('l-email').value.trim();
-  const pw=document.getElementById('l-pass').value;
-  const btn=document.querySelector('#login-screen .btn-primary');
-  const errEl=document.getElementById('l-err');
-  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
-  if(errEl)errEl.style.display='none';
-  function _loginErr(msg){
-    if(btn){btn.textContent='Log In';btn.disabled=false;}
-    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
-  }
-  function _loginSuccess(user,isLegacy){
+function enterApp(user,isLegacy){
     currentUser=user;
     document.getElementById('login-screen').style.display='none';
     document.getElementById('nav').style.display='flex';
@@ -1891,7 +1880,43 @@ async function doLogin(){
         document.body.insertBefore(b,document.getElementById('app'));
       },300);
     }
+}
+async function tryResumeSession(){
+  try{
+    if(location.hash&&/type=recovery|error=/.test(location.hash))return false;
+    const _s=await _supa.auth.getSession();
+    const session=_s&&_s.data&&_s.data.session;
+    if(!session||!session.user)return false;
+    const ok=await loadFromSupabase();
+    if(!ok)return false;
+    const user=DB.users.find(function(x){return x.authId===session.user.id;});
+    if(!user||user.active===false){await _supa.auth.signOut();return false;}
+    enterApp(user,false);
+    return true;
+  }catch(e){return false;}
+}
+(function _autoResume(){
+  function run(){
+    var recovery=location.hash&&/type=recovery|error=/.test(location.hash);
+    var hasTok=false;try{hasTok=!!localStorage.getItem('care_auth');}catch(e){}
+    var ls=document.getElementById('login-screen');
+    if(hasTok&&!recovery&&ls)ls.style.display='none';
+    tryResumeSession().then(function(entered){if(!entered&&ls&&!recovery)ls.style.display='flex';});
   }
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run);else run();
+})();
+async function doLogin(){
+  const emailVal=document.getElementById('l-email').value.trim();
+  const pw=document.getElementById('l-pass').value;
+  const btn=document.querySelector('#login-screen .btn-primary');
+  const errEl=document.getElementById('l-err');
+  if(btn){btn.textContent='Signing in…';btn.disabled=true;}
+  if(errEl)errEl.style.display='none';
+  function _loginErr(msg){
+    if(btn){btn.textContent='Log In';btn.disabled=false;}
+    if(errEl){errEl.textContent=msg;errEl.style.display='block';}
+  }
+  const _loginSuccess=enterApp;
   let authData=null,authErr=null;
   try{
     const _r=await Promise.race([
@@ -2350,7 +2375,7 @@ function renderLessonSessionBlock(lesson){
   if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong><div style="margin-top:4px;white-space:normal">'+formatNoteText(supNote.text)+'</div></div>';
 
   if(lesson.phase==='acquisition'){
-    lesson.sds.forEach((sd,si)=>{
+    _orderedSDs(lesson.sds).forEach(function(_p){const sd=_p[0],si=_p[1];
       const activeTargets=sd.targets.filter(t=>t.status!=='mastered');
       const sessHasMastered=sd.targets.some(t=>t.status==='mastered');
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
@@ -2769,21 +2794,21 @@ function showSaveStatus(state,msg){
   if(!el){
     el=document.createElement('div');
     el.id='save-status-badge';
-    el.style.cssText='position:fixed;bottom:54px;right:16px;padding:6px 14px;border-radius:20px;font-size:.78rem;font-weight:600;z-index:9999;transition:opacity .4s;cursor:default;box-shadow:0 2px 8px rgba(0,0,0,.15)';
+    el.style.cssText='position:fixed;top:66px;left:50%;transform:translateX(-50%);padding:12px 26px;border-radius:26px;font-size:1.05rem;font-weight:700;z-index:9999;transition:opacity .35s;cursor:default;box-shadow:0 6px 20px rgba(0,0,0,.22);white-space:nowrap;text-align:center';
     document.body.appendChild(el);
   }
   if(state==='saving'){
-    el.style.background='#fbeecb';el.style.color='#8a6410';
-    el.textContent='⟳ Saving...';el.style.opacity='1';
+    el.style.background='#c98a12';el.style.color='#fff';
+    el.textContent='⟳ Saving…';el.style.opacity='1';
   } else if(state==='saved'){
-    el.style.background='#e2f2df';el.style.color='#3f8f3b';
+    el.style.background='#4fa14a';el.style.color='#fff';
     el.textContent='✓ '+(msg||'Saved');el.style.opacity='1';
-    setTimeout(function(){el.style.opacity='0';},6000);
+    setTimeout(function(){el.style.opacity='0';},5000);
   } else if(state==='pending'){
-    el.style.background='#fbeecb';el.style.color='#8a6410';
+    el.style.background='#c98a12';el.style.color='#fff';
     el.textContent='⚠ '+(msg||'Unsaved logs — will sync at End Session');el.style.opacity='1';
   } else if(state==='error'){
-    el.style.background='#fbe0da';el.style.color='#a3392b';
+    el.style.background='#d84a3a';el.style.color='#fff';
     el.textContent='✕ '+(msg||'Save failed — check connection');el.style.opacity='1';
   } else {
     el.style.opacity='0';
@@ -3249,7 +3274,7 @@ function renderLessonCard(lesson){
   const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editLessonSupNote(\''+lesson.id+'\','+ni+')">\u270F edit</button>':'')+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
-  const sdsHtml=lesson.sds.map((sd,si)=>{
+  const sdsHtml=_orderedSDs(lesson.sds).map(function(_p){const sd=_p[0],si=_p[1];
     const tHtml=sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').map(t=>{
       const isFlagged=t.status==='flagged';
       const chartId='lch_'+lesson.id+'_'+sd.id+'_'+t.id;
@@ -3488,6 +3513,16 @@ function setTargetStatus(lId,sId,tId,status){
     toast('▶ Target resumed: '+t.name);
   }
   saveData();render();
+}
+function _sdRank(sd){
+  const all=sd.targets||[];
+  if(!all.length)return 0;
+  if(all.some(function(t){return t.status==='in_progress'||t.status==='flagged'||t.status==='not_started';}))return 0;
+  if(all.every(function(t){return t.status==='mastered';}))return 2;
+  return 1;
+}
+function _orderedSDs(sds){
+  return (sds||[]).map(function(sd,i){return [sd,i];}).sort(function(a,b){return _sdRank(a[0])-_sdRank(b[0]);});
 }
 function setSDStatus(lId,sId,status){
   const l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
