@@ -62,8 +62,8 @@ details.lesson-card>summary>span:first-child{transition:transform .15s;display:i
 .lesson-body{padding:16px;}
 /* SD blocks */
 .sd-block{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;}
-.sd-header{background:var(--primary-light);padding:9px 14px;display:flex;align-items:center;gap:8px;}
-.sd-header h4{flex:1;font-size:.88rem;font-weight:600;color:var(--primary);}
+.sd-header{background:#2a4c6d;padding:9px 14px;display:flex;align-items:center;gap:8px;}
+.sd-header h4{flex:1;font-size:.88rem;font-weight:600;color:#fff;}
 .sd-body{padding:12px;}
 /* Target blocks */
 .target-block{border:1px solid var(--border);border-radius:7px;padding:11px;margin-bottom:8px;}
@@ -910,6 +910,7 @@ function setSessState(o){sessionStorage.setItem(SESS_KEY,JSON.stringify(o));}
 function clearSessState(){sessionStorage.removeItem(SESS_KEY);}
 function updateSessState(key,val){const s=getSessState();s[key]=val;setSessState(s);}
 function startSession(){
+  hideUnsavedBanner();
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
@@ -917,6 +918,7 @@ function startSession(){
   render();
 }
 function startSessionFromBar(){
+  hideUnsavedBanner();
   const d=(document.getElementById('ss-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'overlap';
@@ -971,6 +973,7 @@ function confirmDiscard(){
     +'</div></div>');
 }
 function discardSession(){
+  hideUnsavedBanner();
   const _ss=getSessState();
   if(_ss.clientId&&_ss.date)clearBIPDraft(_ss.clientId,_ss.date);
   clearSessState();clearSessionDraft();render();
@@ -1304,6 +1307,7 @@ async function _saveEditedSession(sessId){
       }
     }
     if(el.classList.contains('se-bip-notes'))log.notes=el.value;
+    if(log.duration!=null){var _occ=(log.count&&log.count>0)?log.count:1;log.avgDuration=log.duration>0?Math.round(log.duration/_occ*100)/100:0;}
     sbUpsert('behaviors',{id:log.id,client_id:log.clientId,bip_id:log.bipId,date:log.date,func:log.function,count:log.count!=null?log.count:null,duration:log.duration!=null?log.duration:null,avg_duration:log.avgDuration!=null?log.avgDuration:null,rate:log.rate!=null?log.rate:null,notes:JSON.stringify({text:log.notes||'',setting:log.setting||'therapy'}),tx_id:log.txId||null,tx_name:log.txName||null});
   });
 
@@ -1323,6 +1327,7 @@ async function _saveEditedSession(sessId){
           return !(f.date===sess.date&&f.txId===sess.txId);
         });
         tgt.firstTrialData.push({date:sess.date,result:te.firstTrial,txId:sess.txId,txName:sess.txName});
+        if(tgt.dataType==='checklist')checkFirstTrialCriteria(lesson,tgt);
       });
     });
   });
@@ -1936,6 +1941,10 @@ document.addEventListener('visibilitychange',function(){
   }
 });
 
+// Warn before leaving/closing while a session is still open (unsaved)
+window.addEventListener('beforeunload',function(e){
+  if(typeof isSessionActive==='function'&&isSessionActive()){e.preventDefault();e.returnValue='';}
+});
 // Auto-save session draft every 30 s while a session is in progress
 let _sessAutoSaveTimer=null;
 function _startSessAutoSave(){
@@ -2338,7 +2347,7 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
+      body+='<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</div><div class="sd-body"><p style="font-size:.82rem;color:#334155;margin-bottom:6px"><strong style="color:#2a4c6d">R:</strong> '+esc(sd.response)+'</p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fffef5;border-left:3px solid #fcd34d;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#92400e;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -2481,6 +2490,7 @@ function renderTargetSessionEntry(lesson,sd,target){
       });
       html+='</div>';
     }
+    html+=_ftCriteriaProgress(lesson,target);
     html+='</div>';
   }
 
@@ -2771,6 +2781,22 @@ function showSaveStatus(state,msg){
   }
 }
 
+function showUnsavedBanner(msg){
+  let b=document.getElementById('unsaved-banner');
+  if(!b){
+    b=document.createElement('div');
+    b.id='unsaved-banner';
+    b.style.cssText='position:fixed;top:0;left:0;right:0;background:#dc2626;color:#fff;z-index:10000;padding:12px 16px;display:flex;align-items:center;justify-content:center;gap:14px;font-weight:700;font-size:.95rem;box-shadow:0 2px 10px rgba(0,0,0,.25);text-align:center;flex-wrap:wrap';
+    document.body.appendChild(b);
+  }
+  b.innerHTML='<span>\u26A0 NOT SAVED \u2014 '+(msg||'your session data has not saved yet')+'</span><button onclick="retrySaveSession()" style="background:#fff;color:#dc2626;border:none;padding:8px 18px;border-radius:8px;font-weight:700;font-size:.9rem;cursor:pointer">Save again</button>';
+  b.style.display='flex';
+}
+function hideUnsavedBanner(){const b=document.getElementById('unsaved-banner');if(b)b.remove();}
+function retrySaveSession(){
+  if(currentView==='client'&&selectedTab==='session'){saveSession();}
+  else{toast('Go back to the session screen, then press End & Save.','error',4000);}
+}
 function saveSessionDraft(){
   if(!selectedClientId)return;
   const draft={clientId:selectedClientId,inputs:{},buttons:{},checkboxes:{}};
@@ -2975,11 +3001,13 @@ async function saveSession(){
     if(saveResult===null){
       showSaveStatus('error','Session save failed — check connection');
       toast('⚠ Session save failed — check your connection and try again','error',6000);
+      showUnsavedBanner('press \u201CSave again\u201D to retry \u2014 your data is still here');
       // Do NOT clear state — TX can retry by pressing End Session again
       return;
     }
     // Supabase confirmed save — now commit to local state
     DB.sessions.push(newSess);_sessCommitted=true;
+    hideUnsavedBanner();
     // Persist first trial results onto target.firstTrialData[]
     lessonData.forEach(function(ld){
       const lesson2=DB.lessons.find(function(l){return l.id===ld.lessonId;});
@@ -2991,6 +3019,7 @@ async function saveSession(){
           if(!tgt)return;
           if(!tgt.firstTrialData)tgt.firstTrialData=[];
           tgt.firstTrialData.push({date:date,result:te.firstTrial,txId:currentUser.id,txName:currentUser.name});
+          if(tgt.dataType==='checklist')checkFirstTrialCriteria(lesson2,tgt);
         });
       });
     });
@@ -3067,6 +3096,41 @@ function checkMastery(lesson,target,date,pct){
   }
 }
 
+function checkFirstTrialCriteria(lesson,target){
+  if(!target||target.dataType!=='checklist')return;
+  if(target.status==='mastered'||target.status==='flagged')return;
+  const rule=lesson.masteryRule||{pct:80,sessions:3,therapists:2};
+  const hist=(target.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
+  if(hist.length<rule.sessions)return;
+  const recent=hist.slice(-rule.sessions);
+  const allIndep=recent.every(function(f){return normFT(f.result)==='C';});
+  const txCount=new Set(recent.map(function(f){return f.txId;})).size;
+  if(allIndep&&txCount>=rule.therapists){
+    target.status='flagged';
+    const sd=lesson.sds.find(function(x){return x.targets.some(function(t){return t.id===target.id;});});
+    if(sd){
+      const idx=sd.targets.findIndex(function(t){return t.id===target.id;});
+      const next=sd.targets.slice(idx+1).find(function(t){return t.status==='not_started';});
+      const today=new Date().toISOString().slice(0,10);
+      if(next){next.status='in_progress';next.introducedDate=today;toast('\u2705 '+target.name+' met first-trial criteria \u2192 '+next.name+' now active',4000);}
+      else{toast('\u2705 '+target.name+' met first-trial criteria!',3000);}
+    }
+    saveData();
+  }
+}
+function _ftCriteriaProgress(lesson,target){
+  if(!target||target.dataType!=='checklist'||target.status==='mastered')return '';
+  const rule=lesson.masteryRule||{sessions:3,therapists:2};
+  const clean=(target.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
+  var streak=0;for(var i=clean.length-1;i>=0;i--){if(normFT(clean[i].result)==='C')streak++;else break;}
+  const recent=clean.slice(-rule.sessions);
+  const txCount=new Set(recent.map(function(f){return f.txId;})).size;
+  if(target.status==='flagged'){
+    return '<div style="margin-top:8px;font-size:.75rem;color:#92400e;background:#fef3c7;border-radius:6px;padding:5px 9px">\u2691 Criteria met \u2014 '+rule.sessions+' independent across '+txCount+' therapist'+(txCount>1?'s':'')+'</div>';
+  }
+  const remain=Math.max(rule.sessions-streak,0);
+  return '<div style="margin-top:8px;font-size:.75rem;color:var(--muted)">Toward criteria: <strong style="color:#1D9E75">'+streak+'</strong> / '+rule.sessions+' independent in a row'+(remain>0?' \u2014 '+remain+' more':'')+' \u00b7 needs '+rule.therapists+' therapist'+(rule.therapists>1?'s':'')+'</div>';
+}
 function checkDTStepAdvance(lesson,date,ftResult,pct){
   const stepIdx=lesson.dtStepIndex||0;
   const rule=lesson.masteryRule||{pct:80,sessions:2,therapists:2};
@@ -3173,7 +3237,7 @@ function renderHoldSection(lesson,sd,supView){
 function renderLessonCard(lesson){
   const phase=lesson.phase;
   const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
-  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
+  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editLessonSupNote(\''+lesson.id+'\','+ni+')">\u270F edit</button>':'')+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
   const sdsHtml=lesson.sds.map((sd,si)=>{
@@ -3282,7 +3346,7 @@ function renderLessonCard(lesson){
         +'</div>';
     }
     if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
-    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button>':'')+' </div><div class="sd-body"><p style="font-size:.8rem;color:var(--muted);margin-bottom:6px"><em>R: '+esc(sd.response)+'</em></p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></div>';
+    return '<div class="sd-block"><div class="sd-header"><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fef3c7;color:#92400e;border:1px solid #fcd34d" onclick="setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button>':'')+' </div><div class="sd-body"><p style="font-size:.82rem;color:#334155;margin-bottom:6px"><strong style="color:#2a4c6d">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></div>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3415,6 +3479,52 @@ function setTargetStatus(lId,sId,tId,status){
     toast('▶ Target resumed: '+t.name);
   }
   saveData();render();
+}
+function setSDStatus(lId,sId,status){
+  const l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
+  const sd=l.sds.find(function(x){return x.id===sId;});if(!sd)return;
+  const today=new Date().toISOString().slice(0,10);
+  const targets=sd.targets||[];
+  if(status==='on_hold'){
+    const aff=targets.filter(function(t){return t.status!=='on_hold'&&t.status!=='mastered';});
+    if(!aff.length){toast('No active targets to hold in this SD');return;}
+    if(!confirm('Put all '+aff.length+' active target(s) in this SD on hold?'))return;
+    aff.forEach(function(t){t._prevStatus=t.status;t.status='on_hold';});
+    toast('\u23F8 '+aff.length+' target(s) put on hold');
+  } else if(status==='mastered'){
+    const aff=targets.filter(function(t){return t.status!=='mastered';});
+    if(!aff.length){toast('All targets already mastered');return;}
+    if(!confirm('Mark all '+aff.length+' target(s) in this SD as mastered?'))return;
+    aff.forEach(function(t){t.status='mastered';t.masteredDate=today;});
+    toast('\u2713 '+aff.length+' target(s) mastered');
+  } else if(status==='in_progress'){
+    const aff=targets.filter(function(t){return t.status==='on_hold';});
+    aff.forEach(function(t){t.status='in_progress';});
+    toast('\u25B6 '+aff.length+' target(s) resumed');
+  }
+  saveData();render();
+}
+function editGeneralNote(noteId){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
+  const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
+  modal('<h3 style="margin-bottom:10px">Edit note</h3><textarea id="egn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveGeneralNote(\''+noteId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function saveGeneralNote(noteId){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
+  const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
+  const el=document.getElementById('egn-t');if(!el)return;
+  n.text=(el.value||'').trim();n.editedBy=currentUser.name;n.editedDate=new Date().toISOString().slice(0,10);
+  sbSaveClient(c);closeModal();toast('Note updated \u2713');render();
+}
+function editLessonSupNote(lId,idx){
+  const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
+  const n=l.supNotes[idx];
+  modal('<h3 style="margin-bottom:10px">Edit lesson note</h3><textarea id="elsn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveLessonSupNote(\''+lId+'\','+idx+')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function saveLessonSupNote(lId,idx){
+  const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
+  const el=document.getElementById('elsn-t');if(!el)return;
+  l.supNotes[idx].text=(el.value||'').trim();saveData();closeModal();toast('Note updated \u2713');render();
 }
 function confirmMastery(lId,sId,tId){
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
@@ -4590,11 +4700,11 @@ function renderNotesTab(){
     +'</div>';
 
   // ── Notes feed — merge sup notes + session TX notes ──
-  const supNotes=(c.notes||[]).map(n=>({date:n.date,label:'<span class="sup-badge">SUP</span> '+esc(n.authorName||''),text:n.text,type:'supervisor'}));
+  const supNotes=(c.notes||[]).map(n=>({id:n.id,date:n.date,label:'<span class="sup-badge">SUP</span> '+esc(n.authorName||''),text:n.text,type:'supervisor'}));
   const sessNotes=(DB.sessions||[]).filter(s=>s.clientId===selectedClientId&&s.notes&&s.notes.trim()).map(s=>({date:s.date,label:'<span style="background:#dbeafe;color:#1e40af;border-radius:3px;padding:1px 6px;font-size:.72rem;font-weight:700">TX</span> '+esc(s.txName||''),text:s.notes,type:'tx'}));
   const allNotes=[...supNotes,...sessNotes].sort((a,b)=>b.date.localeCompare(a.date));
   const feed=allNotes.map(n=>'<div class="note-entry '+(n.type==='supervisor'?'sup-note':'')+'">'
-    +'<div class="note-meta">'+n.label+' · '+n.date+'</div>'
+    +'<div class="note-meta">'+n.label+' \u00b7 '+n.date+(isSup&&n.type==='supervisor'&&n.id?' <button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editGeneralNote(\''+n.id+'\')">\u270F edit</button>':'')+'</div>'
     +'<div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
   const addForm=isSup
     ?'<div class="card no-print"><h2>Add General Note</h2><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
