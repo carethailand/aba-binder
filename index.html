@@ -58,13 +58,16 @@ details.lesson-card .lesson-body button,details.lesson-card .lesson-body input,d
 details.lesson-card[open]>summary>.det-arrow{transform:rotate(90deg);}
 details.lesson-card>summary>span:first-child{transition:transform .15s;display:inline-block;}
 .lesson-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);margin-bottom:16px;overflow:hidden;}
+details.lesson-card>summary{background:#cfe6f5;border-bottom:1px solid #b3d9f0;}
+details.lesson-card>summary h3{color:#153244;font-size:1.02rem;font-weight:700;}
+details.lesson-card>summary>.det-arrow{color:#153244;}
 .lesson-header{padding:12px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border);background:#f8f9fb;flex-wrap:wrap;}
 .lesson-header h3{flex:1;font-size:1rem;font-weight:700;min-width:120px;}
 .lesson-body{padding:16px;}
 /* SD blocks */
 .sd-block{border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;}
-.sd-header{background:#234b63;padding:9px 14px;display:flex;align-items:center;gap:8px;}
-.sd-header h4{flex:1;font-size:.88rem;font-weight:600;color:#fff;}
+.sd-header{background:#eef4f9;border-left:4px solid #234b63;padding:9px 12px;display:flex;align-items:center;gap:8px;}
+.sd-header h4{flex:1;font-size:.88rem;font-weight:700;color:#234b63;}
 details.sd-block>summary.sd-header{list-style:none;cursor:pointer;}
 details.sd-block>summary.sd-header::-webkit-details-marker{display:none;}
 details.sd-block[open]>summary .det-arrow{transform:rotate(90deg);}
@@ -1020,7 +1023,7 @@ function buildBIPRows(sess){
   const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
   if(!bips.length)return'';
   const logsOnDate=(DB.behaviors||[]).filter(function(b){return b.clientId===selectedClientId&&b.date===sess.date;});
-  if(!logsOnDate.length)return'<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fdeae4;border-radius:6px;border-left:3px solid #d84a3a">🔔 Behavior (BIP)</div><div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No BIP logs recorded on this date.</div>';
+  if(!logsOnDate.length)return'<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fdeae4;border-radius:6px;border-left:3px solid #d84a3a">🔔 Behavior (BIP)</div><div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No BIP logs recorded on this date.</div>'+_seAddBipForm(sess.date);
   let html='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fdeae4;border-radius:6px;border-left:3px solid #d84a3a">🔔 Behavior (BIP)</div>';
   logsOnDate.forEach(function(log){
     const bip=bips.find(function(b){return b.id===log.bipId;});
@@ -1039,7 +1042,58 @@ function buildBIPRows(sess){
       +'</div>'
       +'</div>';
   });
-  return html;
+  return html+_seAddBipForm(sess.date);
+}
+function _seAddBipForm(sessDate){
+  const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
+  if(!bips.length)return'';
+  const bipOpts=bips.map(function(b){return'<option value="'+b.id+'">'+esc(b.name)+'</option>';}).join('');
+  const fns=(bips[0].functions&&bips[0].functions.length?bips[0].functions:['unknown']);
+  const fnOpts=fns.map(function(f){return'<option value="'+f+'">'+esc(bipFnLabel(f))+'</option>';}).join('');
+  return '<div style="margin-top:8px;padding:9px 10px;background:#f5f6f8;border:1px dashed var(--border);border-radius:8px">'
+    +'<div style="font-size:.76rem;font-weight:700;color:var(--muted);margin-bottom:6px">+ Add a missed BIP entry</div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    +'<select id="se-add-bip" onchange="_seAddBipFuncUpdate()" style="font-size:.8rem">'+bipOpts+'</select>'
+    +'<select id="se-add-func" style="font-size:.8rem">'+fnOpts+'</select>'
+    +'<label style="font-size:.8rem">Count <input type="number" id="se-add-count" min="0" style="width:62px;margin-left:3px"></label>'
+    +'<label style="font-size:.8rem">Duration <input type="text" id="se-add-dur" placeholder="min or m:ss" style="width:82px;margin-left:3px"></label>'
+    +'<label style="font-size:.8rem">Notes <input type="text" id="se-add-notes" style="width:130px;margin-left:3px"></label>'
+    +'<button class="btn btn-xs btn-green" onclick="seAddBIPLog(\''+sessDate+'\')">+ Add</button>'
+    +'</div></div>';
+}
+function _seAddBipFuncUpdate(){
+  const sel=document.getElementById('se-add-bip'); if(!sel)return;
+  const bip=(DB.bips||[]).find(function(b){return b.id===sel.value;});
+  const fns=(bip&&bip.functions&&bip.functions.length)?bip.functions:['unknown'];
+  const fsel=document.getElementById('se-add-func');
+  if(fsel)fsel.innerHTML=fns.map(function(f){return'<option value="'+f+'">'+esc(bipFnLabel(f))+'</option>';}).join('');
+}
+async function seAddBIPLog(sessDate){
+  const bipSel=document.getElementById('se-add-bip'); if(!bipSel)return;
+  const bip=(DB.bips||[]).find(function(b){return b.id===bipSel.value;}); if(!bip)return;
+  const func=(document.getElementById('se-add-func')||{}).value||(bip.functions&&bip.functions[0])||'unknown';
+  const cntEl=document.getElementById('se-add-count'),durEl=document.getElementById('se-add-dur'),notesEl=document.getElementById('se-add-notes');
+  const count=(cntEl&&cntEl.value!=='')?parseInt(cntEl.value):null;
+  let duration=null;
+  if(durEl&&durEl.value.trim()){
+    const raw=durEl.value.trim();const mss=raw.match(/^(\d+):(\d{1,2})$/),sec=raw.match(/^(\d+)s$/i);
+    if(mss)duration=parseInt(mss[1])+parseInt(mss[2])/60;else if(sec)duration=parseInt(sec[1])/60;else duration=parseFloat(raw)||0;
+    duration=Math.round(duration*100)/100;
+  }
+  const _c=(count!=null&&!isNaN(count))?count:null;
+  if(_c==null&&duration==null){toast('Enter a count or duration','error');return;}
+  const occ=(_c&&_c>0)?_c:1;
+  const avgDuration=duration!=null?(duration>0?Math.round(duration/occ*100)/100:0):null;
+  const _cont=document.getElementById('se-bip-section');
+  const _sess=_cont?(DB.sessions||[]).find(function(s){return s.id===_cont.dataset.sessId;}):null;
+  const setting=_sess?(_sess.setting||'therapy'):'therapy';
+  const entry={id:uid(),clientId:selectedClientId,bipId:bip.id,date:sessDate,function:func,count:_c,duration:duration,avgDuration:avgDuration,rate:null,notes:(notesEl&&notesEl.value.trim())||'',setting:setting,txId:currentUser.id,txName:currentUser.name};
+  const r=await sbUpsert('behaviors',{id:entry.id,client_id:entry.clientId,bip_id:entry.bipId,date:entry.date,func:entry.function,count:entry.count!=null?entry.count:null,duration:entry.duration!=null?entry.duration:null,avg_duration:entry.avgDuration!=null?entry.avgDuration:null,rate:null,notes:JSON.stringify({text:entry.notes||'',setting:entry.setting||'therapy'}),tx_id:entry.txId||null,tx_name:entry.txName||null});
+  if(r===null){toast('⚠ Save failed — check connection','error',5000);return;}
+  if(!DB.behaviors)DB.behaviors=[];
+  DB.behaviors.push(entry);
+  toast('BIP entry added ✓');
+  if(_cont&&_sess)_cont.innerHTML=buildBIPRows(_sess);
 }
 function seDeleteBIPLog(logId){
   if(!confirm('Delete this BIP log entry?'))return;
@@ -1991,7 +2045,7 @@ function showView(v){currentView=v;render();}
 function selectClient(id){
   if(currentUser&&currentUser.role==='admin'){toast('Admin cannot access client sessions');return;}
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
-if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab='checklist';showView('client');}
+if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab='checklist';_backtrackFirstTrial();showView('client');}
 function setTab(t){
   if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
   if(t==='session')_startSessAutoSave();
@@ -2042,6 +2096,17 @@ function render(){
           if(this.open){
             const l2=DB.lessons.find(x=>x.id===this.dataset.lid);
             if(l2)requestAnimationFrame(()=>l2.sds.forEach(sd=>sd.targets.forEach(t=>drawLessonChart(l2,sd,t))));
+          }
+        },{once:false});
+      });
+      document.querySelectorAll('details.sd-block').forEach(det=>{
+        det.addEventListener('toggle',function(){
+          if(this.open){
+            const sid=this.dataset.sdid;if(!sid)return;
+            const l2=DB.lessons.find(x=>x.clientId===selectedClientId&&(x.sds||[]).some(sd=>sd.id===sid));
+            if(!l2)return;
+            const sd2=l2.sds.find(sd=>sd.id===sid);
+            if(sd2)requestAnimationFrame(()=>sd2.targets.forEach(t=>drawLessonChart(l2,sd2,t)));
           }
         },{once:false});
       });
@@ -2381,7 +2446,7 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#fff;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdTsBadge+'</summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fdf8ee;border-left:3px solid #e8c14e;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#8a6410;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
+      body+='<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdTsBadge+'</summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fdf8ee;border-left:3px solid #e8c14e;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#8a6410;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -3130,6 +3195,24 @@ function checkMastery(lesson,target,date,pct){
   }
 }
 
+function _backtrackFirstTrial(){
+  if(!selectedClientId)return 0;
+  var changed=0;
+  (DB.lessons||[]).filter(function(l){return l.clientId===selectedClientId;}).forEach(function(lesson){
+    var rule=lesson.masteryRule||{sessions:3,therapists:2};
+    (lesson.sds||[]).forEach(function(sd){
+      (sd.targets||[]).forEach(function(t){
+        if(t.dataType!=='checklist'||t.status==='mastered'||t.status==='flagged')return;
+        var hist=(t.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
+        if(hist.length<rule.sessions)return;
+        var recent=hist.slice(-rule.sessions);
+        if(recent.every(function(f){return normFT(f.result)==='C';})&&new Set(recent.map(function(f){return f.txId;})).size>=rule.therapists){t.status='flagged';changed++;}
+      });
+    });
+  });
+  if(changed)saveData();
+  return changed;
+}
 function checkFirstTrialCriteria(lesson,target){
   if(!target||target.dataType!=='checklist')return;
   if(target.status==='mastered'||target.status==='flagged')return;
@@ -3380,7 +3463,7 @@ function renderLessonCard(lesson){
         +'</div>';
     }
     if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
-    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#fff;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
+    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -3520,6 +3603,12 @@ function _sdRank(sd){
   if(all.some(function(t){return t.status==='in_progress'||t.status==='flagged'||t.status==='not_started';}))return 0;
   if(all.every(function(t){return t.status==='mastered';}))return 2;
   return 1;
+}
+function _sdTagHtml(sd){
+  var r=_sdRank(sd);
+  if(r===2)return '<span style="background:#e2f2df;color:#2f6b2c;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:10px">\u2713 Mastered</span>';
+  if(r===1)return '<span style="background:#fbeecb;color:#8a6410;font-size:.7rem;font-weight:700;padding:2px 9px;border-radius:10px">\u23F8 On Hold</span>';
+  return '';
 }
 function _orderedSDs(sds){
   return (sds||[]).map(function(sd,i){return [sd,i];}).sort(function(a,b){return _sdRank(a[0])-_sdRank(b[0]);});
@@ -4306,7 +4395,7 @@ function renderBehaviorTab(){
     const graphHtml=allMeas.map(m=>'<div style="margin-bottom:16px">'
       +'<div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+';margin-bottom:4px">'+measLabels[m]+'</div>'
       +(logs.length>=1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
-        :'<p style="font-size:.78rem;color:var(--muted)">Graph shows after 2+ entries.</p>')
+        :'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>')
       +'</div>').join('');
     const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+logForm+graphHtml+'</div>';
 
@@ -4374,7 +4463,7 @@ function renderBehaviorTab(){
       // Data log
       +txSectionHdr('Data','📊')
       +logForm
-      +(logs.length>1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">Graph shows after 2+ entries.</p>');
+      +(logs.length>=1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>');
 
     const bodyContent=['supervisor','director'].includes(currentUser.role)
       ? tabNav+tab1+tab2+tab3+tab4+tab5
@@ -4801,7 +4890,7 @@ function renderReport(){
     const measColors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
     const measYLabels={frequency:'Frequency (count)',duration:'Duration (min)',rate:'Rate (per hr)'};
     const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id);
-    const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">Not enough data.</p>')+'</div>').join('');
+    const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>=1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">No data yet.</p>')+'</div>').join('');
     return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+'</h4>'+graphs+'</div>';
   }).join('')||'<p style="color:var(--muted);font-size:.85rem">No BIPs defined.</p>';
   const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('');
