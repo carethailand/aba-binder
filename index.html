@@ -2690,7 +2690,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
       ld.targets&&ld.targets.forEach(t=>{
         if(t.targetId!==target.id)return;
         const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(t.count/(s.sessTime||2)):null));
-        if(v!=null&&!t.na){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);vals.push(v);rawDates.push(s.date);}
+        if(v!=null&&!t.na){labels.push(fmtDateShort(s.date)+'\n'+(s.txName||'').split(' ')[0]);vals.push(v);rawDates.push(s.date);}
       });
     });
   });
@@ -3196,58 +3196,73 @@ function checkMastery(lesson,target,date,pct){
 }
 
 function _backtrackFirstTrial(){
-  if(!selectedClientId)return 0;
+  if(!selectedClientId||(typeof isViewOnly==='function'&&isViewOnly()))return 0;
   var changed=0;
   (DB.lessons||[]).filter(function(l){return l.clientId===selectedClientId;}).forEach(function(lesson){
-    var rule=lesson.masteryRule||{sessions:3,therapists:2};
     (lesson.sds||[]).forEach(function(sd){
       (sd.targets||[]).forEach(function(t){
         if(t.dataType!=='checklist'||t.status==='mastered'||t.status==='flagged')return;
-        var hist=(t.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
-        if(hist.length<rule.sessions)return;
-        var recent=hist.slice(-rule.sessions);
-        if(recent.every(function(f){return normFT(f.result)==='C';})&&new Set(recent.map(function(f){return f.txId;})).size>=rule.therapists){t.status='flagged';changed++;}
+        var e=_ftStepEval(lesson,t);
+        if(e.met&&e.isLast){t.status='flagged';changed++;}
       });
     });
   });
   if(changed)saveData();
   return changed;
 }
+
+function _ftStepStart(target){
+  const cur=target.dtStepIndex||0;
+  const ch=(target.dtStepChanges||[]).filter(function(c){return c.to===cur&&c.date;});
+  return ch.length?ch[ch.length-1].date:'';
+}
+function _ftStepEval(lesson,target){
+  const rule=lesson.masteryRule||{sessions:3,therapists:2};
+  const steps=target.teachingSteps||[];
+  const cur=target.dtStepIndex||0;
+  const start=_ftStepStart(target);
+  const hist=(target.firstTrialData||[]).filter(function(f){
+    if(start&&!(f.date>=start))return false;
+    var n=normFT(f.result);return n==='C'||n==='P'||n==='I';
+  });
+  var streak=0;for(var i=hist.length-1;i>=0;i--){if(normFT(hist[i].result)==='C')streak++;else break;}
+  const recent=hist.slice(-rule.sessions);
+  const txCount=new Set(recent.map(function(f){return f.txId;})).size;
+  const met=hist.length>=rule.sessions&&recent.every(function(f){return normFT(f.result)==='C';})&&txCount>=rule.therapists;
+  const isLast=steps.length<=1||cur>=steps.length-1;
+  return {rule:rule,steps:steps,cur:cur,streak:streak,txCount:txCount,met:met,isLast:isLast};
+}
 function checkFirstTrialCriteria(lesson,target){
   if(!target||target.dataType!=='checklist')return;
   if(target.status==='mastered'||target.status==='flagged')return;
-  const rule=lesson.masteryRule||{pct:80,sessions:3,therapists:2};
-  const hist=(target.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
-  if(hist.length<rule.sessions)return;
-  const recent=hist.slice(-rule.sessions);
-  const allIndep=recent.every(function(f){return normFT(f.result)==='C';});
-  const txCount=new Set(recent.map(function(f){return f.txId;})).size;
-  if(allIndep&&txCount>=rule.therapists){
-    target.status='flagged';
-    const sd=lesson.sds.find(function(x){return x.targets.some(function(t){return t.id===target.id;});});
-    if(sd){
-      const idx=sd.targets.findIndex(function(t){return t.id===target.id;});
-      const next=sd.targets.slice(idx+1).find(function(t){return t.status==='not_started';});
-      const today=new Date().toISOString().slice(0,10);
-      if(next){next.status='in_progress';next.introducedDate=today;toast('\u2705 '+target.name+' met first-trial criteria \u2192 '+next.name+' now active',4000);}
-      else{toast('\u2705 '+target.name+' met first-trial criteria!',3000);}
-    }
-    saveData();
+  const e=_ftStepEval(lesson,target);
+  if(!e.met||!e.isLast)return;
+  target.status='flagged';
+  const sd=lesson.sds.find(function(x){return x.targets.some(function(t){return t.id===target.id;});});
+  if(sd){
+    const idx=sd.targets.findIndex(function(t){return t.id===target.id;});
+    const next=sd.targets.slice(idx+1).find(function(t){return t.status==='not_started';});
+    const today=new Date().toISOString().slice(0,10);
+    if(next){next.status='in_progress';next.introducedDate=today;toast('✅ '+target.name+' met criteria (all steps) → '+next.name+' now active',4000);}
+    else{toast('✅ '+target.name+' met criteria — all steps complete!',3000);}
   }
+  saveData();
 }
+
 function _ftCriteriaProgress(lesson,target){
   if(!target||target.dataType!=='checklist'||target.status==='mastered')return '';
-  const rule=lesson.masteryRule||{sessions:3,therapists:2};
-  const clean=(target.firstTrialData||[]).filter(function(f){var n=normFT(f.result);return n==='C'||n==='P'||n==='I';});
-  var streak=0;for(var i=clean.length-1;i>=0;i--){if(normFT(clean[i].result)==='C')streak++;else break;}
-  const recent=clean.slice(-rule.sessions);
-  const txCount=new Set(recent.map(function(f){return f.txId;})).size;
+  const e=_ftStepEval(lesson,target);
   if(target.status==='flagged'){
-    return '<div style="margin-top:8px;font-size:.75rem;color:#8a6410;background:#fbeecb;border-radius:6px;padding:5px 9px">\u2691 Criteria met \u2014 '+rule.sessions+' independent across '+txCount+' therapist'+(txCount>1?'s':'')+'</div>';
+    return '<div style="margin-top:8px;font-size:.75rem;color:#8a6410;background:#fbeecb;border-radius:6px;padding:5px 9px">⚑ Criteria met (all steps) — ready to master</div>';
   }
-  const remain=Math.max(rule.sessions-streak,0);
-  return '<div style="margin-top:8px;font-size:.75rem;color:var(--muted)">Toward criteria: <strong style="color:#3a5a2c">'+streak+'</strong> / '+rule.sessions+' independent in a row'+(remain>0?' \u2014 '+remain+' more':'')+' \u00b7 needs '+rule.therapists+' therapist'+(rule.therapists>1?'s':'')+'</div>';
+  if(e.met&&!e.isLast){
+    return '<div style="margin-top:8px;font-size:.75rem;color:#234b63;background:#e2f0f7;border-radius:6px;padding:5px 9px">⚑ Step '+(e.cur+1)+' criteria met — ready to advance to Step '+(e.cur+2)+' (tap 🎯 Meet Criteria)</div>';
+  }
+  const remain=Math.max(e.rule.sessions-e.streak,0);
+  const stepLbl=(e.steps.length>1)?(' · Step '+(e.cur+1)):'';
+  return '<div style="margin-top:8px;font-size:.75rem;color:var(--muted)">Toward criteria: <strong style="color:#3a5a2c">'+e.streak+'</strong> / '+e.rule.sessions+' independent in a row'+(remain>0?' — '+remain+' more':'')+' · needs '+e.rule.therapists+' therapist'+(e.rule.therapists>1?'s':'')+stepLbl+'</div>';
 }
+
 function checkDTStepAdvance(lesson,date,ftResult,pct){
   const stepIdx=lesson.dtStepIndex||0;
   const rule=lesson.masteryRule||{pct:80,sessions:2,therapists:2};
@@ -3524,7 +3539,7 @@ function drawLessonChart(lesson,sd,target){
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&(!graphMonth||s.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
   const labels=[],vals=[],sessionDates=[];
   sessions.forEach(s=>{s.lessonData&&s.lessonData.forEach(ld=>{if(ld.lessonId!==lesson.id)return;ld.targets&&ld.targets.forEach(t=>{if(t.targetId!==target.id)return;if(t.na)return;
-const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataType==='tally'?t.count/(s.sessTime||4):t.count):null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+s.txName.split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
+const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataType==='tally'?t.count/(s.sessTime||4):t.count):null));if(v!=null){labels.push(fmtDateShort(s.date)+'\n'+(s.txName||'').split(' ')[0]);sessionDates.push(s.date);vals.push(target.dataType==='rating'?t.rating:v);}});});});
   if(!labels.length){if(wrapEl)wrapEl.innerHTML='<p style="font-size:.78rem;color:var(--muted);padding:8px 0">📊 No session data yet for this target.</p>';return;}
   if(wrapEl)wrapEl.style.border='1px solid #1f8ec4';
   const isRating=target.dataType==='rating';
@@ -4178,7 +4193,7 @@ function renderProgramChecklist(){
   // build column headers: date + therapist initial
   const colHeaders=sessions.map(s=>{
     const d=fmtDateShort(s.date);
-    const init=s.txName.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    const init=(s.txName||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
     return {date:d,init,sessId:s.id,txName:s.txName,fullDate:s.date};
   });
 
@@ -4392,7 +4407,7 @@ function renderBehaviorTab(){
       +'<div style="display:flex;align-items:flex-end"><button class="btn btn-primary btn-sm" onclick="logBIP(\''+bip.id+'\')">Log</button></div>'
       +'</div></div>';
     // Graph canvases — one per measurement, stacked
-    const graphHtml=allMeas.map(m=>'<div style="margin-bottom:16px">'
+    const graphHtml=((bip.functions&&bip.functions.length>1)?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Each colored line = one behavior function (see legend).</div>':'')+allMeas.map(m=>'<div style="margin-bottom:16px">'
       +'<div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+';margin-bottom:4px">'+measLabels[m]+'</div>'
       +(logs.length>=1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
         :'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>')
@@ -4597,7 +4612,7 @@ function drawBIPChart(bip){
     const datasets=allFns.map((fn,fi)=>{
       const color=bipFnColor(fn);
       const fData=logs.map(b=>(b.function===fn||(allFns.length===1&&!b.function))?bipValForMeas(b,meas):null);
-      return{label:bipFnLabel(fn),data:fData,borderColor:color,backgroundColor:'transparent',tension:.3,fill:false,pointRadius:4,borderWidth:2,spanGaps:true};
+      return{label:bipFnLabel(fn),data:fData,borderColor:color,backgroundColor:'transparent',tension:.3,fill:false,pointRadius:4,borderWidth:2,borderDash:fi===0?[]:(fi===1?[6,4]:[2,3]),spanGaps:true};
     });
 
     // goal line
