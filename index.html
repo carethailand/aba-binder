@@ -254,6 +254,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .session-locked select{pointer-events:none;opacity:.55;background:#f5f6f8;}
 .session-locked button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
 .session-locked .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
+.session-locked .bip-tab-btn,.view-only-mode .bip-tab-btn{pointer-events:auto!important;opacity:1!important;}
 .session-locked .no-session-banner{display:flex;}
 .no-session-banner{display:none;align-items:center;gap:8px;background:#fbeecb;border:1px solid #f2b431;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#8a6410;}
 
@@ -3595,7 +3596,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
 }
 
 // ── Mastery actions ──
-function setTargetStatus(lId,sId,tId,status){
+function setTargetStatus(lId,sId,tId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
   const t=sd.targets.find(x=>x.id===tId);if(!t)return;
@@ -3628,7 +3629,7 @@ function _sdTagHtml(sd){
 function _orderedSDs(sds){
   return (sds||[]).map(function(sd,i){return [sd,i];}).sort(function(a,b){return _sdRank(a[0])-_sdRank(b[0]);});
 }
-function setSDStatus(lId,sId,status){
+function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
   const sd=l.sds.find(function(x){return x.id===sId;});if(!sd)return;
   const today=new Date().toISOString().slice(0,10);
@@ -3652,36 +3653,36 @@ function setSDStatus(lId,sId,status){
   }
   saveData();render();
 }
-function editGeneralNote(noteId){
+function editGeneralNote(noteId){if(!requireActiveSession())return;
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
   const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
   modal('<h3 style="margin-bottom:10px">Edit note</h3><textarea id="egn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveGeneralNote(\''+noteId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveGeneralNote(noteId){
+function saveGeneralNote(noteId){if(!requireActiveSession())return;
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
   const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
   const el=document.getElementById('egn-t');if(!el)return;
   n.text=(el.value||'').trim();n.editedBy=currentUser.name;n.editedDate=new Date().toISOString().slice(0,10);
   sbSaveClient(c);closeModal();toast('Note updated \u2713');render();
 }
-function editLessonSupNote(lId,idx){
+function editLessonSupNote(lId,idx){if(!requireActiveSession())return;
   const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
   const n=l.supNotes[idx];
   modal('<h3 style="margin-bottom:10px">Edit lesson note</h3><textarea id="elsn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveLessonSupNote(\''+lId+'\','+idx+')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveLessonSupNote(lId,idx){
+function saveLessonSupNote(lId,idx){if(!requireActiveSession())return;
   const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
   const el=document.getElementById('elsn-t');if(!el)return;
   l.supNotes[idx].text=(el.value||'').trim();saveData();closeModal();toast('Note updated \u2713');render();
 }
-function confirmMastery(lId,sId,tId){
+function confirmMastery(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   t.status='mastered';t.masteredDate=new Date().toISOString().slice(0,10);
   const allMastered=l.sds.every(s=>s.targets.every(x=>x.status==='mastered'));
   saveData();toast(allMastered?'🎉 All targets mastered! Consider advancing phase.':'✓ Target mastered',allMastered?4000:2500);render();
 }
-function rejectMastery(lId,sId,tId){const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';saveData();toast('Kept as in-progress');render();}
-function showReintroduceModal(lId){
+function rejectMastery(lId,sId,tId){if(!requireActiveSession())return;const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';saveData();toast('Kept as in-progress');render();}
+function showReintroduceModal(lId){if(!requireActiveSession())return;
   const lesson=DB.lessons.find(x=>x.id===lId);
   if(!lesson)return;
   const masteredTargets=[];
@@ -3723,7 +3724,7 @@ function showReintroduceModal(lId){
     +'</div></div>');
 }
 
-function saveReintroduce(){
+function saveReintroduce(){if(!requireActiveSession())return;
   const _rd=window._reintroData||{};
   const lId=_rd.lId, pairs=_rd.pairs||[];
   const lesson=DB.lessons.find(x=>x.id===lId);
@@ -3754,7 +3755,7 @@ function saveReintroduce(){
 }
 
 
-function setLessonStatus(lId,status){
+function setLessonStatus(lId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   if(status==='maintenance'&&l.phase!=='maintenance'){
     const sched=prompt('Maintenance schedule (e.g. twice a week):',l.maintenanceSchedule||'twice a week');
@@ -3777,7 +3778,7 @@ function setLessonStatus(lId,status){
   render();
 }
 
-function advancePhase(lId){
+function advancePhase(lId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);
   const next=l.phase==='acquisition'?(l.teachingStyle==='NET'?'maintenance':'dt'):l.phase==='dt'?'maintenance':'acquisition';
   if(next==='maintenance'){const s=prompt('Maintenance schedule:','twice a week');if(!s)return;l.maintenanceSchedule=s;}
@@ -3785,7 +3786,7 @@ function advancePhase(lId){
 }
 
 // ── Skip DT step (supervisor only) ──
-function skipDTStep(lId){
+function skipDTStep(lId){if(!requireActiveSession())return;
   if(currentUser.role!=='supervisor'){alert('Supervisors only');return;}
   const l=DB.lessons.find(x=>x.id===lId);
   const dtSteps=l.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS;
@@ -3816,7 +3817,7 @@ function showAddLesson(){
 function toggleDTField(){document.getElementById('nl-dt-wrap').style.display=document.getElementById('nl-style').value==='NET'?'none':'';}
 function toggleTAFields(){const v=document.getElementById('nl-dtype').value;document.getElementById('nl-ta-wrap').style.display=v==='ta'?'':'none';document.getElementById('nl-rating-wrap').style.display=v==='rating'?'':'none';const _tw=document.getElementById('nl-trials-wrap');if(_tw)_tw.style.display=v==='tally'?'none':'';const _tlw=document.getElementById('nl-tally-wrap');if(_tlw)_tlw.style.display=v==='tally'?'':'none';}
 
-function saveNewLesson(){
+function saveNewLesson(){if(!requireActiveSession())return;
   const name=document.getElementById('nl-name').value.trim();if(!name){alert('Name required');return;}
   const style='DTT';
   const dtype=document.getElementById('nl-dtype').value;
@@ -3861,7 +3862,7 @@ function saveNewSD(lId){
 }
 
 // ── Add Target to specific SD ──
-function addTarget(lId,sId){
+function addTarget(lId,sId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   const _sdSteps=(sd.teachingSteps||[]).join('\n');
   modal('<h3 style="margin-bottom:12px">Add Target</h3>'
@@ -3925,7 +3926,7 @@ function saveAddSDTarget(lId){
 
 
 // ── Edit SD ──
-function editSD(lId,sId){
+function editSD(lId,sId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   const existingSteps=(sd.teachingSteps||[]).join('\n');
   const curStyle=sd.teachingStyle||'DTT';
@@ -3941,14 +3942,14 @@ function editSD(lId,sId){
     +'<button class="btn btn-primary" onclick="saveEditSD(\''+lId+'\',\''+sId+'\')">' + 'Save</button>'
     +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function addSDNote(lId,sId){
+function addSDNote(lId,sId){if(!requireActiveSession())return;
   const el=document.getElementById('sdnadd_'+sId);
   if(!el||!el.value.trim())return;
   saveSDNote(lId,sId,el.value);
   el.value='';
   render();
 }
-function saveSDNote(lId,sId,val){
+function saveSDNote(lId,sId,val){if(!requireActiveSession())return;
   const _txt=(val||'').trim();if(!_txt)return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
@@ -3960,13 +3961,13 @@ function saveSDNote(lId,sId,val){
   else{sd.notes.push({date:_today,authorId:currentUser.id,authorName:currentUser.name,text:_txt});}
   saveData();
 }
-function deleteSDNote(lId,sId,idx){
+function deleteSDNote(lId,sId,idx){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd||!sd.notes)return;
   sd.notes.splice(idx,1);
   saveData();render();
 }
-function saveEditSD(lId,sId){
+function saveEditSD(lId,sId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
   const _beforeSD=JSON.stringify({sd:sd.sd||'',response:sd.response||'',teachingStyle:sd.teachingStyle||'DTT',teachingSteps:sd.teachingSteps||[]});
   sd.sd=document.getElementById('esd-sd').value.trim()||sd.sd;
@@ -3978,7 +3979,7 @@ function saveEditSD(lId,sId){
   saveData();closeModal();render();
 }
 // ── Edit lesson / target ──
-function editLesson(lId){
+function editLesson(lId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);
   modal('<h3 style="margin-bottom:12px">Edit: '+esc(l.name)+'</h3>'+
   '<label>Name<input id="el-n" type="text" value="'+esc(l.name)+'"></label>'+
@@ -3986,14 +3987,14 @@ function editLesson(lId){
   '<div class="form-row" style="margin-top:8px"><div class="fg-sm"><label>Mastery %<input id="el-p" type="number" value="'+l.masteryRule.pct+'"></label></div><div class="fg-sm"><label>Sessions<input id="el-ss" type="number" value="'+l.masteryRule.sessions+'"></label></div><div class="fg-sm"><label>Therapists<input id="el-tx" type="number" value="'+l.masteryRule.therapists+'"></label></div></div>'+
   '<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="saveEditLesson(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveEditLesson(id){
+function saveEditLesson(id){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===id);
   l.name=document.getElementById('el-n').value.trim()||l.name;
   l.purpose=(document.getElementById('el-pur').value||'').trim();
   l.masteryRule={pct:parseInt(document.getElementById('el-p').value)||80,sessions:parseInt(document.getElementById('el-ss').value)||3,therapists:parseInt(document.getElementById('el-tx').value)||2};
   saveData();render();
 }
-function showMeetCriteria(lId,sId,tId){
+function showMeetCriteria(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   const steps=t.teachingSteps||[];
   if(!steps.length){toast('No teaching steps defined for this target. Supervisor can add them in Edit Target.');return;}
@@ -4010,7 +4011,7 @@ function showMeetCriteria(lId,sId,tId){
     '<button class="btn btn-primary" onclick="applyMeetCriteria(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Confirm</button>'+
     '<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function applyMeetCriteria(lId,sId,tId){
+function applyMeetCriteria(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   const el=document.getElementById('mc-step');if(!el)return;
   const newIdx=parseInt(el.value);
@@ -4023,7 +4024,7 @@ function applyMeetCriteria(lId,sId,tId){
   saveData();closeModal();render();
   toast('✅ '+t.name+' → Step '+(newIdx+1)+': '+(steps[newIdx]||''),4000);
 }
-function editTarget(lId,sId,tId){
+function editTarget(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   const tSteps=t.teachingSteps&&t.teachingSteps.length?t.teachingSteps:(sd.teachingSteps||[]);
   const cur=t.dtStepIndex!=null?t.dtStepIndex:0;
@@ -4045,7 +4046,7 @@ function editTarget(lId,sId,tId){
   supSection+
   '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline unlock-exempt" style="margin-left:auto;color:#d84a3a;border-color:#d84a3a" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
 }
-function saveEditTarget(lId,sId,tId){
+function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
   t.name=document.getElementById('et-n').value.trim()||t.name;
   if(['supervisor','director'].includes(currentUser.role)){
@@ -4111,7 +4112,7 @@ function deleteTarget(lId,sId,tId){
 function addLessonNote(lId){
   modal('<h3 style="margin-bottom:12px">General Notes</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveLessonNote(lId){const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({date:new Date().toISOString().slice(0,10),author:currentUser.id,text});saveData();render();}
+function saveLessonNote(lId){if(!requireActiveSession())return;const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({date:new Date().toISOString().slice(0,10),author:currentUser.id,text});saveData();render();}
 
 // ════════════════════════════════════════════════
 // MAINTENANCE TAB
@@ -4215,7 +4216,7 @@ function renderProgramChecklist(){
   });
 
   // single header row: dd.mm.yy + first name at 45 degrees
-  let initRow='<tr><td style="background:#e2f0f7;font-weight:700;min-width:170px;padding:7px 10px">Session</td>';
+  let initRow='<tr><td style="background:#e2f0f7;font-weight:700;min-width:150px;padding:7px 10px;position:sticky;left:0;z-index:3">Session</td>';
   colHeaders.forEach(h=>{
     const d=h.fullDate.slice(2).replace(/-/g,'.');// yy.mm.dd -> need dd.mm.yy
     const parts=h.fullDate.split('-');
@@ -4234,7 +4235,7 @@ function renderProgramChecklist(){
   // lesson rows
   const lessonRows=lessons.map((l,i)=>{
     const rowBg=i%2===0?'#f0faed':'#ffffff';
-    let row='<tr><td style="padding:7px 10px;font-size:.87rem;background:'+rowBg+';border-right:2px solid #b8dcef">'+esc(l.name)+'</td>';
+    let row='<tr><td style="padding:7px 10px;font-size:.87rem;background:'+rowBg+';border-right:2px solid #b8dcef;position:sticky;left:0;z-index:2;min-width:150px">'+esc(l.name)+'</td>';
     colHeaders.forEach(h=>{
       const cellVal=sessionLessons[h.sessId]&&sessionLessons[h.sessId][l.id];
       if(cellVal==='ran'){
@@ -4567,7 +4568,7 @@ function logBIP(bipId){
 // ═══════════════════════════════════════════════════════
 // BIP — save field on-the-fly (sup)
 // ═══════════════════════════════════════════════════════
-function saveBIPField(bipId,field,value){
+function saveBIPField(bipId,field,value){if(!requireActiveSession())return;
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   bip[field]=value;saveData();
 }
@@ -4632,7 +4633,7 @@ function drawBIPChart(bip){
 // ═══════════════════════════════════════════════════════
 // BIP — add / edit modals
 // ═══════════════════════════════════════════════════════
-function copyBIPToSchool(bipId){
+function copyBIPToSchool(bipId){if(!requireActiveSession())return;
   const src=DB.bips.find(b=>b.id===bipId);if(!src)return;
   const copy=JSON.parse(JSON.stringify(src));
   copy.id=uid();
@@ -4643,7 +4644,7 @@ function copyBIPToSchool(bipId){
   saveData();
   toast('Copied to School BIP ✓ — switch to School session to view and edit it.');
 }
-function showAddBIP(){
+function showAddBIP(){if(!requireActiveSession())return;
   const _bipSetting=(()=>{
     if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
     const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
@@ -4670,7 +4671,7 @@ function showAddBIP(){
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveBIP()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 
-function saveBIP(){
+function saveBIP(){if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
   const name=document.getElementById('nb-n').value.trim();if(!name){alert('Name required');return;}
   const measIdMap={frequency:'nb-mfreq',duration:'nb-mdur',rate:'nb-mrate'};
@@ -4694,7 +4695,7 @@ function saveBIP(){
   saveData();render();closeModal();
 }
 
-function editBIP(bipId){
+function editBIP(bipId){if(!requireActiveSession())return;
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   const fns=bip.functions||['unknown'];
   const meas=bipMeasList(bip);
@@ -4719,7 +4720,7 @@ function editBIP(bipId){
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveEditBIP(\''+bipId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 
-function saveEditBIP(bipId){
+function saveEditBIP(bipId){if(!requireActiveSession())return;
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   const _beforeBIP=JSON.stringify({name:bip.name,description:bip.description||'',measurements:bip.measurements||[],functions:bip.functions||[],goal:bip.goal||'',goalDeadline:bip.goalDeadline||'',goalValue:(bip.goalValue==null?null:bip.goalValue),baseline:bip.baseline||''});
   bip.name=document.getElementById('eb-n').value.trim()||bip.name;
@@ -4743,7 +4744,7 @@ function deleteBIP(bipId){
   modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Delete BIP?</h3><p style="color:var(--muted);margin-bottom:16px">This deletes the BIP and all logged data. Cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();_doDeleteBIP(\''+bipId+'\')">Delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
   return;
 }
-function _doDeleteBIP(bipId){
+function _doDeleteBIP(bipId){if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
   // Delete behavior logs for this BIP from Supabase first
   const logsToDelete=(DB.behaviors||[]).filter(b=>b.bipId===bipId);
@@ -4871,7 +4872,7 @@ function saveReinforcer(){
   saveData();toast('Reinforcer added ✓');render();
 }
 
-function deleteReinforcer(idx){
+function deleteReinforcer(idx){if(!requireActiveSession())return;
   const c=DB.clients.find(x=>x.id===selectedClientId);
   if(!c.reinforcers)return;
   c.reinforcers.splice(idx,1);
