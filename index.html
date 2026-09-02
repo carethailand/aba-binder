@@ -2824,7 +2824,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
     });
   }};
   new Chart(canvas,{type:'line',data:{labels,datasets:[
-    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
+    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery',data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,fill:false}
   ]},plugins:[sgPhasePlugin,sgSdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:20,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
@@ -3669,7 +3669,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
     });
   }};
   new Chart(canvas,{type:'line',data:{labels,datasets:[
-    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
+    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery '+masteryLine+(isRating?'':isTally?'/hr':'%'),data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
   ]},plugins:[phaseLinePlugin,sdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:20,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
