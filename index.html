@@ -917,6 +917,13 @@ function getSessState(){try{return JSON.parse(sessionStorage.getItem(SESS_KEY))|
 function setSessState(o){sessionStorage.setItem(SESS_KEY,JSON.stringify(o));}
 function clearSessState(){sessionStorage.removeItem(SESS_KEY);}
 function updateSessState(key,val){const s=getSessState();s[key]=val;setSessState(s);}
+function getActiveState(){
+  const ss=getSessState();
+  if(ss.started&&ss.clientId===selectedClientId)return ss;
+  const sv=getSupState();
+  if(sv.started&&sv.clientId===selectedClientId)return sv;
+  return ss.started?ss:(sv.started?sv:{});
+}
 function startSession(){
   hideUnsavedBanner();
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
@@ -1506,6 +1513,13 @@ function startSupervision(){
   const _supSet=(document.getElementById('sv-setting')||{}).value||'therapy';
   try{sessionStorage.setItem('sup_snap',JSON.stringify(snap));}catch(e){console.warn('Snap too large for sessionStorage',e);}
   setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true});
+  render();
+}
+function startSessionAsSup(){
+  if(typeof hideUnsavedBanner==='function')hideUnsavedBanner();
+  const d=(document.getElementById('sv-date')||{}).value||new Date().toISOString().slice(0,10);
+  const _set=(document.getElementById('sv-setting')||{}).value||'therapy';
+  setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
   render();
 }
 
@@ -2268,7 +2282,8 @@ function renderClientView(){
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
   let stickyBar='';
-  if(!isSup){
+  const _supSessMode=isSup&&getSessState().started&&getSessState().clientId===selectedClientId;
+  if(!isSup||_supSessMode){
     const ss0=getSessState();
     if(!ss0.clientId||ss0.clientId!==selectedClientId){setSessState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),sessTime:4,started:false,sessType:'individual'});}
     const ss=getSessState();
@@ -2312,7 +2327,7 @@ function renderClientView(){
   }
   // Supervision sticky bar — SUP only
   let supBar='';
-  if(isSup){
+  if(isSup&&!_supSessMode){
     const sv=getSupState();
     if(!sv.clientId||sv.clientId!==selectedClientId){setSupState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),supType:'overlap',setting:'therapy',started:false});}
     const sv2=getSupState();
@@ -2328,6 +2343,7 @@ function renderClientView(){
         +'<span class="ss-label">Setting</span><select id="sv-setting" onchange="updateSupState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_svSetting==='therapy'?' selected':'')+'>🏠 1:1</option><option value="school"'+(_svSetting==='school'?' selected':'')+'>🏫 School Obs</option></select>'
         +'<div style="flex:1"></div>'
         +'<button class="unlock-exempt" style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
+        +'<button class="unlock-exempt" style="background:#1f8ec4;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:6px" onclick="startSessionAsSup()">▶ Start Session (as therapist)</button>'
         +'</div>';
     } else {
       const supTypeLabel=(sv2.supType||'overlap').charAt(0).toUpperCase()+(sv2.supType||'overlap').slice(1);
@@ -2369,7 +2385,7 @@ function isViewOnly(){
 function isSessionActive(){
   if(!currentUser)return false;
   const isSup=['supervisor','director'].includes(currentUser.role);
-  return isSup?!!getSupState().started:!!getSessState().started;
+  return isSup?(!!getSupState().started||!!getSessState().started):!!getSessState().started;
 }
 
 // ── Session guard — call at top of any data-entry function ──
@@ -2377,11 +2393,10 @@ function requireActiveSession(){
   const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
   if(isSup){
     const sv=getSupState();
-    if(!sv.started||sv.clientId!==selectedClientId){
-      toast('⚠ Start a supervision session first before recording data.','error',3500);
-      return false;
-    }
-    return true;
+    const ss=getSessState();
+    if((sv.started&&sv.clientId===selectedClientId)||(ss.started&&ss.clientId===selectedClientId))return true;
+    toast('⚠ Start a supervision visit or a session first before recording data.','error',3500);
+    return false;
   } else {
     const ss=getSessState();
     if(!ss.started||ss.clientId!==selectedClientId){
@@ -2739,13 +2754,16 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   const sgPhaseLines=sgStepChanges.map(c=>{
     if(rawDates.length===0)return null;
     const sgSteps=target.teachingSteps||[];
-    if(c.sessionCount!=null){
-      const sgPinIdx=Math.min(c.sessionCount,rawDates.length-1);
-      return{idx:sgPinIdx,label:'Step '+(c.to+1)+': '+(sgSteps[c.to]||'')};
+    const _lbl='Step '+(c.to+1)+': '+(sgSteps[c.to]||'');
+    // All-time view: pin by stored session count (disambiguates same-date sessions)
+    if(c.sessionCount!=null&&!graphMonth){
+      return{idx:Math.min(c.sessionCount,rawDates.length-1),label:_lbl};
     }
-    const sgAfterIdx=rawDates.findIndex(d=>d>c.date);
-    if(sgAfterIdx>=0)return{idx:sgAfterIdx,label:'Step '+(c.to+1)+': '+(sgSteps[c.to]||'')};
-    return{idx:rawDates.length-1,label:'Step '+(c.to+1)+': '+(sgSteps[c.to]||'')};
+    // Month view (or legacy change without count): place by date within the visible points
+    const sgAfterIdx=rawDates.findIndex(d=>d>=c.date);
+    if(sgAfterIdx<0)return null;                       // change is newer than all visible sessions
+    if(sgAfterIdx===0&&rawDates[0]!==c.date)return null; // change predates this window
+    return{idx:sgAfterIdx,label:_lbl};
   }).filter(Boolean);
   const sgSdModLines=((sd&&sd.modHistory)||[]).map(function(m){
     if(!m.date||!rawDates.length)return null;
@@ -3594,15 +3612,16 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   const phaseLines=stepChanges.map(c=>{
     if(sessionDates.length===0)return null;
     const steps=target.teachingSteps||[];
-    // use stored sessionCount pin if available
-    if(c.sessionCount!=null){
-      const pinIdx=Math.min(c.sessionCount,sessionDates.length-1);
-      return{idx:pinIdx,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
+    const _lbl='Step '+(c.to+1)+': '+(steps[c.to]||'');
+    // All-time view: pin by stored session count (disambiguates same-date sessions)
+    if(c.sessionCount!=null&&!graphMonth){
+      return{idx:Math.min(c.sessionCount,sessionDates.length-1),label:_lbl};
     }
-    // fallback: first session on or after change date
+    // Month view (or legacy change without count): place by date within the visible points
     const afterIdx=sessionDates.findIndex(d=>d>=c.date);
-    if(afterIdx>=0)return{idx:afterIdx,label:'Step '+(c.to+1)+': '+(steps[c.to]||'')};
-    return null; // no session yet after this change — don't draw the line
+    if(afterIdx<0)return null;                          // change is newer than all visible sessions
+    if(afterIdx===0&&sessionDates[0]!==c.date)return null; // change predates this window
+    return{idx:afterIdx,label:_lbl};
   }).filter(Boolean);
   const sdModLines=((sd&&sd.modHistory)||[]).map(function(m){
     if(!m.date||!sessionDates.length)return null;
@@ -4211,7 +4230,7 @@ async function recordMaintMark(lessonId,targetId,result){
   lesson.sds.forEach(function(sd){sd.targets.forEach(function(t){if(t.id===targetId){tgt=t;sdId=sd.id;}});});
   if(!tgt)return;
   const isSup=['supervisor','director'].includes(currentUser.role);
-  const st=isSup?getSupState():getSessState();
+  const st=getActiveState();
   const date=st.date||new Date().toISOString().slice(0,10);
   const setting=st.setting||'therapy';
   const existing=DB.sessions.find(function(s){return s.clientId===selectedClientId&&s.date===date&&(s.setting||'therapy')===setting&&s.sessType==='maintenance';});
@@ -4593,7 +4612,7 @@ function logBIP(bipId){
   if(!DB.bips)DB.bips=[];
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
   const isSup2=['supervisor','director'].includes(currentUser.role);
-  const date=(isSup2?getSupState():getSessState()).date||new Date().toISOString().slice(0,10);
+  const date=getActiveState().date||new Date().toISOString().slice(0,10);
   const notes=((document.getElementById('bxn_'+bipId)||{}).value||'').trim();
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
@@ -4966,7 +4985,7 @@ function deleteReinforcer(idx){if(!requireActiveSession())return;
   saveData();render();
 }
 
-function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:((['supervisor','director'].includes(currentUser.role)?getSupState():getSessState()).date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:(getActiveState().date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
