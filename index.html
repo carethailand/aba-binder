@@ -224,6 +224,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   /* SD header buttons wrap */
   .sd-header{flex-wrap:wrap;}
 
+  /* Lesson header buttons wrap (name + status + edit/note/sd/delete) */
+  .lesson-card > summary{flex-wrap:wrap;row-gap:6px;}
+
   /* Sticky bar — compact 2-row layout */
   #sess-sticky{padding:5px 8px;gap:4px;row-gap:5px;}
   #sess-sticky .ss-label{font-size:.65rem;letter-spacing:.02em;}
@@ -769,17 +772,13 @@ function buildOfflineArchiveHTML(client,lessons,bips,sessions,behaviors,abcEntri
         if(t.dataType!=='checklist'&&pts.length){
           const isRating=t.dataType==='rating';
           const isTally=t.dataType==='tally';
-          const maxY=isRating?5:isTally?null:100;
+          const maxY=isRating?null:isTally?null:108;
           const suffix=isRating?'':isTally?'/hr':'%';
           const color=isRating?'#8b5cf6':isTally?'#e6a71f':'#1f8ec4';
           lHtml+=svgLine(pts,{maxY,suffix,color});
         }
         // First trial circles
-        const fts=(t.firstTrialData||[]).filter(f=>f.date>=fromVal+'-01'&&f.date<=toVal+'-31').slice(-8);
-        if(fts.length){
-          lHtml+='<div style="font-size:.72rem;font-weight:600;color:#374151;margin:6px 0 3px">First Trial</div>';
-          lHtml+=ftCircles(fts.map(f=>({r:f.result,l:fmtD(f.date),tx:(f.txName||'').split(' ')[0]})));
-        }
+        lHtml+=_ftStrip(l,t,(t.firstTrialData||[]).filter(f=>f.date>=fromVal+'-01'&&f.date<=toVal+'-31'),'First Trial');
         lHtml+='</div>';
       });
       lHtml+='</div>';
@@ -2537,6 +2536,39 @@ function renderLessonSessionBlock(lesson){
 }
 
 // ── Target session entry ──
+function _ftDotCell(ft){
+  const cc=normFTCol(ft.result),lab=normFT(ft.result);
+  return '<div style="display:flex;flex-direction:column;align-items:center;width:46px;flex:0 0 auto">'
+    +'<div style="width:32px;height:32px;border-radius:50%;background:'+cc.bg+';color:'+cc.c+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+lab+'</div>'
+    +'<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2;margin-top:2px">'+fmtDateShort(ft.date)+'<br>'+(ft.txName?esc(ft.txName.split(' ')[0]):'')+'</div></div>';
+}
+function _ftMarkerCell(color,label){
+  return '<div style="display:flex;flex-direction:column;align-items:center;width:26px;flex:0 0 auto">'
+    +'<div style="margin-top:5px;display:flex;flex-direction:column;align-items:center">'
+    +'<div style="width:1.5px;height:15px;background:'+color+';opacity:.55"></div>'
+    +'<svg width="15" height="12" viewBox="0 0 16 13" aria-hidden="true"><path d="M8 0 L16 13 L0 13 Z" fill="'+color+'"/></svg>'
+    +'<div style="font-size:10px;color:'+(color==='#4fa14a'?'#2f6b2c':'#a35f0a')+';margin-top:2px;white-space:nowrap">'+label+'</div>'
+    +'</div></div>';
+}
+function _ftStrip(lesson,target,points,label){
+  points=(points||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  if(!points.length)return '';
+  const marks=[];
+  (target.dtStepChanges||[]).filter(function(c){return c.date;}).forEach(function(c){marks.push({date:c.date,color:'#EF9F27',label:'S'+((c.to||0)+1)});});
+  if(target.masteredDate)marks.push({date:target.masteredDate,color:'#4fa14a',label:'M'});
+  const byGap={};
+  marks.forEach(function(m){
+    var idx=points.findIndex(function(p){return p.date>=m.date;});
+    if(idx>0){(byGap[idx]=byGap[idx]||[]).push(m);}
+  });
+  var cells='';
+  points.forEach(function(ft,i){
+    if(byGap[i])byGap[i].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label);});
+    cells+=_ftDotCell(ft);
+  });
+  return '<div style="font-size:.72rem;color:var(--muted);margin:6px 0 3px">'+label+'</div>'
+    +'<div style="overflow-x:auto;direction:rtl;padding-bottom:2px"><div style="display:inline-flex;direction:ltr;align-items:flex-start;gap:2px">'+cells+'</div></div>';
+}
 function renderTargetSessionEntry(lesson,sd,target){
   // On-hold targets: no data input — the yellow renderHoldSection shows them below
   if(target.status==='on_hold') return '';
@@ -2651,19 +2683,7 @@ function renderTargetSessionEntry(lesson,sd,target){
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="N/A" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">N/A</button>';
       html+='</div>';
     }
-    const ftHist=(target.firstTrialData||[]).slice(-8).reverse();
-    if(ftHist.length){
-      html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Recent</div>';
-      html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
-      ftHist.forEach(function(ft){
-        const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
-        html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-        html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
-        html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+(ft.txName?ft.txName.split(' ')[0]:'')+'</div>';
-        html+='</div>';
-      });
-      html+='</div>';
-    }
+    html+=_ftStrip(lesson,target,target.firstTrialData||[],'Recent');
     html+=_ftCriteriaProgress(lesson,target);
     html+='</div>';
   }
@@ -2683,21 +2703,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<p style="font-size:.78rem;color:var(--muted)">First trial recorded by TX during session.</p>';
   }
   // history dots (all roles see this)
-  const ftHistory=(target.firstTrialData||[]).slice(-8).reverse();
-  if(ftHistory.length){
-    html+='<div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div>';
-    html+='<div style="display:flex;gap:6px;flex-wrap:wrap">';
-    ftHistory.forEach(function(ft){
-      const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
-      const shortDate=fmtDateShort(ft.date);
-      const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
-      html+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">';
-      html+='<div style="width:32px;height:32px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+_ftLabel+'</div>';
-      html+='<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2">'+shortDate+'<br>'+txFirst+'</div>';
-      html+='</div>';
-    });
-    html+='</div>';
-  }
+  html+=_ftStrip(lesson,target,target.firstTrialData||[],'Data recorded');
   html+='</div>';
   } // end First Trial recorder
 
@@ -2772,7 +2778,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   if(!labels.length)return;
   const isRating=target.dataType==='rating';
   const isTally=target.dataType==='tally';
-  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:100;
+  const maxY=isRating?((target.ratingScale&&target.ratingScale.max||5)+0.5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:108;
   const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?(target.tallyGoal||null):lesson.masteryRule.pct||80;
   // phase change lines
   const sgStepChanges=(target.dtStepChanges||[]).filter(c=>c.date);
@@ -2820,7 +2826,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery',data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,fill:false}
-  ]},plugins:[sgPhasePlugin,sgSdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[sgPhasePlugin,sgSdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:10,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{offset:true,ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── DT Session Entry ──
@@ -3088,6 +3094,7 @@ async function saveSession(){
           } else if(target.dataType==='rating'){
             const sel=document.querySelector('.cpi-btn[data-id="rt_'+id+'"].rating-sel');
             if(sel){entry.rating=parseInt(sel.dataset.val);entry.pct=Math.round((entry.rating-1)/((target.ratingScale&&target.ratingScale.max||5)-1)*100);}
+            else {entry._skipped=true;}
           } else if(target.dataType==='ta'){
             const mode=target.chainingMode||'total';
             const teachIdx=getCurrentStepIndex(target);
@@ -3523,21 +3530,7 @@ function renderLessonCard(lesson){
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+(function(){
-        const ftH=(t.firstTrialData||[]).slice(-8).reverse();
-        if(!ftH.length)return'';
-        let d='<div style="margin-bottom:8px"><div style="font-size:.72rem;color:var(--muted);margin-bottom:4px">Data recorded</div><div style="display:flex;gap:6px;flex-wrap:wrap">';
-        ftH.forEach(function(ft){
-          const {c:col,bg}=normFTCol(ft.result);const _ftLabel=normFT(ft.result);
-          const txFirst=ft.txName?ft.txName.split(' ')[0]:'';
-          d+='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-            +'<div style="width:30px;height:30px;border-radius:50%;background:'+bg+';color:'+col+';display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700">'+_ftLabel+'</div>'
-            +'<div style="font-size:.63rem;color:var(--muted);text-align:center;line-height:1.2">'+fmtDateShort(ft.date)+'<br>'+txFirst+'</div>'
-            +'</div>';
-        });
-        d+='</div></div>';
-        return d;
-      }())
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+_ftStrip(lesson,t,t.firstTrialData||[],'Data recorded')
       +(t.dataType!=='checklist'?'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>':'')+'</div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
@@ -3630,7 +3623,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   if(wrapEl)wrapEl.style.border='1px solid #1f8ec4';
   const isRating=target.dataType==='rating';
   const isTally=target.dataType==='tally';
-  const maxY=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:100;
+  const maxY=isRating?((target.ratingScale&&target.ratingScale.max||5)+0.5):isTally?Math.max(10,...(vals.length?vals:[10]))*1.2:108;
   const masteryLine=isRating?(target.ratingScale&&target.ratingScale.max||5):isTally?(target.tallyGoal||null):lesson.masteryRule.pct||80;
   // Phase change lines: find indices where dtStepChanges happened
   const stepChanges=(target.dtStepChanges||[]).filter(c=>c.date);
@@ -3678,7 +3671,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   new Chart(canvas,{type:'line',data:{labels,datasets:[
     {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:.3,fill:true,pointRadius:5,pointHoverRadius:7},
     {label:'Mastery '+masteryLine+(isRating?'':isTally?'/hr':'%'),data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
-  ]},plugins:[phaseLinePlugin,sdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:10,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[phaseLinePlugin,sdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:10,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{offset:true,ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── Mastery actions ──
@@ -4756,7 +4749,7 @@ function drawBIPChart(bip){
     new Chart(canvas,{type:'line',data:{labels,datasets},plugins:[bipModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},
       plugins:{legend:{display:allFns.length>1||bip.goalValue!=null,labels:{boxWidth:12,font:{size:10}}},
         tooltip:{callbacks:{title:ctx=>ctx[0].label}}},
-      scales:{y:{beginAtZero:true,title:{display:true,text:yLabel,font:{size:10}}},
+      scales:{y:{beginAtZero:true,grace:'8%',title:{display:true,text:yLabel,font:{size:10}}},
         x:{ticks:{font:{size:9},maxRotation:45,minRotation:30}}}}});
   });
 }
