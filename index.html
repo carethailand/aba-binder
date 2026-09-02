@@ -462,6 +462,7 @@ async function loadFromSupabase(){
     DB.sessions=(sessions||[]).map(rowToSession);
     DB.behaviors=(behaviors||[]).map(rowToBehavior);
     DB.abcData=(abcData||[]).map(rowToABC);
+    try{var _fh=reconcileFirstTrialData();if(_fh>0)saveData();}catch(e){console.warn('FT reconcile failed',e);}
     hideSyncStatus();return true;
   }catch(e){
     console.error('loadFromSupabase failed',e);
@@ -469,6 +470,29 @@ async function loadFromSupabase(){
   }
 }
 
+function reconcileFirstTrialData(){
+  // Heal the denormalized first-trial cache (target.firstTrialData) from session records,
+  // which are the source of truth. ADD-ONLY: never removes points, so archived history is kept.
+  const byTarget={};
+  (DB.lessons||[]).forEach(function(l){(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){byTarget[t.id]=t;});});});
+  var healed=0;
+  (DB.sessions||[]).forEach(function(s){
+    (s.lessonData||[]).forEach(function(ld){
+      (ld.targets||[]).forEach(function(te){
+        if(!te.firstTrial||te.na)return;
+        const t=byTarget[te.targetId];if(!t)return;
+        if(!t.firstTrialData)t.firstTrialData=[];
+        const dup=t.firstTrialData.some(function(f){return f.date===s.date&&f.txId===s.txId;});
+        if(!dup){t.firstTrialData.push({date:s.date,result:te.firstTrial,txId:s.txId,txName:s.txName});healed++;}
+      });
+    });
+  });
+  if(healed){
+    Object.keys(byTarget).forEach(function(id){var t=byTarget[id];if(t.firstTrialData&&t.firstTrialData.length>1)t.firstTrialData.sort(function(a,b){return a.date.localeCompare(b.date);});});
+    console.log('reconcileFirstTrialData: healed '+healed+' missing first-trial point(s)');
+  }
+  return healed;
+}
 async function sbSaveClient(cObj){
   await sbUpsert('clients',clientToRow(cObj));
   hideSyncStatus();
@@ -1520,6 +1544,7 @@ function startSessionAsSup(){
   const d=(document.getElementById('sv-date')||{}).value||new Date().toISOString().slice(0,10);
   const _set=(document.getElementById('sv-setting')||{}).value||'therapy';
   setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
+  selectedTab='session';
   render();
 }
 
@@ -2256,6 +2281,7 @@ function renderClientView(){
   const flags=countFlags(selectedClientId);
   const flagBanner=flags?'<div class="alert alert-warn no-print">⚑ <strong>'+flags+' target'+(flags>1?'s':'')+' flagged for mastery review</strong> — check Lessons tab.</div>':'';
   const isSup=['supervisor','director'].includes(currentUser.role);
+  const _supSessMode=isSup&&getSessState().started&&getSessState().clientId===selectedClientId;
   const isQCD=currentUser.role==='qcd';
   const txTabs=[
     {id:'checklist',l:'☑ Checklist'},
@@ -2276,13 +2302,12 @@ function renderClientView(){
     {id:'report',l:'📄 Report'},
     {id:'schoolinfo',l:'🏫 School Info'}
   ];
-  const tabs=isSup?supTabs:txTabs;
-  if(isSup&&selectedTab==='session')selectedTab='checklist';
-  if(!isSup&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
+  const tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
+  if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
+  if((!isSup||_supSessMode)&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
   let stickyBar='';
-  const _supSessMode=isSup&&getSessState().started&&getSessState().clientId===selectedClientId;
   if(!isSup||_supSessMode){
     const ss0=getSessState();
     if(!ss0.clientId||ss0.clientId!==selectedClientId){setSessState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),sessTime:4,started:false,sessType:'individual'});}
