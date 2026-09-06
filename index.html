@@ -1962,6 +1962,23 @@ async function printSupPDF(){
 }
 
 // ── Report builder (print anytime, no supervision needed) ──
+function _svgChart(points,opts){
+  if(!points||!points.length)return'';
+  opts=opts||{};
+  const W=340,H=92,pad=34;
+  const min=opts.min!=null?opts.min:0,max=(opts.max!=null?opts.max:100);
+  const color=opts.color||'#1f8ec4',suffix=opts.suffix||'';
+  const n=points.length,xStep=(W-pad*2)/Math.max(n-1,1);
+  const yS=function(v){return H-pad-((v-min)/((max-min)||1))*(H-pad*2);};
+  const ticks=opts.ticks||[min,(min+max)/2,max];
+  const grid=ticks.map(function(v){var y=yS(v).toFixed(1);var lab=opts.tickLabel?opts.tickLabel(v):(v+suffix);return '<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="#eef1f4" stroke-width="1"/><text x="'+(pad-4)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#94a0ae">'+lab+'</text>';}).join('');
+  const mastery=opts.mastery!=null?'<line x1="'+pad+'" y1="'+yS(opts.mastery).toFixed(1)+'" x2="'+(W-pad)+'" y2="'+yS(opts.mastery).toFixed(1)+'" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3"/>':'';
+  const poly='<polyline points="'+points.map(function(p,i){return (pad+i*xStep).toFixed(1)+','+yS(p.y).toFixed(1);}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';
+  const dots=points.map(function(p,i){return '<circle cx="'+(pad+i*xStep).toFixed(1)+'" cy="'+yS(p.y).toFixed(1)+'" r="3" fill="'+(p.color||color)+'" stroke="white" stroke-width="1.5"/>';}).join('');
+  const stp=Math.max(1,Math.ceil(n/6));
+  const labels=points.map(function(p,i){if(n<=6||i===0||i===n-1||i%stp===0){return '<text x="'+(pad+i*xStep).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="8" fill="#6b7280">'+esc(p.date.slice(5))+'</text>';}return'';}).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" style="display:block;margin:4px 0"><rect width="'+W+'" height="'+H+'" fill="#f9fafb" rx="4"/>'+grid+mastery+poly+dots+labels+'</svg>';
+}
 function _printHtml(html,pdfName){
   let _pf=document.getElementById('_print_frame');if(_pf)_pf.remove();
   _pf=document.createElement('iframe');_pf.id='_print_frame';_pf.style.cssText='position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none';
@@ -1991,6 +2008,7 @@ function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
   const today=new Date().toISOString().slice(0,10);
   const since=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
+  const gfrom=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
   modal('<div style="max-width:470px">'
    +'<h3 style="margin-bottom:10px">🖨 Build report — '+esc(c.name)+'</h3>'
    +'<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
@@ -2004,6 +2022,8 @@ function openReportBuilder(){
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-notes" checked> General notes <select id="rb-notes-mode" style="margin-left:auto;font-size:.8rem"><option value="latest">Latest</option><option value="all">All</option></select></label>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-lessons" checked> Lessons <select id="rb-lessons-scope" style="margin-left:auto;font-size:.8rem"><option value="updated">Updated</option><option value="all">All</option></select><select id="rb-lessons-depth" style="font-size:.8rem"><option value="summary">Summary</option><option value="full">Full</option></select></label>'
    +'<div style="display:flex;align-items:center;gap:8px;padding-left:26px"><span style="font-size:.78rem;color:#6b7280">Updated since</span><input id="rb-since" type="date" value="'+since+'" style="font-size:.8rem"></div>'
+   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-graphs"> Include graphs (% / rating)</label>'
+   +'<div style="display:flex;align-items:center;gap:6px;padding-left:26px;font-size:.78rem;color:#6b7280">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-bip" checked> BIP (protocol + last 5 data)</label>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-reinf"> Reinforcer list</label>'
    +'</div>'
@@ -2033,6 +2053,7 @@ function buildAndPrintReport(){
   }
   if(gc('rb-lessons')){
     const scope=gv('rb-lessons-scope'),depth=gv('rb-lessons-depth'),since=gv('rb-since');
+    const gOn=gc('rb-graphs'),gFrom=gv('rb-gfrom'),gTo=gv('rb-gto');
     let lessons=DB.lessons.filter(function(l){return l.clientId===selectedClientId&&l.phase!=='archived';});
     if(scope==='updated')lessons=lessons.filter(function(l){return _lessonUpdatedSince(l,since);});
     let lh='';
@@ -2040,16 +2061,37 @@ function buildAndPrintReport(){
       let inner='';
       (l.sds||[]).forEach(function(sd){
         sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).forEach(function(t){
-          const sc=[];
-          DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id){if(td.pct!=null&&!td.na)sc.push({d:s.date,v:Math.round(td.pct)+'%'});else if(td.firstTrial)sc.push({d:s.date,v:normFT(td.firstTrial)});}});});
-          let latest='';if(sc.length){sc.sort(function(a,b){return a.d.localeCompare(b.d);});latest=sc[sc.length-1].v;}
-          inner+='<li>Current target: '+esc(t.name)+(latest?' — '+esc(latest):'')+'</li>';
+          const entries=[];
+          DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
+          entries.sort(function(a,b){return a.date.localeCompare(b.date);});
+          let latest='';for(var _i=entries.length-1;_i>=0;_i--){var _td=entries[_i].td;if(_td.pct!=null){latest=Math.round(_td.pct)+'%';break;}if(_td.rating!=null){latest='rating '+_td.rating+'/'+((t.ratingScale&&t.ratingScale.max)||5);break;}if(_td.firstTrial){latest=normFT(_td.firstTrial);break;}if(_td.count!=null){latest=_td.count+'';break;}}
+          inner+='<p style="margin:6px 0 2px"><strong>Current target:</strong> '+esc(t.name)+(latest?' \u2014 '+esc(latest):'')+'</p>';
+          if(t.dataType==='ta'&&t.taSteps&&t.taSteps.length){var _md=0;for(var _si=0;_si<t.taSteps.length;_si++){if(isStepMastered(t,_si))_md++;}inner+='<p style="margin:1px 0 3px;font-size:.8rem;color:#6b7280">Steps mastered: '+_md+' / '+t.taSteps.length+'</p>';}
+          if(gOn){
+            var inR=entries.filter(function(e){return (!gFrom||e.date>=gFrom)&&(!gTo||e.date<=gTo);});
+            var chart='';
+            if(t.dataType==='percent'||t.dataType==='ta'){
+              var pp=[];inR.forEach(function(e){if(e.td.pct!=null)pp.push({date:e.date,y:Math.round(e.td.pct)});});
+              if(pp.length)chart=_svgChart(pp,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:(l.masteryRule&&l.masteryRule.pct)||80,color:'#1f8ec4'});
+            }else if(t.dataType==='rating'){
+              var rmax=(t.ratingScale&&t.ratingScale.max)||5;var rp=[];inR.forEach(function(e){if(e.td.rating!=null)rp.push({date:e.date,y:e.td.rating});});
+              var rt=[];for(var _r=1;_r<=rmax;_r++)rt.push(_r);
+              if(rp.length)chart=_svgChart(rp,{min:1,max:rmax,ticks:rt,color:'#8b5cf6',mastery:rmax});
+            }else if(t.dataType==='tally'){
+              var tp=[];inR.forEach(function(e){if(e.td.count!=null)tp.push({date:e.date,y:+(e.td.count/(e.sessTime||1)).toFixed(1)});});
+              if(tp.length){var mx=Math.max.apply(null,tp.map(function(p){return p.y;}));mx=(mx>0?mx*1.2:5);chart=_svgChart(tp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:'/hr',color:'#e6a71f'});}
+            }else if(t.dataType==='checklist'){
+              var fp=[];inR.forEach(function(e){var nf=normFT(e.td.firstTrial);if(nf==='C')fp.push({date:e.date,y:2,color:'#4fa14a'});else if(nf==='P')fp.push({date:e.date,y:1,color:'#c98a12'});else if(nf==='I')fp.push({date:e.date,y:0,color:'#d84a3a'});});
+              if(fp.length)chart=_svgChart(fp,{min:0,max:2,ticks:[0,1,2],tickLabel:function(v){return v===2?'C':v===1?'P':'I';},color:'#1f8ec4'});
+            }
+            if(chart)inner+='<div style="margin:0 0 8px">'+chart+'</div>';
+          }
         });
       });
       const sn=l.supNotes&&l.supNotes.length?l.supNotes[l.supNotes.length-1]:null;
-      if(sn)inner+='<li>Note: '+esc(sn.text)+'</li>';
-      if(depth==='full'){const mast=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status==='mastered';});if(mast.length)inner+='<li>Mastered ('+mast.length+'): '+mast.map(function(t){return esc(t.name);}).join(', ')+'</li>';}
-      if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><ul>'+inner+'</ul>';
+      if(sn)inner+='<p style="margin:3px 0"><strong>Note:</strong> '+esc(sn.text)+'</p>';
+      if(depth==='full'){const mast=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status==='mastered';});if(mast.length)inner+='<p style="margin:3px 0;color:#2f6b2c"><strong>Mastered ('+mast.length+'):</strong> '+mast.map(function(t){return esc(t.name);}).join(', ')+'</p>';}
+      if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div>'+inner;
     });
     body+='<div class="sec-title">Lesson Updates</div>'+(lh||'<p style="color:#94a0ae;font-style:italic">No lessons match.</p>');
   }
