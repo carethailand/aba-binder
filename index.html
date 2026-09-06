@@ -2022,7 +2022,7 @@ function openReportBuilder(){
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-notes" checked> General notes <select id="rb-notes-mode" style="margin-left:auto;font-size:.8rem"><option value="latest">Latest</option><option value="all">All</option></select></label>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-lessons" checked> Lessons <select id="rb-lessons-scope" style="margin-left:auto;font-size:.8rem"><option value="updated">Updated</option><option value="all">All</option></select><select id="rb-lessons-depth" style="font-size:.8rem"><option value="summary">Summary</option><option value="full">Full</option></select></label>'
    +'<div style="display:flex;align-items:center;gap:8px;padding-left:26px"><span style="font-size:.78rem;color:#6b7280">Updated since</span><input id="rb-since" type="date" value="'+since+'" style="font-size:.8rem"></div>'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-graphs"> Include graphs (% / rating)</label>'
+   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-graphs" checked> Include graphs (% / rating / behavior)</label>'
    +'<div style="display:flex;align-items:center;gap:6px;padding-left:26px;font-size:.78rem;color:#6b7280">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-bip" checked> BIP (protocol + last 5 data)</label>'
    +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-reinf"> Reinforcer list</label>'
@@ -2098,12 +2098,19 @@ function buildAndPrintReport(){
   if(gc('rb-bip')){
     const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
     let bh='';
+    const _bgOn=gc('rb-graphs'),_bgF=gv('rb-gfrom'),_bgT=gv('rb-gto');
     bips.forEach(function(b){
       bh+='<div class="lesson-title">'+esc(b.name)+'</div>';
       if(b.description)bh+='<p><strong>Definition:</strong> '+esc(b.description)+'</p>';
       if(b.replacement)bh+='<p><strong>Replacement:</strong> '+esc(b.replacement)+'</p>';
-      const logs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);}).slice(-5);
+      const allLogs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
+      const logs=allLogs.slice(-5);
       if(logs.length)bh+='<p><strong>Recent:</strong> '+logs.map(function(x){return x.date.slice(5)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
+      if(_bgOn){
+        var meas=(bipMeasList(b)[0])||'frequency';
+        var gp=[];allLogs.forEach(function(x){if((!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT)){var v=bipValForMeas(x,meas);if(v!=null)gp.push({date:x.date,y:v});}});
+        if(gp.length){var mx=Math.max.apply(null,gp.map(function(pp){return pp.y;}));mx=(mx>0?mx*1.2:5);var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;bh+='<div style="margin:2px 0 10px">'+_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:'#d84a3a',mastery:(goal!=null&&!isNaN(goal)?goal:null)})+'</div>';}
+      }
     });
     if(bh)body+='<div class="sec-title">Behavior (BIP)</div>'+bh;
   }
