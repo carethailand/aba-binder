@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-06-17-A -->
+<!-- BUILD v2026-09-02-A -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CARE Client Binder v2026-06-10-N</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>CARE Client Binder v2026-09-02-A</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -1355,7 +1358,7 @@ async function _saveEditedSession(sessId){
       if(te.dataType==='percent'){
         const corEl=document.querySelector('.se-cor[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
         const totEl=document.querySelector('.se-tot[data-lid="'+ld.lessonId+'"][data-tid="'+te.targetId+'"]');
-        if(corEl&&corEl.value!==''){te.correct=parseInt(corEl.value)||0;te.total=parseInt(totEl&&totEl.value)||te.total;te.pct=te.total>0?Math.round(te.correct/te.total*100):null;}
+        if(corEl&&corEl.value!==''){te.total=parseInt(totEl&&totEl.value)||te.total;te.correct=Math.min(parseInt(corEl.value)||0,te.total);te.pct=te.total>0?Math.round(te.correct/te.total*100):null;}
       }
       // rating
       if(te.dataType==='rating'){
@@ -2532,7 +2535,7 @@ function renderLessonSessionBlock(lesson){
 
   // general note for lesson
   body+='<div style="margin-top:10px"><label>Lesson note (optional)</label><input type="text" id="lnote_'+lesson.id+'" placeholder="Overall note for this lesson..."></div>';
-  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
+  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
 }
 
 // ── Target session entry ──
@@ -2675,7 +2678,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     // First Trial only — C/P/I/N/A buttons are the sole data entry
     html+='<div style="margin-top:8px">';
     html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
-    if(['junior','senior'].includes(currentUser.role)){
+    if(['junior','senior','supervisor','director'].includes(currentUser.role)){
       html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
@@ -2692,7 +2695,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   if(target.dataType==='percent'){
   html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
   html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
-  if(['junior','senior'].includes(currentUser.role)){
+  if(['junior','senior','supervisor','director'].includes(currentUser.role)){
     html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
     html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
     html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
@@ -2725,8 +2728,10 @@ function toggleFT(btn){
 }
 
 function calcPct(id){
-  const cor=parseFloat(document.getElementById('cor_'+id)&&document.getElementById('cor_'+id).value)||0;
-  const tot=parseFloat(document.getElementById('tot_'+id)&&document.getElementById('tot_'+id).value)||0;
+  const corEl=document.getElementById('cor_'+id),totEl=document.getElementById('tot_'+id);
+  const tot=parseFloat(totEl&&totEl.value)||0;
+  let cor=parseFloat(corEl&&corEl.value)||0;
+  if(tot>0&&cor>tot){cor=tot;if(corEl)corEl.value=tot;}
   const el=document.getElementById('pctlbl_'+id);
   if(el&&tot>0)el.textContent=Math.round(cor/tot*100)+'%';
 }
@@ -3087,8 +3092,8 @@ async function saveSession(){
             // Only record if Tx explicitly typed in the correct field (non-empty)
             const corTyped=corEl&&corEl.value.trim()!=='';
             if(corTyped){
-              const cor=parseInt(corEl.value)||0;
               const tot=parseInt((totEl||{}).value)||target.trialCount;
+              const cor=Math.min(parseInt(corEl.value)||0,tot);
               entry.correct=cor;entry.total=tot;entry.pct=Math.round(cor/tot*100);
             } else {entry._skipped=true;}
           } else if(target.dataType==='rating'){
@@ -3530,7 +3535,7 @@ function renderLessonCard(lesson){
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+_ftStrip(lesson,t,t.firstTrialData||[],'Data recorded')
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;min-width:170px;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+_ftStrip(lesson,t,t.firstTrialData||[],'Data recorded')
       +(t.dataType!=='checklist'?'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>':'')+'</div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
@@ -3574,7 +3579,7 @@ function renderLessonCard(lesson){
     ?'<button class="btn btn-sm no-print" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button> '
     :'';
   const supBtns=['supervisor','director'].includes(currentUser.role)?_reintroBtn+'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">&#x270F; Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">'+'+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">'+'+ SD</button> <button class="btn btn-sm no-print" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="deleteLesson(\''+lesson.id+'\')" title="Delete lesson">🗑 Delete</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span><h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function fmtDateShort(d){
@@ -4293,7 +4298,7 @@ function renderMaintenanceTab(){
     const _reintroMaintBtn=['supervisor','director'].includes(currentUser.role)
       ?'<button class="btn btn-sm no-print" style="margin-left:8px;background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button>'
       :'';
-    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+_reintroMaintBtn+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
+    return '<details class="lesson-card" style="margin-bottom:10px" open><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+schedule+_reintroMaintBtn+'</summary><div class="lesson-body" style="padding:12px 14px">'+(rows||'<p style="color:var(--muted);font-size:.85rem">No mastered targets yet.</p>')+'</div></details>';
   }).join('');
   return '<div style="margin-bottom:16px"><h2>🔁 Maintenance Lessons</h2><p style="font-size:.82rem;color:var(--muted)">Tap +, P, or − to record — each mark saves immediately.</p></div>'+maintHtml;
 }
