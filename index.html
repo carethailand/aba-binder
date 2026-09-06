@@ -1933,7 +1933,7 @@ async function printSupPDF(){
   if(_pf)_pf.remove();
   _pf=document.createElement('iframe');
   _pf.id='_print_frame';
-  _pf.style.cssText='position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none';
+  _pf.style.cssText='position:fixed;left:-10000px;top:0;width:820px;height:1160px;border:none;opacity:0.01';
   document.body.appendChild(_pf);
   _pf.contentDocument.open();
   _pf.contentDocument.write(_supHtml);
@@ -1981,7 +1981,7 @@ function _svgChart(points,opts){
 }
 function _printHtml(html,pdfName){
   let _pf=document.getElementById('_print_frame');if(_pf)_pf.remove();
-  _pf=document.createElement('iframe');_pf.id='_print_frame';_pf.style.cssText='position:fixed;top:-9999px;left:-9999px;width:0;height:0;border:none';
+  _pf=document.createElement('iframe');_pf.id='_print_frame';_pf.style.cssText='position:fixed;left:-10000px;top:0;width:820px;height:1160px;border:none;opacity:0.01';
   document.body.appendChild(_pf);
   _pf.contentDocument.open();_pf.contentDocument.write(html);_pf.contentDocument.close();
   const _old=document.title;document.title=pdfName;
