@@ -109,6 +109,7 @@ details.sd-block[open]>summary .det-arrow{transform:rotate(90deg);}
 .mastered-section-header{background:#f0faed;color:#2f6b2c;font-weight:700;font-size:.82rem;padding:6px 10px;display:flex;align-items:center;gap:6px;}
 details.mastered-target-detail>summary{list-style:none;cursor:pointer;padding:6px 10px;display:flex;align-items:center;gap:6px;font-size:.8rem;border-bottom:1px solid #e6e9ee;}
 details.mastered-target-detail>summary::-webkit-details-marker{display:none;}
+details.mastered-drop>summary::-webkit-details-marker{display:none;}
 details.mastered-target-detail[open]>summary{border-bottom:1px solid #bfe6b8;}
 details.mastered-target-detail .chart-wrap{margin:8px 10px 10px;}
 /* BIP tabs */
@@ -124,6 +125,8 @@ details.card[open]>summary .det-arrow{transform:rotate(90deg);}
 .status-btn.active-btn{background:#1f8ec4;color:#fff;border-color:#1f8ec4;}
 .status-btn.maint-btn{background:#4fa14a;color:#fff;border-color:#4fa14a;}
 .status-btn.hold-btn{background:#e6a71f;color:#fff;border-color:#e6a71f;}
+.status-btn.arch-btn{background:#6b7280;color:#fff;border-color:#6b7280;}
+details.mastered-drop[open]>summary>.det-arrow{transform:rotate(90deg);}
 .status-btn.inactive{background:#fff;color:#94a0ae;border-color:#e6e9ee;}
 /* Phase banner */
 .phase-banner{padding:7px 12px;border-radius:7px;font-size:.85rem;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
@@ -970,7 +973,7 @@ function confirmEndSession(){
   // If not on the Session tab, switch to it first so entered data (draft) is in the DOM before saving
   if(selectedTab!=='session'){setTab('session');setTimeout(confirmEndSession,220);return;}
   // Count unscored targets
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='maintenance'&&l.phase!=='hold');
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived');
   let unscored=0;
   lessons.forEach(l=>l.sds.forEach(sd=>sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(t=>{
     const id=l.id+'_'+sd.id+'_'+t.id;
@@ -2487,7 +2490,7 @@ function renderSessionEntry(){
 
   const today=new Date().toISOString().slice(0,10);
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
-  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
+  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived');
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
   const blocks=active.map(l=>renderLessonSessionBlock(l)).join('');
@@ -3183,7 +3186,7 @@ async function saveSession(){
   // Systemic empty-save guard: never silently save a session with no real data (catches wrong-tab/lost-draft/accidental ends and rating ghosts)
   var _hasRealData=lessonData.some(function(ld){
     if(ld.dtData)return true;
-    return (ld.targets||[]).some(function(t){return t.dataType!=='maintenance'&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null);});
+    return (ld.targets||[]).some(function(t){return (t.dataType!=='maintenance'&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null))||(t.dataType==='maintenance'&&t.result!=null);});
   });
   if(!_hasRealData){
     if(!confirm('\u26A0 This session has NO data recorded yet.\n\nSave it empty anyway?\n\nTap Cancel to go back and enter data — nothing you typed will be lost.'))return;
@@ -3395,13 +3398,15 @@ function checkDTStepAdvance(lesson,date,ftResult,pct){
 function renderLessonsView(){
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddLesson()">+ Add Lesson</button>':'';
-  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
+  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived');
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
+  const archived=lessons.filter(l=>l.phase==='archived');
   const section=(title,color,items)=>items.length?'<div style="margin-bottom:6px"><div style="font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:'+color+';margin-bottom:8px;padding:4px 0;border-bottom:2px solid currentColor">'+title+' ('+items.length+')</div>'+items.map(renderLessonCard).join('')+'</div>':'';
   const cards=(section('📖 Active',  '#1f8ec4',active)
               +section('✅ Maintenance','#4fa14a',maint)
-              +section('⏸ On Hold','#c98a12',held))
+              +section('⏸ On Hold','#c98a12',held)
+              +section('🗄 Archived','#6b7280',archived))
               ||'<div class="empty-state">No lessons yet.</div>';
 
   return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><h2 style="flex:1">Lessons</h2>'+addBtn+'</div>'+cards+'<div id="modal-area"></div>';
@@ -3429,13 +3434,21 @@ function renderMasteredSection(lesson,sd,si,supView){
     }).join('');
     return '<div class="mastered-section"><div class="mastered-section-header">✅ Mastered ('+mastered.length+')</div>'+rows+'</div>';
   } else {
-    const rows=mastered.map(t=>{
-      const steps=t.teachingSteps||[];
-      const curStep=steps.length?'Step '+((t.dtStepIndex||0)+1)+': '+(steps[t.dtStepIndex||0]||'—'):'—';
-      return '<tr><td><strong>'+esc(t.name)+'</strong></td><td style="color:var(--muted)">'+(t.introducedDate||'—')+'</td><td style="color:var(--muted)">'+(t.masteredDate||'—')+'</td></tr>';
+    const _lastMc={};
+    DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).sort(function(a,b){return b.date.localeCompare(a.date);}).forEach(function(s){
+      (s.lessonData||[]).forEach(function(ld){
+        if(ld.lessonId!==lesson.id)return;
+        (ld.targets||[]).forEach(function(t){
+          if(t.dataType==='maintenance'&&!_lastMc[t.targetId])_lastMc[t.targetId]={result:t.result,date:s.date};
+        });
+      });
+    });
+    const rows=mastered.map(function(t){
+      const last=_lastMc[t.id];
+      const lastBadge=last?'<span class="badge badge-'+(last.result==='+'?'green':last.result==='P'?'yellow':'red')+'" style="font-size:.7rem">'+last.result+' \u00b7 '+fmtDateShort(last.date)+'</span>':'<span class="badge badge-gray" style="font-size:.7rem">no probe yet</span>';
+      return '<div class="cl-row" style="align-items:center;gap:8px"><span style="flex:1;font-weight:500">'+esc(t.name)+'</span>'+lastBadge+'<div class="cpi-group"><button class="cpi-btn plus" data-id="mc_'+lesson.id+'_'+t.id+'" onclick="toggleCPI(this)">+</button><button class="cpi-btn P" data-id="mc_'+lesson.id+'_'+t.id+'" onclick="toggleCPI(this)">P</button><button class="cpi-btn minus" data-id="mc_'+lesson.id+'_'+t.id+'" onclick="toggleCPI(this)">\u2212</button></div></div>';
     }).join('');
-    return '<div class="mastered-section"><div class="mastered-section-header">✅ Mastered ('+mastered.length+')</div>'
-      +'<table class="mastered-table"><thead><tr><th>Target</th><th>Introduced</th><th>Mastered</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+    return '<details class="mastered-drop" style="border:1px solid #cfe6c9;border-radius:8px;overflow:hidden;margin-top:8px;background:#fff"><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;background:#eaf7e8;color:#2f6b2c;font-weight:600;font-size:.82rem;padding:8px 12px"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.8rem">▶</span>✅ Mastered ('+mastered.length+') <span style="font-weight:400;color:#3f8f3b;font-size:.72rem">— maintenance probe</span></summary><div style="padding:4px 4px 6px">'+rows+'</div></details>';
   }
 }
 
@@ -3466,7 +3479,7 @@ function renderHoldSection(lesson,sd,supView){
 
 function renderLessonCard(lesson){
   const phase=lesson.phase;
-  const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
+  const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):phase==='archived'?'🗄 ARCHIVED':'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
   const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editLessonSupNote(\''+lesson.id+'\','+ni+')">\u270F edit</button>':'')+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
@@ -3569,11 +3582,13 @@ function renderLessonCard(lesson){
   const isActive=phase==='acquisition'||phase==='active'||phase==='dt';
   const isMaint=phase==='maintenance';
   const isHold=phase==='hold';
+  const isArchived=phase==='archived';
   const statusBtns=['supervisor','director'].includes(currentUser.role)
     ?'<button class="status-btn '+(isActive?'active-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'active\')" title="Show in Session tab">📖 Introduced</button>'
      +'<button class="status-btn '+(isMaint?'maint-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'maintenance\')" title="Move to Maintenance">✅ Maintenance</button>'
      +'<button class="status-btn '+(isHold?'hold-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'hold\')" title="Pause this lesson">⏸ Hold</button>'
-     :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':'On Hold')+'</span>';
+     +'<button class="status-btn '+(isArchived?'arch-btn':'inactive')+'" onclick="event.stopPropagation();setLessonStatus(\''+lesson.id+'\',\'archived\')" title="Retire — mastered, no more data">🗄 Archived</button>'
+     :'<span class="badge badge-'+(isActive?'blue':isMaint?'green':isArchived?'gray':'yellow')+'">'+(isActive?'Active':isMaint?'Maintenance':isArchived?'Archived':'On Hold')+'</span>';
 
   const _reintroBtn=isMaint&&['supervisor','director'].includes(currentUser.role)
     ?'<button class="btn btn-sm no-print" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button> '
@@ -3846,18 +3861,18 @@ function setLessonStatus(lId,status){if(!requireActiveSession())return;
     if(sched===null)return; // cancelled
     l.maintenanceSchedule=sched;
   }
-  if(status==='active'&&l.phase==='hold'){
-    // coming off hold — keep existing acquisition/dt phase
+  if(status==='active'&&(l.phase==='hold'||l.phase==='archived')){
+    // coming off hold/archived — restore previous phase
     l.phase=l._prevPhase||'acquisition';
     delete l._prevPhase;
-  } else if(status==='hold'){
+  } else if(status==='hold'||status==='archived'){
     l._prevPhase=l.phase;
-    l.phase='hold';
+    l.phase=status;
   } else {
     l.phase=status==='active'?'acquisition':status;
   }
   saveData();
-  const labels={active:'Introduced ✓',maintenance:'On Maintenance ✓',hold:'On Hold ✓'};
+  const labels={active:'Introduced ✓',maintenance:'On Maintenance ✓',hold:'On Hold ✓',archived:'Archived ✓'};
   toast(labels[status]||'Updated');
   render();
 }
@@ -4310,7 +4325,7 @@ function renderMaintenanceTab(){
 // PROGRAM CHECKLIST TAB
 // ════════════════════════════════════════════════
 function renderProgramChecklist(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='archived').slice().sort((a,b)=>a.name.localeCompare(b.name));
   // get all sessions sorted oldest→newest, limit last 30
   // Determine current context setting — show therapy sessions on therapy checklist, school on school
   const _clSetting=(getSessState().setting||'therapy');
