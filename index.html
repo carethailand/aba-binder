@@ -1652,26 +1652,11 @@ async function finishSupervision(){
     // Target changes
     l.sds.forEach(sd=>{
       const snapSd=snapL&&snapL.sds.find(x=>x.id===sd.id);
+      const _newTgts=[];
       sd.targets.forEach(t=>{
         const snapT=snapSd&&snapSd.targets.find(x=>x.id===t.id);
         if(!snapT){
-          // Build full target detail for new target
-          const lines=[];
-          lines.push('Lesson: '+l.name);
-          if(sd.sd)lines.push('SD: '+sd.sd);
-          if(sd.response)lines.push('R: '+sd.response);
-          lines.push('Target: '+t.name);
-          if(t.dataType)lines.push('Data type: '+t.dataType+(t.trialCount?' ('+t.trialCount+' trials)':''));
-          if(t.teachingSteps&&t.teachingSteps.length){const curIdx=t.dtStepIndex||0;lines.push('Current teaching step: Step '+(curIdx+1)+': '+(t.teachingSteps[curIdx]||t.teachingSteps[0]));}
-          // Any existing scores for this target?
-          const existScores=[];
-          DB.sessions.filter(s=>s.clientId===selectedClientId).forEach(s=>{
-            const ld=s.lessonData&&s.lessonData.find(x=>x.lessonId===l.id);
-            if(!ld)return;
-            (ld.targets||[]).forEach(td=>{if(td.targetId===t.id&&td.pct!=null&&!td.na)existScores.push(s.date.slice(5)+' '+Math.round(td.pct)+'%');});
-          });
-          if(existScores.length)lines.push('Recent data: '+existScores.slice(-5).join(', '));
-          lItems.push({label:'New target added: '+t.name,value:lines.join('\n')});
+          _newTgts.push(t);
         }
         else{
           if(snapT.status!==t.status){
@@ -1688,6 +1673,22 @@ async function finishSupervision(){
           if((snapT.dtStepIndex||0)!==(t.dtStepIndex||0))lItems.push({label:t.name+': step advanced to step '+((t.dtStepIndex||0)+1),value:'Lesson: '+l.name+'\nSD: '+(sd.sd||'—')+'\nStep: '+(t.teachingSteps&&t.teachingSteps[t.dtStepIndex||0]||'')});
         }
       });
+      if(_newTgts.length){
+        const _nl=['Lesson: '+l.name];
+        if(sd.sd)_nl.push('SD: '+sd.sd);
+        if(sd.response)_nl.push('R: '+sd.response);
+        _nl.push(_newTgts.length+' new target'+(_newTgts.length>1?'s':'')+' added:');
+        _newTgts.forEach(function(t){
+          var tl='\u2022 '+t.name;
+          if(t.dataType)tl+=' \u2014 '+t.dataType+(t.dataType==='percent'&&t.trialCount?' ('+t.trialCount+' trials)':'');
+          if(t.teachingSteps&&t.teachingSteps.length){var ci=t.dtStepIndex||0;tl+=' \u00b7 Step '+(ci+1)+': '+(t.teachingSteps[ci]||t.teachingSteps[0]);}
+          var es=[];
+          DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).forEach(function(s){var ld=s.lessonData&&s.lessonData.find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&td.pct!=null&&!td.na)es.push(s.date.slice(5)+' '+Math.round(td.pct)+'%');});});
+          if(es.length)tl+=' \u00b7 recent: '+es.slice(-5).join(', ');
+          _nl.push(tl);
+        });
+        lItems.push({label:_newTgts.length===1?'New target added: '+_newTgts[0].name:_newTgts.length+' new targets added',value:_nl.join('\n')});
+      }
     });
     // New SD notes added during this supervision
     l.sds.forEach(function(sd){
