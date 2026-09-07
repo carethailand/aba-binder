@@ -273,6 +273,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-mode select{pointer-events:none;opacity:.55;background:#f5f6f8;}
 .view-only-mode button:not(.unlock-exempt){pointer-events:none;opacity:.45;}
 .view-only-mode .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
+.view-only-mode .caseinfo-edit input,.view-only-mode .caseinfo-edit textarea,.view-only-mode .caseinfo-edit select{pointer-events:auto!important;opacity:1!important;background:#fff!important;}
+.view-only-mode .caseinfo-edit button{pointer-events:auto!important;opacity:1!important;}
 .view-only-mode .view-only-banner{display:flex;}
 .view-only-mode .no-session-banner{display:none!important;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#b83268;}
@@ -2004,29 +2006,29 @@ function _lessonUpdatedSince(l,since){
   DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.date>=since;}).forEach(function(s){if((s.lessonData||[]).some(function(ld){return ld.lessonId===l.id;}))chk.push(s.date);});
   return chk.some(function(d){return d&&d>=since;});
 }
+function _rbToggleSince(sel){var r=document.getElementById('rb-since-row');if(r)r.style.display=sel.value==='updated'?'flex':'none';}
+function _rbToggleGraph(cb){var r=document.getElementById('rb-graph-row');if(r)r.style.display=cb.checked?'flex':'none';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
   const today=new Date().toISOString().slice(0,10);
   const since=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
   const gfrom=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
-  modal('<div style="max-width:470px">'
-   +'<h3 style="margin-bottom:10px">🖨 Build report — '+esc(c.name)+'</h3>'
-   +'<div style="display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
-   +'<label>Date</label><input id="rb-date" type="date" value="'+today+'">'
-   +'<label>Time</label><input id="rb-time" type="text" placeholder="e.g. 13:30-15:30">'
-   +'<label>Therapist</label><input id="rb-tx" type="text" placeholder="(optional)">'
-   +'<label>Type</label><select id="rb-type"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option></select>'
+  modal('<div style="max-width:480px">'
+   +'<h3 style="margin-bottom:14px">\U0001F5A8 Build report — '+esc(c.name)+'</h3>'
+   +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:16px">'
+     +'<label style="color:#6b7280">Date</label><input id="rb-date" type="date" value="'+today+'">'
+     +'<label style="color:#6b7280">Time</label><input id="rb-time" type="text" placeholder="e.g. 13:30-15:30">'
+     +'<label style="color:#6b7280">Therapist</label><input id="rb-tx" type="text" placeholder="(optional)">'
+     +'<label style="color:#6b7280">Type</label><select id="rb-type"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option></select>'
    +'</div>'
-   +'<div style="font-size:.8rem;font-weight:700;color:#6b7280;margin-bottom:6px">Include</div>'
-   +'<div style="display:flex;flex-direction:column;gap:9px;font-size:.85rem">'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-notes" checked> General notes <select id="rb-notes-mode" style="margin-left:auto;font-size:.8rem"><option value="latest">Latest</option><option value="all">All</option></select></label>'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-lessons" checked> Lessons <select id="rb-lessons-scope" style="margin-left:auto;font-size:.8rem"><option value="updated">Updated</option><option value="all">All</option></select><select id="rb-lessons-depth" style="font-size:.8rem"><option value="summary">Summary</option><option value="full">Full</option></select></label>'
-   +'<div style="display:flex;align-items:center;gap:8px;padding-left:26px"><span style="font-size:.78rem;color:#6b7280">Updated since</span><input id="rb-since" type="date" value="'+since+'" style="font-size:.8rem"></div>'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-graphs" checked> Include graphs (% / rating / behavior)</label>'
-   +'<div style="display:flex;align-items:center;gap:6px;padding-left:26px;font-size:.78rem;color:#6b7280">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-bip" checked> BIP (protocol + last 5 data)</label>'
-   +'<label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rb-reinf"> Reinforcer list</label>'
-   +'</div>'
+   +'<div style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Include in report</div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-notes" checked> General notes</label><select id="rb-notes-mode" style="font-size:.82rem;width:110px"><option value="latest">Latest</option><option value="all">All notes</option></select></div>'
+   +'<div style="display:flex;align-items:center;gap:8px;padding:9px 0 4px;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lessons" checked> Lessons</label><select id="rb-lessons-scope" style="font-size:.82rem;width:96px" onchange="_rbToggleSince(this)"><option value="updated">Updated</option><option value="all">All</option></select><select id="rb-lessons-depth" style="font-size:.82rem;width:96px"><option value="summary">Summary</option><option value="full">Full</option></select></div>'
+   +'<div style="display:flex;align-items:center;gap:8px;padding:0 0 8px 26px;font-size:.8rem;color:#6b7280" id="rb-since-row">Updated since <input id="rb-since" type="date" value="'+since+'" style="font-size:.8rem"></div>'
+   +'<div style="display:flex;align-items:center;gap:8px;padding:9px 0 4px;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-graphs" checked onchange="_rbToggleGraph(this)"> Include graphs <span style="font-size:.72rem;color:#94a0ae">(% / rating / behavior)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:8px;padding:0 0 8px 26px;font-size:.8rem;color:#6b7280" id="rb-graph-row">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-bip" checked> BIP <span style="font-size:.72rem;color:#94a0ae">(protocol + last 5 data)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Reinforcer list</label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
 }
@@ -2135,7 +2137,7 @@ function enterApp(user,isLegacy){
     document.getElementById('nav').style.display='flex';
     document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
     document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
-    document.getElementById('btn-clients').style.display=user.role==='admin'?'none':'';
+    document.getElementById('btn-clients').style.display='';
     const _cpBtn=document.getElementById('btn-change-pw');if(_cpBtn)_cpBtn.style.display=user.authId?'':'none';
     document.getElementById('app').style.display='block';
     showView(user.role==='admin'?'admin':'clients');
@@ -2289,9 +2291,8 @@ function _stopSessAutoSave(){
 // ── ROUTING ──
 function showView(v){currentView=v;render();}
 function selectClient(id){
-  if(currentUser&&currentUser.role==='admin'){toast('Admin cannot access client sessions');return;}
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
-if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab='checklist';_backtrackFirstTrial();showView('client');}
+if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
 function setTab(t){
   if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
   if(t==='session')_startSessAutoSave();
@@ -2308,7 +2309,7 @@ function render(){
   document.querySelectorAll('[id^="sdnadd_"]').forEach(function(el){if(el.value.trim())_sdDrafts[el.id]=el.value;});
 
   const app=document.getElementById('app');
-  if(currentView==='clients')app.innerHTML=(currentUser&&currentUser.role==='admin')?renderAdmin():renderClientList();
+  if(currentView==='clients')app.innerHTML=renderClientList();
   else if(currentView==='client')app.innerHTML=renderClientView();
   else if(currentView==='admin')app.innerHTML=renderAdmin();
 
@@ -2456,23 +2457,23 @@ function renderClientView(){
   const _supSessMode=isSup&&getSessState().started&&getSessState().clientId===selectedClientId;
   const isQCD=currentUser.role==='qcd';
   const txTabs=[
+    {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
     {id:'notes',l:'💬 Notes'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'session',l:'📝 Session'},
-    {id:'maintenance',l:'🔁 Maintenance'},
-    {id:'schoolinfo',l:'🏫 School Info'}
+    {id:'maintenance',l:'🔁 Maintenance'}
   ];
   const supTabs=[
+    {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
     {id:'notes',l:'💬 Notes'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
     {id:'maintenance',l:'🔁 Maintenance'},
-    {id:'report',l:'📄 Report'},
-    {id:'schoolinfo',l:'🏫 School Info'}
+    {id:'report',l:'📄 Report'}
   ];
   const tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
@@ -2627,30 +2628,43 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 // SESSION ENTRY
 // ════════════════════════════════════════════════
+function _medRowHtml(m){m=m||{};return '<div class="med-row" style="display:grid;grid-template-columns:1.4fr .8fr .9fr auto;gap:6px;margin-bottom:6px"><input class="med-name" type="text" placeholder="Medication" value="'+esc(m.name||'')+'"><input class="med-dose" type="text" placeholder="Dose" value="'+esc(m.dose||'')+'"><input class="med-time" type="text" placeholder="Time" value="'+esc(m.time||'')+'"><button type="button" class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="this.parentElement.remove()">✕</button></div>';}
+function _svcRowHtml(x){x=x||{};return '<div class="svc-row" style="display:grid;grid-template-columns:1.2fr 1fr .8fr auto;gap:6px;margin-bottom:6px"><input class="svc-name" type="text" placeholder="Service" value="'+esc(x.name||'')+'"><input class="svc-provider" type="text" placeholder="Provider" value="'+esc(x.provider||'')+'"><input class="svc-freq" type="text" placeholder="Frequency" value="'+esc(x.freq||'')+'"><button type="button" class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="this.parentElement.remove()">✕</button></div>';}
+function _addMedRow(){var el=document.getElementById('meds-container');if(el)el.insertAdjacentHTML('beforeend',_medRowHtml());}
+function _addSvcRow(){var el=document.getElementById('svcs-container');if(el)el.insertAdjacentHTML('beforeend',_svcRowHtml());}
 function renderSchoolInfoTab(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
-  const si=c.schoolInfo||{};
-  const canEdit=['supervisor','director'].includes(currentUser.role);
-  if(!canEdit)return '<div style="padding:20px"><h3>School Information</h3>'+(si.schoolName?'<p><strong>School:</strong> '+esc(si.schoolName)+'</p>':'')+(si.className?'<p><strong>Class:</strong> '+esc(si.className)+'</p>':'')+(si.teacher?'<p><strong>Teacher:</strong> '+esc(si.teacher)+'</p>':'')+(si.academicYear?'<p><strong>Academic Year:</strong> '+esc(si.academicYear)+'</p>':'')+(si.notes?'<p><strong>Notes:</strong> '+esc(si.notes)+'</p>':'')+'</div>';
-  return '<div style="padding:4px 0;max-width:520px">'
-    +'<h3 style="margin-bottom:14px">🏫 School Information</h3>'
-    +'<label>School Name<input id="si-school" type="text" value="'+esc(si.schoolName||'')+'" placeholder="e.g. ABC International School"></label>'
-    +'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Class / Room<input id="si-class" type="text" value="'+esc(si.className||'')+'" placeholder="e.g. 3B, Life Skills Room"></label></div><div class="fg"><label>Academic Year<input id="si-year" type="text" value="'+esc(si.academicYear||'')+'" placeholder="e.g. 2025–2026"></label></div></div>'
-    +'<label style="margin-top:8px">Class Teacher<input id="si-teacher" type="text" value="'+esc(si.teacher||'')+'" placeholder="Teacher name"></label>'
-    +'<label style="margin-top:8px">Additional Notes<textarea id="si-notes" rows="3" placeholder="Schedule, support staff, important context...">'+esc(si.notes||'')+'</textarea></label>'
-    +'<button class="btn btn-primary" style="margin-top:12px" onclick="saveSchoolInfo()">Save</button>'
-    +'</div>';
+  const ci=c.schoolInfo||{};
+  const canEdit=['admin','supervisor','director','senior'].includes(currentUser.role);
+  const _map=function(a){return a?'<a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(a)+'" target="_blank" style="color:#1f8ec4;text-decoration:none;white-space:nowrap">📍 View on Google Maps →</a>':'';};
+  if(!canEdit){
+    const row=function(l,v){return v?'<div style="font-size:.85rem;margin-bottom:3px"><span style="color:var(--muted)">'+l+':</span> '+esc(v)+'</div>':'';};
+    let h='<div style="padding:4px 0;max-width:640px"><h3 style="margin-bottom:12px">🗂 Case Info — '+esc(c.name)+'</h3>';
+    h+='<div class="card"><div class="section-title">General</div>'+row('DOB',c.dob)+row('Diagnosis',c.diagnosis)+row('Language',ci.language)+row('Guardian',ci.guardian)+'</div>';
+    h+='<div class="card"><div class="section-title">School</div>'+row('School',ci.schoolName)+row('Class / Room',ci.className)+row('Class Teacher',ci.teacher)+row('TA',ci.ta)+row('Grade / Year',ci.grade)+row('Shadow',ci.shadow)+row('Days / Hours',ci.daysHours)+row('Therapist break',ci.breakTime)+row('Academic Year',ci.academicYear)+'</div>';
+    if((ci.meds||[]).length)h+='<div class="card"><div class="section-title">Medication</div>'+ci.meds.map(function(m){return '<div style="font-size:.85rem">'+esc(m.name||'')+' — '+esc(m.dose||'')+' ('+esc(m.time||'')+')</div>';}).join('')+'</div>';
+    if((ci.services||[]).length)h+='<div class="card"><div class="section-title">Current services</div>'+ci.services.map(function(x){return '<div style="font-size:.85rem">'+esc(x.name||'')+' — '+esc(x.provider||'')+' ('+esc(x.freq||'')+')</div>';}).join('')+'</div>';
+    if(ci.homeAddr||ci.schoolAddr)h+='<div class="card"><div class="section-title">Addresses</div>'+(ci.homeAddr?'<div style="font-size:.85rem;margin-bottom:4px"><span style="color:var(--muted)">Home:</span> '+esc(ci.homeAddr)+' '+_map(ci.homeAddr)+'</div>':'')+(ci.schoolAddr?'<div style="font-size:.85rem"><span style="color:var(--muted)">School:</span> '+esc(ci.schoolAddr)+' '+_map(ci.schoolAddr)+'</div>':'')+'</div>';
+    if(ci.notes)h+='<div class="card"><div class="section-title">Notes</div><div style="font-size:.85rem;white-space:pre-wrap">'+esc(ci.notes)+'</div></div>';
+    return h+'</div>';
+  }
+  let h='<div class="caseinfo-edit" style="padding:4px 0;max-width:640px"><h3 style="margin-bottom:12px">🗂 Case Info — '+esc(c.name)+'</h3>';
+  h+='<div class="card"><div class="section-title">General</div><div class="form-row"><div class="fg"><label>Language<input id="ci-language" type="text" value="'+esc(ci.language||'')+'" placeholder="e.g. Thai / English"></label></div><div class="fg"><label>Guardian / contact<input id="ci-guardian" type="text" value="'+esc(ci.guardian||'')+'" placeholder="Name · phone"></label></div></div><p style="font-size:.72rem;color:var(--muted);margin-top:4px">Name, DOB and diagnosis come from the client record.</p></div>';
+  h+='<div class="card"><div class="section-title">School</div><label>School Name<input id="si-school" type="text" value="'+esc(ci.schoolName||'')+'"></label><div class="form-row" style="margin-top:8px"><div class="fg"><label>Class / Room<input id="si-class" type="text" value="'+esc(ci.className||'')+'"></label></div><div class="fg"><label>Grade / Year<input id="ci-grade" type="text" value="'+esc(ci.grade||'')+'"></label></div></div><div class="form-row" style="margin-top:8px"><div class="fg"><label>Class Teacher<input id="si-teacher" type="text" value="'+esc(ci.teacher||'')+'"></label></div><div class="fg"><label>TA name<input id="ci-ta" type="text" value="'+esc(ci.ta||'')+'"></label></div></div><div class="form-row" style="margin-top:8px"><div class="fg"><label>Shadow(s)<input id="ci-shadow" type="text" value="'+esc(ci.shadow||'')+'"></label></div><div class="fg"><label>Days / Hours<input id="ci-dayshours" type="text" value="'+esc(ci.daysHours||'')+'" placeholder="Mon-Fri 8:30-14:30"></label></div></div><div class="form-row" style="margin-top:8px"><div class="fg"><label>Therapist break time<input id="ci-break" type="text" value="'+esc(ci.breakTime||'')+'" placeholder="e.g. 12:00-12:30"></label></div><div class="fg"><label>Academic Year<input id="si-year" type="text" value="'+esc(ci.academicYear||'')+'" placeholder="2025-2026"></label></div></div></div>';
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px"><div class="section-title" style="flex:1;margin:0">Medication</div><button class="btn btn-xs btn-outline" onclick="_addMedRow()">+ Add row</button></div><div style="font-size:.7rem;color:var(--muted);margin:6px 0 6px;display:grid;grid-template-columns:1.4fr .8fr .9fr auto;gap:6px"><span>Medication</span><span>Dose</span><span>Time</span><span></span></div><div id="meds-container">'+(ci.meds||[]).map(_medRowHtml).join('')+'</div></div>';
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px"><div class="section-title" style="flex:1;margin:0">Current services</div><button class="btn btn-xs btn-outline" onclick="_addSvcRow()">+ Add row</button></div><div style="font-size:.7rem;color:var(--muted);margin:6px 0 6px;display:grid;grid-template-columns:1.2fr 1fr .8fr auto;gap:6px"><span>Service</span><span>Provider</span><span>Frequency</span><span></span></div><div id="svcs-container">'+(ci.services||[]).map(_svcRowHtml).join('')+'</div></div>';
+  h+='<div class="card"><div class="section-title">Addresses</div><label>Home address<input id="ci-homeaddr" type="text" value="'+esc(ci.homeAddr||'')+'"></label><label style="margin-top:8px">School address<input id="ci-schooladdr" type="text" value="'+esc(ci.schoolAddr||'')+'"></label><p style="font-size:.72rem;color:var(--muted);margin-top:4px">A "View on Google Maps" link is generated from each address.</p></div>';
+  h+='<div class="card"><div class="section-title">Notes</div><textarea id="si-notes" rows="3">'+esc(ci.notes||'')+'</textarea></div>';
+  h+='<button class="btn btn-primary" onclick="saveSchoolInfo()">Save Case Info</button></div>';
+  return h;
 }
 function saveSchoolInfo(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
-  c.schoolInfo={
-    schoolName:(document.getElementById('si-school')||{value:''}).value.trim(),
-    className:(document.getElementById('si-class')||{value:''}).value.trim(),
-    academicYear:(document.getElementById('si-year')||{value:''}).value.trim(),
-    teacher:(document.getElementById('si-teacher')||{value:''}).value.trim(),
-    notes:(document.getElementById('si-notes')||{value:''}).value.trim()
-  };
-  sbSaveClient(c);toast('School info saved ✓');render();
+  const gv=function(id){var e=document.getElementById(id);return e?e.value.trim():'';};
+  const meds=[];document.querySelectorAll('#meds-container .med-row').forEach(function(r){var n=r.querySelector('.med-name').value.trim(),d=r.querySelector('.med-dose').value.trim(),t=r.querySelector('.med-time').value.trim();if(n||d||t)meds.push({name:n,dose:d,time:t});});
+  const svcs=[];document.querySelectorAll('#svcs-container .svc-row').forEach(function(r){var n=r.querySelector('.svc-name').value.trim(),pr=r.querySelector('.svc-provider').value.trim(),f=r.querySelector('.svc-freq').value.trim();if(n||pr||f)svcs.push({name:n,provider:pr,freq:f});});
+  c.schoolInfo=Object.assign({},c.schoolInfo||{},{schoolName:gv('si-school'),className:gv('si-class'),grade:gv('ci-grade'),teacher:gv('si-teacher'),ta:gv('ci-ta'),shadow:gv('ci-shadow'),daysHours:gv('ci-dayshours'),breakTime:gv('ci-break'),academicYear:gv('si-year'),language:gv('ci-language'),guardian:gv('ci-guardian'),homeAddr:gv('ci-homeaddr'),schoolAddr:gv('ci-schooladdr'),notes:gv('si-notes'),meds:meds,services:svcs});
+  sbSaveClient(c);toast('Case info saved ✓');render();
 }
 function renderSessionEntry(){
   const ss_check=getSessState();
