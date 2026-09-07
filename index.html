@@ -256,7 +256,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   #sess-sticky button[onclick*="startSupervision"]{width:100%;margin-top:2px;}
 }
 
-@media print{#nav,.tabs,.no-print,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}}
+@media print{#nav,#sess-sticky,.tabs,.no-print,.view-only-banner,.no-session-banner,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}table{page-break-inside:auto;}tr{page-break-inside:avoid;}}
 
 /* ── Session-locked read-only mode ── */
 .session-locked input,
@@ -276,6 +276,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-mode .unlock-exempt button{pointer-events:auto!important;opacity:1!important;}
 .view-only-mode .caseinfo-edit input,.view-only-mode .caseinfo-edit textarea,.view-only-mode .caseinfo-edit select{pointer-events:auto!important;opacity:1!important;background:#fff!important;}
 .view-only-mode .caseinfo-edit button{pointer-events:auto!important;opacity:1!important;}
+.session-locked .ss-tab input,.session-locked .ss-tab select,.session-locked .ss-tab button,.view-only-mode .ss-tab input,.view-only-mode .ss-tab select,.view-only-mode .ss-tab button{pointer-events:auto!important;opacity:1!important;background:#fff;}
 .view-only-mode .view-only-banner{display:flex;}
 .view-only-mode .no-session-banner{display:none!important;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#b83268;}
@@ -401,8 +402,8 @@ const DT_SIMULTANEOUS=[
   'Generalization (New contexts)'
 ];
 
-function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:c.supNotif?{...c.supNotif,_schoolInfo:c.schoolInfo||null}:(c.schoolInfo?{_schoolInfo:c.schoolInfo}:null)};}
-function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si};}
+function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;return Object.keys(o).length?o:null;})()};}
+function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh};}
 
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
@@ -1965,10 +1966,11 @@ async function printSupPDF(){
 }
 
 // ── Report builder (print anytime, no supervision needed) ──
+function _mmmD(d){var pp=(d||'').split('-');if(pp.length<3)return d;return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+pp[1]-1)]+' '+(+pp[2]);}
 function _svgChart(points,opts){
   if(!points||!points.length)return'';
   opts=opts||{};
-  const W=340,H=92,pad=34;
+  const W=680,H=130,pad=36;
   const min=opts.min!=null?opts.min:0,max=(opts.max!=null?opts.max:100);
   const color=opts.color||'#1f8ec4',suffix=opts.suffix||'';
   const n=points.length,xStep=(W-pad*2)/Math.max(n-1,1);
@@ -1978,9 +1980,9 @@ function _svgChart(points,opts){
   const mastery=opts.mastery!=null?'<line x1="'+pad+'" y1="'+yS(opts.mastery).toFixed(1)+'" x2="'+(W-pad)+'" y2="'+yS(opts.mastery).toFixed(1)+'" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3"/>':'';
   const poly='<polyline points="'+points.map(function(p,i){return (pad+i*xStep).toFixed(1)+','+yS(p.y).toFixed(1);}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';
   const dots=points.map(function(p,i){return '<circle cx="'+(pad+i*xStep).toFixed(1)+'" cy="'+yS(p.y).toFixed(1)+'" r="3" fill="'+(p.color||color)+'" stroke="white" stroke-width="1.5"/>';}).join('');
-  const stp=Math.max(1,Math.ceil(n/6));
-  const labels=points.map(function(p,i){if(n<=6||i===0||i===n-1||i%stp===0){return '<text x="'+(pad+i*xStep).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="8" fill="#6b7280">'+esc(p.date.slice(5))+'</text>';}return'';}).join('');
-  return '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" style="display:block;margin:4px 0"><rect width="'+W+'" height="'+H+'" fill="#f9fafb" rx="4"/>'+grid+mastery+poly+dots+labels+'</svg>';
+  const stp=Math.max(1,Math.ceil(n/9));
+  const labels=points.map(function(p,i){if(n<=6||i===0||i===n-1||i%stp===0){return '<text x="'+(pad+i*xStep).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" fill="#6b7280">'+esc(_mmmD(p.date))+'</text>';}return'';}).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:auto;display:block;margin:6px 0"><rect width="'+W+'" height="'+H+'" fill="#f9fafb" rx="4"/>'+grid+mastery+poly+dots+labels+'</svg>';
 }
 function _printHtml(html,pdfName){
   let _pf=document.getElementById('_print_frame');if(_pf)_pf.remove();
@@ -2107,8 +2109,8 @@ function buildAndPrintReport(){
       if(b.description)bh+='<p><strong>Definition:</strong> '+esc(b.description)+'</p>';
       if(b.replacement)bh+='<p><strong>Replacement:</strong> '+esc(b.replacement)+'</p>';
       const allLogs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      const logs=allLogs.slice(-5);
-      if(logs.length)bh+='<p><strong>Recent:</strong> '+logs.map(function(x){return x.date.slice(5)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
+      const logs=allLogs.filter(function(x){return (!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT);});
+      if(logs.length)bh+='<p><strong>Data:</strong> '+logs.map(function(x){return _mmmD(x.date)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
       if(_bgOn){
         var meas=(bipMeasList(b)[0])||'frequency';
         var gp=[];allLogs.forEach(function(x){if((!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT)){var v=bipValForMeas(x,meas);if(v!=null)gp.push({date:x.date,y:v});}});
@@ -2464,7 +2466,8 @@ function renderClientView(){
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'session',l:'📝 Session'},
-    {id:'maintenance',l:'🔁 Maintenance'}
+    {id:'maintenance',l:'🔁 Maintenance'},
+    {id:'schoolshadow',l:'🏫 School Shadow'}
   ];
   const supTabs=[
     {id:'schoolinfo',l:'🗂 Case Info'},
@@ -2474,7 +2477,8 @@ function renderClientView(){
     {id:'behavior',l:'🔔 Behavior'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
     {id:'maintenance',l:'🔁 Maintenance'},
-    {id:'report',l:'📄 Report'}
+    {id:'report',l:'📄 Report'},
+    {id:'schoolshadow',l:'🏫 School Shadow'}
   ];
   const tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
@@ -2563,7 +2567,7 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>'+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+'<div class="no-print" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>'+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'><div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>'+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
@@ -2608,6 +2612,7 @@ function requireActiveSession(){
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
   if(selectedTab==='schoolinfo')return renderSchoolInfoTab();
+  if(selectedTab==='schoolshadow')return renderSchoolShadowTab();
   if(selectedTab==='checklist')return renderProgramChecklist();
   if(selectedTab==='lessons')return renderLessonsView();
   if(selectedTab==='maintenance')return renderMaintenanceTab();
@@ -2629,6 +2634,74 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 // SESSION ENTRY
 // ════════════════════════════════════════════════
+const _SS_DAYS=['mon','tue','wed','thu','fri'];
+const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
+var _ssDate='';var _ssEditDay='';
+function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
+function _ssCellStyle(v){return v==='C'?{bg:'#e2f2df',c:'#2f6b2c',b:'#9fce97'}:v==='P'?{bg:'#fbeecb',c:'#8a6410',b:'#e8c14e'}:v==='-'?{bg:'#fbe0da',c:'#b23a2a',b:'#e6b3aa'}:v==='/'?{bg:'#eef1f4',c:'#9aa3ad',b:'#d5dae1'}:{bg:'#fff',c:'#c5ccd3',b:'#d5dae1'};}
+function _ssCellHtml(tid,pi,v){var m=_ssCellStyle(v);return '<button type="button" class="ss-cell" data-t="'+tid+'" data-p="'+pi+'" data-v="'+v+'" onclick="_ssCycle(this)" style="height:32px;border-radius:5px;border:1px solid '+m.b+';background:'+m.bg+';color:'+m.c+';font-weight:700;font-size:.82rem;cursor:pointer">'+(v||'\u00b7')+'</button>';}
+function _ssPct(cells,tid,np){var cn=0,op=0;for(var i=0;i<np;i++){var v=cells[tid+'_'+i];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}}return op?Math.round(cn/op*100)+'%':'\u2013';}
+function _ssCycle(btn){var order=['','C','P','-','/'];var i=order.indexOf(btn.dataset.v);var nv=order[(i+1)%order.length];btn.dataset.v=nv;var m=_ssCellStyle(nv);btn.style.background=m.bg;btn.style.color=m.c;btn.style.borderColor=m.b;btn.textContent=nv||'\u00b7';_ssRecalc();}
+function _ssRecalc(){var byT={};document.querySelectorAll('.ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var t=el.dataset.t,o=byT[t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'\u2013';});}
+function _ssSetDate(v){if(!v)return;_ssDate=v;_ssEditDay=_ssWeekday(v);render();}
+function _ssSetEditDay(btn){_ssEditDay=btn.dataset.day;render();}
+function _ssAddPeriod(){var el=document.getElementById('ssp-container');if(el)el.insertAdjacentHTML('beforeend','<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" placeholder="Subject"><input class="ssp-time" type="text" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>');}
+function _ssAddTarget(){var el=document.getElementById('sst-container');if(el)el.insertAdjacentHTML('beforeend','<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+uid()+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>');}
+function _ssSaveSetup(){
+  if(!['admin','supervisor','director','senior'].includes(currentUser.role)){toast('Only admin/supervisor/senior can edit setup.');return;}
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
+  var periods=[];document.querySelectorAll('#ssp-container .ssp-row').forEach(function(r){var sub=r.querySelector('.ssp-subject').value.trim(),tm=r.querySelector('.ssp-time').value.trim();if(sub||tm)periods.push({subject:sub,time:tm});});
+  if(!ss.timetable)ss.timetable={};ss.timetable[_ssEditDay]=periods;
+  var tgts=[];document.querySelectorAll('#sst-container .sst-row').forEach(function(r){var inp=r.querySelector('.sst-name');var nm=inp.value.trim();if(nm)tgts.push({id:inp.dataset.id||uid(),name:nm});});
+  ss.targets=tgts;
+  sbSaveClient(c);toast('Setup saved \u2713');render();
+}
+function _ssSaveEntry(){
+  if(!['junior','senior','supervisor','director'].includes(currentUser.role)){toast('This role cannot record school data.');return;}
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
+  if(!ss.log)ss.log={};
+  var cells={};document.querySelectorAll('.ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});
+  ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};
+  sbSaveClient(c);toast('Day saved \u2713');render();
+}
+function renderSchoolShadowTab(){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});
+  const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
+  const canSetup=['admin','supervisor','director','senior'].includes(currentUser.role);
+  const today=new Date().toISOString().slice(0,10);
+  if(!_ssDate)_ssDate=today;
+  const date=_ssDate;const wd=_ssWeekday(date);
+  if(!_ssEditDay)_ssEditDay=(_SS_DAYS.indexOf(wd)>=0?wd:'mon');
+  const periods=(ss.timetable&&ss.timetable[wd])||[];
+  const targets=ss.targets||[];
+  const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
+  let h='<div class="ss-tab" style="max-width:680px"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
+  if(canSetup){
+    const ed=(ss.timetable&&ss.timetable[_ssEditDay])||[];
+    const dayBtns=_SS_DAYS.map(function(d){return '<button type="button" class="btn btn-xs '+(d===_ssEditDay?'btn-primary':'btn-outline')+'" data-day="'+d+'" onclick="_ssSetEditDay(this)">'+_SS_DAYLABEL[d].slice(0,3)+'</button>';}).join(' ');
+    const periodRows=ed.map(function(pp){return '<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" value="'+esc(pp.subject||'')+'" placeholder="Subject"><input class="ssp-time" type="text" value="'+esc(pp.time||'')+'" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">✕</button></div>';}).join('');
+    const tgtRows=targets.map(function(t){return '<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+t.id+'" value="'+esc(t.name||'')+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">✕</button></div>';}).join('');
+    h+='<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
+      +'<div style="margin-top:10px"><div class="section-title">Timetable — '+_SS_DAYLABEL[_ssEditDay]+'</div><div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">'+dayBtns+'</div>'
+      +'<div id="ssp-container">'+periodRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddPeriod()">+ Add period</button></div>'
+      +'<div style="margin-top:16px"><div class="section-title">School targets (first trial)</div><div id="sst-container">'+tgtRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddTarget()">+ Add target</button></div>'
+      +'<button type="button" class="btn btn-primary" style="margin-top:12px" onclick="_ssSaveSetup()">Save setup</button></details>';
+  }
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:150px"><span style="font-size:.8rem;color:var(--muted)">'+_SS_DAYLABEL[wd]||wd+'</span></div>';
+  if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet. Add them in setup above.</p>';}
+  else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable set for '+(_SS_DAYLABEL[wd]||wd)+' yet. Set it up above.</p>';}
+  else{
+    const gtc='1.5fr repeat('+targets.length+',1fr)';
+    let head='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;font-size:.72rem;font-weight:700;color:#234b63;background:#eef6fb;padding:6px 8px;border-radius:6px 6px 0 0"><span>Period</span>'+targets.map(function(t){return '<span style="text-align:center">'+esc(t.name)+'</span>';}).join('')+'</div>';
+    let rows=periods.map(function(pp,pi){var cc=targets.map(function(t){return _ssCellHtml(t.id,pi,cells[t.id+'_'+pi]||'');}).join('');return '<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;align-items:center;padding:4px 8px;border-bottom:1px solid #eef1f4"><span style="font-size:.78rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';}).join('');
+    let pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;padding:6px 8px;background:#f5f6f8;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem">Daily %</span>'+targets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.8rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods.length)+'</span>';}).join('')+'</div>';
+    h+='<div style="border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+rows+pctRow+'</div>'
+      +'<div style="font-size:.72rem;color:#6b7280;margin-top:6px">Tap a cell to cycle: C independent &middot; P shadow support &middot; \u2212 did not perform &middot; / no opportunity</div>'
+      +'<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveEntry()">Save day</button>';
+  }
+  h+='</div></div>';
+  return h;
+}
 function _medRowHtml(m){m=m||{};return '<div class="med-row" style="display:grid;grid-template-columns:1.4fr .8fr .9fr auto;gap:6px;margin-bottom:6px"><input class="med-name" type="text" placeholder="Medication" value="'+esc(m.name||'')+'"><input class="med-dose" type="text" placeholder="Dose" value="'+esc(m.dose||'')+'"><input class="med-time" type="text" placeholder="Time" value="'+esc(m.time||'')+'"><button type="button" class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="this.parentElement.remove()">✕</button></div>';}
 function _svcRowHtml(x){x=x||{};return '<div class="svc-row" style="display:grid;grid-template-columns:1.2fr 1fr .8fr auto;gap:6px;margin-bottom:6px"><input class="svc-name" type="text" placeholder="Service" value="'+esc(x.name||'')+'"><input class="svc-provider" type="text" placeholder="Provider" value="'+esc(x.provider||'')+'"><input class="svc-freq" type="text" placeholder="Frequency" value="'+esc(x.freq||'')+'"><button type="button" class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="this.parentElement.remove()">✕</button></div>';}
 function _addMedRow(){var el=document.getElementById('meds-container');if(el)el.insertAdjacentHTML('beforeend',_medRowHtml());}
