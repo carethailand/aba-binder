@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-02-A -->
+<!-- BUILD v2026-09-08-A -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-02-A</title>
+<title>CARE Client Binder v2026-09-08-A</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -2639,75 +2639,84 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 const _SS_DAYS=['mon','tue','wed','thu','fri'];
 const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
-var _ssDate='';var _ssEditDay='';
+var _ssDate='';var _ssMDay='';var _ssMPid=null;
 function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
+function _ssTimeMin(t){if(!t)return 9999;var m=(''+t).match(/(\d{1,2})[:.]?(\d{2})?/);if(!m)return 9999;return (+m[1])*60+(+(m[2]||0));}
+function _ssBucket(t){var mn=_ssTimeMin(t);return mn<720?'Morning':mn<780?'Lunch':'Afternoon';}
+function _ssSortPeriods(a){return (a||[]).slice().sort(function(x,y){return _ssTimeMin(x.time)-_ssTimeMin(y.time);});}
+function _ssGet(){var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.schoolShadow)c.schoolShadow={timetable:{},targets:[],log:{}};var tt=c.schoolShadow.timetable||{};Object.keys(tt).forEach(function(d){(tt[d]||[]).forEach(function(pp){if(!pp.id)pp.id=uid();});});return c.schoolShadow;}
+function _ssSave(){sbSaveClient(DB.clients.find(function(x){return x.id===selectedClientId;}));}
+function _ssCanSetup(){return ['admin','supervisor','director','senior'].includes(currentUser.role);}
 function _ssCellStyle(v){return v==='C'?{bg:'#e2f2df',c:'#2f6b2c',b:'#9fce97'}:v==='P'?{bg:'#fbeecb',c:'#8a6410',b:'#e8c14e'}:v==='-'?{bg:'#fbe0da',c:'#b23a2a',b:'#e6b3aa'}:v==='/'?{bg:'#eef1f4',c:'#9aa3ad',b:'#d5dae1'}:{bg:'#fff',c:'#c5ccd3',b:'#d5dae1'};}
-function _ssCellHtml(tid,pi,v){var m=_ssCellStyle(v);return '<button type="button" class="ss-cell" data-t="'+tid+'" data-p="'+pi+'" data-v="'+v+'" onclick="_ssCycle(this)" style="height:32px;border-radius:5px;border:1px solid '+m.b+';background:'+m.bg+';color:'+m.c+';font-weight:700;font-size:.82rem;cursor:pointer">'+(v||'\u00b7')+'</button>';}
-function _ssPct(cells,tid,np){var cn=0,op=0;for(var i=0;i<np;i++){var v=cells[tid+'_'+i];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}}return op?Math.round(cn/op*100)+'%':'\u2013';}
-function _ssCycle(btn){var order=['','C','P','-','/'];var i=order.indexOf(btn.dataset.v);var nv=order[(i+1)%order.length];btn.dataset.v=nv;var m=_ssCellStyle(nv);btn.style.background=m.bg;btn.style.color=m.c;btn.style.borderColor=m.b;btn.textContent=nv||'\u00b7';_ssRecalc();}
-function _ssRecalc(){var byT={};document.querySelectorAll('.ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var t=el.dataset.t,o=byT[t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'\u2013';});}
-function _ssSetDate(v){if(!v)return;_ssDate=v;_ssEditDay=_ssWeekday(v);render();}
-function _ssPeriodRowHtml(pp){pp=pp||{};return '<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" value="'+esc(pp.subject||'')+'" placeholder="Subject"><input class="ssp-time" type="text" value="'+esc(pp.time||'')+'" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>';}
-function _ssSetEditDay(btn){
-  _ssEditDay=btn.dataset.day;
-  var c=DB.clients.find(function(x){return x.id===selectedClientId;});var ss=(c&&c.schoolShadow)||{};
-  var ed=(ss.timetable&&ss.timetable[_ssEditDay])||[];
-  var hdr=document.getElementById('ss-tt-header');if(hdr)hdr.textContent='Timetable — '+_SS_DAYLABEL[_ssEditDay];
-  document.querySelectorAll('.ss-day-btn').forEach(function(b){b.className='btn btn-xs ss-day-btn '+(b.dataset.day===_ssEditDay?'btn-primary':'btn-outline');});
-  var cont=document.getElementById('ssp-container');if(cont)cont.innerHTML=ed.map(_ssPeriodRowHtml).join('');
+function _ssCellHtml(tid,pid,v){var m=_ssCellStyle(v);return '<button type="button" class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" onclick="_ssCycle(this)" style="height:32px;border-radius:5px;border:1px solid '+m.b+';background:'+m.bg+';color:'+m.c+';font-weight:700;font-size:.82rem;cursor:pointer">'+(v||'·')+'</button>';}
+function _ssPct(cells,tid,periods){var cn=0,op=0;periods.forEach(function(pp){var v=cells[tid+'_'+pp.id];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}});return op?Math.round(cn/op*100)+'%':'–';}
+function _ssCycle(btn){var order=['','C','P','-','/'];var i=order.indexOf(btn.dataset.v);var nv=order[(i+1)%order.length];btn.dataset.v=nv;var m=_ssCellStyle(nv);btn.style.background=m.bg;btn.style.color=m.c;btn.style.borderColor=m.b;btn.textContent=nv||'·';_ssRecalc();}
+function _ssRecalc(){var byT={};document.querySelectorAll('.ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
+function _ssSetDate(v){if(v){_ssDate=v;render();}}
+function _ssPeriodClick(btn){_ssPeriodModal(btn.dataset.day,parseInt(btn.dataset.idx));}
+function _ssPeriodModal(day,idx){
+  if(!_ssCanSetup()){toast('Only admin/supervisor/senior can edit setup.');return;}
+  _ssMDay=day;var ss=_ssGet();var arr=_ssSortPeriods((ss.timetable&&ss.timetable[day])||[]);var pr=(idx>=0&&arr[idx])?arr[idx]:{};_ssMPid=(idx>=0&&arr[idx])?arr[idx].id:null;
+  modal('<h3 style="margin-bottom:10px">'+_SS_DAYLABEL[day]+' — '+(idx>=0?'edit period':'add period')+'</h3><label>Time<input id="ssp-t" type="text" value="'+esc(pr.time||'')+'" placeholder="e.g. 9:10"></label><label style="margin-top:8px">Subject<input id="ssp-s" type="text" value="'+esc(pr.subject||'')+'"></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSavePeriod()">Save</button>'+(idx>=0?'<button class="btn" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="_ssDeletePeriod()">Delete</button>':'')+'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function _ssAddPeriod(){var el=document.getElementById('ssp-container');if(el)el.insertAdjacentHTML('beforeend',_ssPeriodRowHtml());}
-function _ssAddTarget(){var el=document.getElementById('sst-container');if(el)el.insertAdjacentHTML('beforeend','<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+uid()+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>');}
-function _ssSaveSetup(){
-  if(!['admin','supervisor','director','senior'].includes(currentUser.role)){toast('Only admin/supervisor/senior can edit setup.');return;}
-  const c=DB.clients.find(function(x){return x.id===selectedClientId;});const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
-  var periods=[];document.querySelectorAll('#ssp-container .ssp-row').forEach(function(r){var sub=r.querySelector('.ssp-subject').value.trim(),tm=r.querySelector('.ssp-time').value.trim();if(sub||tm)periods.push({subject:sub,time:tm});});
-  if(!ss.timetable)ss.timetable={};ss.timetable[_ssEditDay]=periods;
-  var tgts=[];document.querySelectorAll('#sst-container .sst-row').forEach(function(r){var inp=r.querySelector('.sst-name');var nm=inp.value.trim();if(nm)tgts.push({id:inp.dataset.id||uid(),name:nm});});
-  ss.targets=tgts;
-  sbSaveClient(c);toast('Setup saved \u2713');render();
+function _ssSavePeriod(){
+  if(!_ssCanSetup())return;var ss=_ssGet();var day=_ssMDay;if(!ss.timetable)ss.timetable={};if(!ss.timetable[day])ss.timetable[day]=[];
+  var t=((document.getElementById('ssp-t')||{}).value||'').trim();var sub=((document.getElementById('ssp-s')||{}).value||'').trim();
+  if(!t&&!sub){toast('Enter a subject or time');return;}
+  if(_ssMPid){var pr=ss.timetable[day].find(function(x){return x.id===_ssMPid;});if(pr){pr.time=t;pr.subject=sub;}}else{ss.timetable[day].push({id:uid(),time:t,subject:sub});}
+  ss.timetable[day]=_ssSortPeriods(ss.timetable[day]);_ssSave();closeModal();toast('Saved ✓');render();
 }
+function _ssDeletePeriod(){if(!_ssCanSetup())return;var ss=_ssGet();var day=_ssMDay;if(ss.timetable&&ss.timetable[day]&&_ssMPid){ss.timetable[day]=ss.timetable[day].filter(function(x){return x.id!==_ssMPid;});_ssSave();closeModal();render();}}
+function _ssTargetModal(){
+  if(!_ssCanSetup()){toast('Only admin/supervisor/senior can edit setup.');return;}
+  modal('<h3 style="margin-bottom:10px">Add school target</h3><label>Target name<input id="sst-n" type="text"></label><label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2"></textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2"></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+}
+function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var n=((document.getElementById('sst-n')||{}).value||'').trim();if(!n){toast('Enter a name');return;}if(!ss.targets)ss.targets=[];ss.targets.push({id:uid(),name:n,sd:((document.getElementById('sst-sd')||{}).value||'').trim(),r:((document.getElementById('sst-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
+function _ssTargetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.targets=(ss.targets||[]).filter(function(t){return t.id!==btn.dataset.id;});_ssSave();render();}
 function _ssSaveEntry(){
   if(!['junior','senior','supervisor','director'].includes(currentUser.role)){toast('This role cannot record school data.');return;}
-  const c=DB.clients.find(function(x){return x.id===selectedClientId;});const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
-  if(!ss.log)ss.log={};
-  var cells={};document.querySelectorAll('.ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});
-  ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};
-  sbSaveClient(c);toast('Day saved \u2713');render();
+  var ss=_ssGet();if(!ss.log)ss.log={};var cells={};document.querySelectorAll('.ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});
+  ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();
 }
 function renderSchoolShadowTab(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});
-  const ss=c.schoolShadow||(c.schoolShadow={timetable:{},targets:[],log:{}});
-  const canSetup=['admin','supervisor','director','senior'].includes(currentUser.role);
+  const ss=_ssGet();
+  const canSetup=_ssCanSetup();
   const today=new Date().toISOString().slice(0,10);
   if(!_ssDate)_ssDate=today;
   const date=_ssDate;const wd=_ssWeekday(date);
-  if(!_ssEditDay)_ssEditDay=(_SS_DAYS.indexOf(wd)>=0?wd:'mon');
-  const periods=(ss.timetable&&ss.timetable[wd])||[];
   const targets=ss.targets||[];
-  const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
-  let h='<div class="ss-tab" style="max-width:680px"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
+  let h='<div class="ss-tab" style="max-width:720px"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   if(canSetup){
-    const ed=(ss.timetable&&ss.timetable[_ssEditDay])||[];
-    const dayBtns=_SS_DAYS.map(function(d){return '<button type="button" class="btn btn-xs ss-day-btn '+(d===_ssEditDay?'btn-primary':'btn-outline')+'" data-day="'+d+'" onclick="_ssSetEditDay(this)">'+_SS_DAYLABEL[d].slice(0,3)+'</button>';}).join(' ');
-    const periodRows=ed.map(_ssPeriodRowHtml).join('');
-    const tgtRows=targets.map(function(t){return '<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+t.id+'" value="'+esc(t.name||'')+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">✕</button></div>';}).join('');
+    var cols=_SS_DAYS.map(function(d){
+      var ps=_ssSortPeriods((ss.timetable&&ss.timetable[d])||[]);
+      var chips=ps.map(function(pp,i){return '<button type="button" data-day="'+d+'" data-idx="'+i+'" onclick="_ssPeriodClick(this)" style="display:block;width:100%;text-align:left;background:#f5f6f8;border:1px solid #eef1f4;border-radius:5px;padding:3px 6px;margin-bottom:4px;font-size:11px;cursor:pointer;color:#374151">'+esc(pp.time||'')+' '+esc(pp.subject||'')+'</button>';}).join('');
+      return '<div><div style="font-size:12px;font-weight:700;text-align:center;padding:5px 0;background:#eef6fb;color:#234b63;border-radius:6px;margin-bottom:6px">'+_SS_DAYLABEL[d].slice(0,3)+'</div>'+chips+'<button type="button" data-day="'+d+'" data-idx="-1" onclick="_ssPeriodClick(this)" style="width:100%;border:1px dashed #b8dcef;color:#1f8ec4;background:#fff;border-radius:5px;padding:2px 0;font-size:12px;cursor:pointer">+</button></div>';
+    }).join('');
+    var tgtChips=targets.map(function(t){return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem">'+esc(t.name)+'</span><button type="button" data-id="'+t.id+'" onclick="_ssTargetDel(this)" style="color:#a3392b;cursor:pointer;background:none;border:none;font-size:.9rem">✕</button></div>';}).join('');
     h+='<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
-      +'<div style="margin-top:10px"><div class="section-title" id="ss-tt-header">Timetable — '+_SS_DAYLABEL[_ssEditDay]+'</div><div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">'+dayBtns+'</div>'
-      +'<div id="ssp-container">'+periodRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddPeriod()">+ Add period</button></div>'
-      +'<div style="margin-top:16px"><div class="section-title">School targets (first trial)</div><div id="sst-container">'+tgtRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddTarget()">+ Add target</button></div>'
-      +'<button type="button" class="btn btn-primary" style="margin-top:12px" onclick="_ssSaveSetup()">Save setup</button></details>';
+      +'<div style="margin-top:10px"><div class="section-title">Weekly timetable</div><div style="overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(5,minmax(108px,1fr));gap:8px;min-width:560px">'+cols+'</div></div><p style="font-size:.72rem;color:var(--muted);margin-top:6px">Tap a period to edit · + to add · sorted by time · morning/lunch/afternoon set from the time.</p></div>'
+      +'<div style="margin-top:14px"><div class="section-title">School targets (first trial)</div>'+(tgtChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssTargetModal()">+ Add target</button></div>'
+      +'</details>';
   }
-  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:150px"><span style="font-size:.8rem;color:var(--muted)">'+_SS_DAYLABEL[wd]||wd+'</span></div>';
+  const periods=_ssSortPeriods((ss.timetable&&ss.timetable[wd])||[]);
+  const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:150px"><span style="font-size:.8rem;color:var(--muted)">'+(_SS_DAYLABEL[wd]||wd)+'</span></div>';
   if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet. Add them in setup above.</p>';}
-  else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable set for '+(_SS_DAYLABEL[wd]||wd)+' yet. Set it up above.</p>';}
+  else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet. Add it in setup above.</p>';}
   else{
-    const gtc='1.5fr repeat('+targets.length+',1fr)';
-    let head='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;font-size:.72rem;font-weight:700;color:#234b63;background:#eef6fb;padding:6px 8px;border-radius:6px 6px 0 0"><span>Period</span>'+targets.map(function(t){return '<span style="text-align:center">'+esc(t.name)+'</span>';}).join('')+'</div>';
-    let rows=periods.map(function(pp,pi){var cc=targets.map(function(t){return _ssCellHtml(t.id,pi,cells[t.id+'_'+pi]||'');}).join('');return '<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;align-items:center;padding:4px 8px;border-bottom:1px solid #eef1f4"><span style="font-size:.78rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';}).join('');
-    let pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;padding:6px 8px;background:#f5f6f8;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem">Daily %</span>'+targets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.8rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods.length)+'</span>';}).join('')+'</div>';
-    h+='<div style="border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+rows+pctRow+'</div>'
-      +'<div style="font-size:.72rem;color:#6b7280;margin-top:6px">Tap a cell to cycle: C independent &middot; P shadow support &middot; \u2212 did not perform &middot; / no opportunity</div>'
+    const gtc='1.6fr repeat('+targets.length+',minmax(46px,1fr))';
+    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+targets.map(function(t){return '<span style="text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
+    var lastB='';var body='';
+    periods.forEach(function(pp){
+      var b=_ssBucket(pp.time);
+      if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}
+      var cc=targets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'');}).join('');
+      body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;align-items:center;padding:3px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.76rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';
+    });
+    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.76rem">Daily %</span>'+targets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.8rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
+    h+='<div style="overflow-x:auto"><div style="min-width:'+(180+targets.length*52)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
+      +'<div style="display:flex;gap:14px;font-size:.72rem;color:#6b7280;margin-top:6px;flex-wrap:wrap"><span><b style="color:#2f6b2c">C</b> independent</span><span><b style="color:#8a6410">P</b> shadow support</span><span><b style="color:#b23a2a">−</b> did not perform</span><span><b style="color:#9aa3ad">/</b> no opportunity</span></div>'
       +'<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveEntry()">Save day</button>';
   }
   h+='</div></div>';
