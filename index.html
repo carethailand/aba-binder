@@ -2639,99 +2639,88 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 const _SS_DAYS=['mon','tue','wed','thu','fri'];
 const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
-var _ssDate='';var _ssMDay='';var _ssMPid=null;
+var _ssDate='';var _ssSetupOpen=true;
+const _SS_CODES=[['C','C'],['P','P'],['-','−'],['/','N/A']];
+function _ssClient(){return DB.clients.find(function(x){return x.id===selectedClientId;});}
 function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
 function _ssTimeMin(t){if(!t)return 9999;var m=(''+t).match(/(\d{1,2})[:.]?(\d{2})?/);if(!m)return 9999;return (+m[1])*60+(+(m[2]||0));}
 function _ssBucket(t){var mn=_ssTimeMin(t);return mn<720?'Morning':mn<780?'Lunch':'Afternoon';}
-function _ssSortPeriods(a){return (a||[]).slice().sort(function(x,y){return _ssTimeMin(x.time)-_ssTimeMin(y.time);});}
-function _ssGet(){var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.schoolShadow)c.schoolShadow={timetable:{},targets:[],log:{}};var tt=c.schoolShadow.timetable||{};Object.keys(tt).forEach(function(d){(tt[d]||[]).forEach(function(pp){if(!pp.id)pp.id=uid();});});return c.schoolShadow;}
-function _ssSave(){sbSaveClient(DB.clients.find(function(x){return x.id===selectedClientId;}));}
-function _ssCanSetup(){return ['admin','supervisor','director','senior'].includes(currentUser.role);}
-function _ssCellStyle(v){return v==='C'?{bg:'#e2f2df',c:'#2f6b2c',b:'#9fce97'}:v==='P'?{bg:'#fbeecb',c:'#8a6410',b:'#e8c14e'}:v==='-'?{bg:'#fbe0da',c:'#b23a2a',b:'#e6b3aa'}:v==='/'?{bg:'#eef1f4',c:'#9aa3ad',b:'#d5dae1'}:{bg:'#fff',c:'#c5ccd3',b:'#d5dae1'};}
-function _ssCellHtml(tid,pid,v){var m=_ssCellStyle(v);return '<button type="button" class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" onclick="_ssCycle(this)" style="height:32px;border-radius:5px;border:1px solid '+m.b+';background:'+m.bg+';color:'+m.c+';font-weight:700;font-size:.82rem;cursor:pointer">'+(v||'·')+'</button>';}
+function _ssSortSlots(a){return (a||[]).slice().sort(function(x,y){return _ssTimeMin(x.time)-_ssTimeMin(y.time);});}
+function _ssGet(){var c=_ssClient();if(!c.schoolShadow)c.schoolShadow={slots:[],grid:{},targets:[],net:[],log:{},netLog:{}};var s=c.schoolShadow;
+  if(s.timetable&&!s.slots){var tm={};var slots=[];var grid={};_SS_DAYS.forEach(function(d){grid[d]={};});_SS_DAYS.forEach(function(d){(s.timetable[d]||[]).forEach(function(p){var key=(p.time||'').trim();var sid;if(tm[key]){sid=tm[key];}else{sid=uid();tm[key]=sid;slots.push({id:sid,time:key});}grid[d][sid]=p.subject||'';});});s.slots=slots;s.grid=grid;delete s.timetable;}
+  if(!s.slots)s.slots=[];if(!s.grid)s.grid={};_SS_DAYS.forEach(function(d){if(!s.grid[d])s.grid[d]={};});if(!s.targets)s.targets=[];if(!s.net)s.net=[];if(!s.log)s.log={};if(!s.netLog)s.netLog={};
+  return s;}
+function _ssSave(){sbSaveClient(_ssClient());}
+function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role);}
+function _ssActive(){var isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');var se=getSessState();if(isSup){var sv=getSupState();return (sv.started&&sv.clientId===selectedClientId)||(se.started&&se.clientId===selectedClientId);}return se.started&&se.clientId===selectedClientId;}
+function _ssCM(code){return {'C':{c:'#2f6b2c',bg:'#e2f2df',b:'#9fce97'},'P':{c:'#8a6410',bg:'#fbeecb',b:'#e8c14e'},'-':{c:'#b23a2a',bg:'#fbe0da',b:'#e6b3aa'},'/':{c:'#6b7280',bg:'#eef1f4',b:'#d5dae1'}}[code];}
+function _ssBtnStyle(active,code){var m=_ssCM(code);return active?('background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b+';font-weight:700'):('background:#fff;color:#c0c7ce;border:1px solid #e6e9ee;font-weight:600');}
+function _ssLbl(v){return v==='/'?'N/A':(v==='-'?'−':(v||'·'));}
+function _ssCellHtml(tid,pid,v,active){
+  if(!active){var m=v?_ssCM(v):null;return '<div class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" style="height:30px;display:flex;align-items:center;justify-content:center;border-radius:5px;font-size:.78rem;font-weight:700;'+(m?'background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b:'background:#fafbfc;color:#c8cfd6;border:1px solid #eef1f4')+'">'+_ssLbl(v)+'</div>';}
+  var btns=_SS_CODES.map(function(cd){return '<button type="button" data-v="'+cd[0]+'" onclick="_ssPick(this)" style="flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(v===cd[0],cd[0])+'">'+cd[1]+'</button>';}).join('');
+  return '<div class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" style="display:flex;gap:3px">'+btns+'</div>';
+}
+function _ssPick(btn){var cell=btn.parentNode;var nv=btn.dataset.v;if(cell.dataset.v===nv)nv='';cell.dataset.v=nv;Array.prototype.forEach.call(cell.children,function(b){b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===nv,b.dataset.v));});_ssRecalc();}
+function _ssRecalc(){var byT={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
 function _ssPct(cells,tid,periods){var cn=0,op=0;periods.forEach(function(pp){var v=cells[tid+'_'+pp.id];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}});return op?Math.round(cn/op*100)+'%':'–';}
-function _ssCycle(btn){var order=['','C','P','-','/'];var i=order.indexOf(btn.dataset.v);var nv=order[(i+1)%order.length];btn.dataset.v=nv;var m=_ssCellStyle(nv);btn.style.background=m.bg;btn.style.color=m.c;btn.style.borderColor=m.b;btn.textContent=nv||'·';_ssRecalc();}
-function _ssRecalc(){var byT={};document.querySelectorAll('.ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
 function _ssSetDate(v){if(v){_ssDate=v;render();}}
-function _ssPeriodClick(btn){_ssPeriodModal(btn.dataset.day,parseInt(btn.dataset.idx));}
-function _ssPeriodModal(day,idx){
-  if(!_ssCanSetup()){toast('Only admin/supervisor/senior can edit setup.');return;}
-  _ssMDay=day;var ss=_ssGet();var arr=_ssSortPeriods((ss.timetable&&ss.timetable[day])||[]);var pr=(idx>=0&&arr[idx])?arr[idx]:{};_ssMPid=(idx>=0&&arr[idx])?arr[idx].id:null;
-  modal('<h3 style="margin-bottom:10px">'+_SS_DAYLABEL[day]+' — '+(idx>=0?'edit period':'add period')+'</h3><label>Time<input id="ssp-t" type="text" value="'+esc(pr.time||'')+'" placeholder="e.g. 9:10"></label><label style="margin-top:8px">Subject<input id="ssp-s" type="text" value="'+esc(pr.subject||'')+'"></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSavePeriod()">Save</button>'+(idx>=0?'<button class="btn" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="_ssDeletePeriod()">Delete</button>':'')+'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
-}
-function _ssSavePeriod(){
-  if(!_ssCanSetup())return;var ss=_ssGet();var day=_ssMDay;if(!ss.timetable)ss.timetable={};if(!ss.timetable[day])ss.timetable[day]=[];
-  var t=((document.getElementById('ssp-t')||{}).value||'').trim();var sub=((document.getElementById('ssp-s')||{}).value||'').trim();
-  if(!t&&!sub){toast('Enter a subject or time');return;}
-  if(_ssMPid){var pr=ss.timetable[day].find(function(x){return x.id===_ssMPid;});if(pr){pr.time=t;pr.subject=sub;}}else{ss.timetable[day].push({id:uid(),time:t,subject:sub});}
-  ss.timetable[day]=_ssSortPeriods(ss.timetable[day]);_ssSave();closeModal();toast('Saved ✓');render();
-}
-function _ssDeletePeriod(){if(!_ssCanSetup())return;var ss=_ssGet();var day=_ssMDay;if(ss.timetable&&ss.timetable[day]&&_ssMPid){ss.timetable[day]=ss.timetable[day].filter(function(x){return x.id!==_ssMPid;});_ssSave();closeModal();render();}}
-function _ssTargetModal(){
-  if(!_ssCanSetup()){toast('Only admin/supervisor/senior can edit setup.');return;}
-  modal('<h3 style="margin-bottom:10px">Add school target</h3><label>Target name<input id="sst-n" type="text"></label><label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2"></textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2"></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
-}
-function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var n=((document.getElementById('sst-n')||{}).value||'').trim();if(!n){toast('Enter a name');return;}if(!ss.targets)ss.targets=[];ss.targets.push({id:uid(),name:n,sd:((document.getElementById('sst-sd')||{}).value||'').trim(),r:((document.getElementById('sst-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
+function _ssSlotTime(el){if(!_ssCanSetup())return;var ss=_ssGet();var s=(ss.slots||[]).find(function(x){return x.id===el.dataset.id;});if(s){s.time=el.value.trim();_ssSave();}}
+function _ssGridSet(el){if(!_ssCanSetup())return;var ss=_ssGet();var d=el.dataset.day,sid=el.dataset.slot;if(!ss.grid[d])ss.grid[d]={};ss.grid[d][sid]=el.value.trim();_ssSave();}
+function _ssSlotAdd(){if(!_ssCanSetup())return;var ss=_ssGet();ss.slots.push({id:uid(),time:''});_ssSave();render();}
+function _ssSlotDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();var sid=btn.dataset.id;ss.slots=(ss.slots||[]).filter(function(x){return x.id!==sid;});_SS_DAYS.forEach(function(d){if(ss.grid[d])delete ss.grid[d][sid];});_ssSave();render();}
+function _ssTargetModal(){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}modal('<h3 style="margin-bottom:10px">Add school target (first trial)</h3><label>Target name<input id="sst-n" type="text"></label><label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2"></textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2"></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
+function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('sst-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}ss.targets.push({id:uid(),name:nm,sd:((document.getElementById('sst-sd')||{}).value||'').trim(),r:((document.getElementById('sst-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
 function _ssTargetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.targets=(ss.targets||[]).filter(function(t){return t.id!==btn.dataset.id;});_ssSave();render();}
-function _ssSaveEntry(){
-  if(!['junior','senior','supervisor','director'].includes(currentUser.role)){toast('This role cannot record school data.');return;}
-  var ss=_ssGet();if(!ss.log)ss.log={};var cells={};document.querySelectorAll('.ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});
-  ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();
-}
-function _ssNetModal(){if(!_ssCanSetup()){toast('Only admin/supervisor/senior can edit setup.');return;}modal('<h3 style="margin-bottom:10px">Add NET target (% correct)</h3><label>Target name<input id="ssnt-n" type="text"></label><label style="margin-top:8px">SD<textarea id="ssnt-sd" rows="2"></textarea></label><label style="margin-top:8px">R<textarea id="ssnt-r" rows="2"></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveNet()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
-function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('ssnt-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}if(!ss.net)ss.net=[];ss.net.push({id:uid(),name:nm,sd:((document.getElementById('ssnt-sd')||{}).value||'').trim(),r:((document.getElementById('ssnt-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
+function _ssNetModal(){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}modal('<h3 style="margin-bottom:10px">Add NET target (% correct)</h3><label>Target name<input id="ssnt-n" type="text"></label><label style="margin-top:8px">SD<textarea id="ssnt-sd" rows="2"></textarea></label><label style="margin-top:8px">R<textarea id="ssnt-r" rows="2"></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveNet()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
+function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('ssnt-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}ss.net.push({id:uid(),name:nm,sd:((document.getElementById('ssnt-sd')||{}).value||'').trim(),r:((document.getElementById('ssnt-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
 function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net||[]).filter(function(x){return x.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
-function _ssSaveNetDay(){if(!['junior','senior','supervisor','director'].includes(currentUser.role)){toast('This role cannot record school data.');return;}var ss=_ssGet();if(!ss.netLog)ss.netLog={};var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssSaveEntry(){if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
+function _ssSaveNetDay(){if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
 function renderSchoolShadowTab(){
-  const c=DB.clients.find(function(x){return x.id===selectedClientId;});
-  const ss=_ssGet();
-  const canSetup=_ssCanSetup();
-  const today=new Date().toISOString().slice(0,10);
-  if(!_ssDate)_ssDate=today;
+  const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();const active=_ssActive();
+  const today=new Date().toISOString().slice(0,10);if(!_ssDate)_ssDate=today;
   const date=_ssDate;const wd=_ssWeekday(date);
-  const targets=ss.targets||[];
-  let h='<div class="ss-tab" style="max-width:720px"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
+  const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
+  const ttGtc='84px repeat(5,minmax(96px,1fr)) 26px';
+  let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   if(canSetup){
-    var cols=_SS_DAYS.map(function(d){
-      var ps=_ssSortPeriods((ss.timetable&&ss.timetable[d])||[]);
-      var chips=ps.map(function(pp,i){return '<button type="button" data-day="'+d+'" data-idx="'+i+'" onclick="_ssPeriodClick(this)" style="display:block;width:100%;text-align:left;background:#f5f6f8;border:1px solid #eef1f4;border-radius:5px;padding:3px 6px;margin-bottom:4px;font-size:11px;cursor:pointer;color:#374151">'+esc(pp.time||'')+' '+esc(pp.subject||'')+'</button>';}).join('');
-      return '<div><div style="font-size:12px;font-weight:700;text-align:center;padding:5px 0;background:#eef6fb;color:#234b63;border-radius:6px;margin-bottom:6px">'+_SS_DAYLABEL[d].slice(0,3)+'</div>'+chips+'<button type="button" data-day="'+d+'" data-idx="-1" onclick="_ssPeriodClick(this)" style="width:100%;border:1px dashed #b8dcef;color:#1f8ec4;background:#fff;border-radius:5px;padding:2px 0;font-size:12px;cursor:pointer">+</button></div>';
-    }).join('');
+    var ttHead='<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;margin-bottom:6px;font-size:.72rem;font-weight:700;color:#234b63"><span style="text-align:center">Time</span>'+_SS_DAYS.map(function(d){return '<span style="text-align:center">'+_SS_DAYLABEL[d].slice(0,3)+'</span>';}).join('')+'<span></span></div>';
+    var rows=slots.map(function(s){var subs=_SS_DAYS.map(function(d){return '<input type="text" data-day="'+d+'" data-slot="'+s.id+'" value="'+esc((ss.grid[d]||{})[s.id]||'')+'" onchange="_ssGridSet(this)" placeholder="—" style="width:100%;font-size:.8rem;padding:4px 6px;box-sizing:border-box">';}).join('');return '<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;align-items:center;margin-bottom:6px"><input type="text" data-id="'+s.id+'" value="'+esc(s.time||'')+'" onchange="_ssSlotTime(this)" placeholder="8:00" style="width:100%;font-size:.8rem;padding:4px 6px;text-align:center;box-sizing:border-box">'+subs+'<button type="button" data-id="'+s.id+'" onclick="_ssSlotDel(this)" style="color:#a3392b;background:none;border:none;cursor:pointer;font-size:.9rem">✕</button></div>';}).join('');
+    if(!slots.length)rows='<p style="font-size:.8rem;color:var(--muted);margin:4px 0">No periods yet — add a time row.</p>';
     var tgtChips=targets.map(function(t){return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem">'+esc(t.name)+'</span><button type="button" data-id="'+t.id+'" onclick="_ssTargetDel(this)" style="color:#a3392b;cursor:pointer;background:none;border:none;font-size:.9rem">✕</button></div>';}).join('');
     var netChips=(ss.net||[]).map(function(nn){return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem"><b>'+esc(nn.name)+'</b>'+(nn.sd?'<span style="color:#6b7280"> · SD: '+esc(nn.sd)+'</span>':'')+'</span><button type="button" data-id="'+nn.id+'" onclick="_ssNetDel(this)" style="color:#a3392b;cursor:pointer;background:none;border:none;font-size:.9rem">✕</button></div>';}).join('');
-    h+='<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
-      +'<div style="margin-top:10px"><div class="section-title">Weekly timetable</div><div style="overflow-x:auto"><div style="display:grid;grid-template-columns:repeat(5,minmax(108px,1fr));gap:8px;min-width:560px">'+cols+'</div></div><p style="font-size:.72rem;color:var(--muted);margin-top:6px">Tap a period to edit · + to add · sorted by time · morning/lunch/afternoon set from the time.</p></div>'
+    h+='<details class="card"'+(_ssSetupOpen?' open':'')+' ontoggle="_ssSetupOpen=this.open"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
+      +'<div style="margin-top:10px"><div class="section-title">Weekly timetable</div><div style="overflow-x:auto"><div style="min-width:620px">'+ttHead+rows+'</div></div><button type="button" class="btn btn-xs btn-outline" style="margin-top:4px" onclick="_ssSlotAdd()">+ Add time row</button><p style="font-size:.72rem;color:var(--muted);margin-top:6px">Enter the time once on the left, then type each day’s subject. Blank = no class that period. Rows sort by time; morning/lunch/afternoon set from the time.</p></div>'
       +'<div style="margin-top:14px"><div class="section-title">School targets (first trial)</div>'+(tgtChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssTargetModal()">+ Add target</button></div>'
       +'<div style="margin-top:14px"><div class="section-title">NET targets (% correct)</div>'+(netChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No NET targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssNetModal()">+ Add NET target</button></div>'
       +'</details>';
   }
-  const periods=_ssSortPeriods((ss.timetable&&ss.timetable[wd])||[]);
+  const periods=slots.filter(function(s){return (((ss.grid[wd]||{})[s.id])||'').trim();}).map(function(s){return {id:s.id,time:s.time,subject:(ss.grid[wd]||{})[s.id]};});
   const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
-  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:150px"><span style="font-size:.8rem;color:var(--muted)">'+(_SS_DAYLABEL[wd]||wd)+'</span></div>';
-  if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet. Add them in setup above.</p>';}
-  else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet. Add it in setup above.</p>';}
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:auto"><span style="font-size:.8rem;color:var(--muted)">'+(_SS_DAYLABEL[wd]||wd)+'</span></div>';
+  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">▶ Start a session (or supervision visit) to record data. You can still review below.</div>';
+  if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet.'+(canSetup?' Add them in setup above.':'')+'</p>';}
+  else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
-    const gtc='1.6fr repeat('+targets.length+',minmax(46px,1fr))';
-    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+targets.map(function(t){return '<span style="text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
+    const gtc='1.5fr repeat('+targets.length+',minmax(150px,1fr))';
+    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+targets.map(function(t){return '<span style="text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
     var lastB='';var body='';
-    periods.forEach(function(pp){
-      var b=_ssBucket(pp.time);
-      if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}
-      var cc=targets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'');}).join('');
-      body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;align-items:center;padding:3px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.76rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';
-    });
-    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:4px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.76rem">Daily %</span>'+targets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.8rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
-    h+='<div style="overflow-x:auto"><div style="min-width:'+(180+targets.length*52)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
-      +'<div style="display:flex;gap:14px;font-size:.72rem;color:#6b7280;margin-top:6px;flex-wrap:wrap"><span><b style="color:#2f6b2c">C</b> independent</span><span><b style="color:#8a6410">P</b> shadow support</span><span><b style="color:#b23a2a">−</b> did not perform</span><span><b style="color:#9aa3ad">/</b> no opportunity</span></div>'
-      +'<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveEntry()">Save day</button>';
+    periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=targets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';});
+    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem">Daily %</span>'+targets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
+    h+='<div style="overflow-x:auto"><div id="ss-grid" style="min-width:'+(170+targets.length*155)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
+      +'<div style="display:flex;gap:14px;font-size:.72rem;color:#6b7280;margin-top:6px;flex-wrap:wrap"><span><b style="color:#2f6b2c">C</b> independent</span><span><b style="color:#8a6410">P</b> shadow support</span><span><b style="color:#b23a2a">−</b> did not perform</span><span><b style="color:#6b7280">N/A</b> no opportunity</span></div>';
+    if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveEntry()">Save day</button>';
   }
   h+='</div>';
   var _netToday=(ss.netLog&&ss.netLog[date])?(ss.netLog[date].data||{}):{};
-  var _netCards=(ss.net||[]).map(function(nn){var d=_netToday[nn.id]||{};return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div></div>';}).join('');
   h+='<div class="card"><div class="section-title">NET targets (% correct) — '+(_SS_DAYLABEL[wd]||wd)+'</div>';
   if(!(ss.net||[]).length){h+='<p style="color:var(--muted);font-size:.85rem">No NET targets yet.'+(canSetup?' Add them in setup above.':'')+'</p>';}
-  else{h+=_netCards+'<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';}
+  else{
+    var _netCards=(ss.net||[]).map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+'</div>';}).join('');
+    h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';
+  }
   h+='</div>';
   h+='</div>';
   return h;
