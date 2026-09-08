@@ -2065,7 +2065,10 @@ function buildAndPrintReport(){
     lessons.forEach(function(l){
       let inner='';
       (l.sds||[]).forEach(function(sd){
-        sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).forEach(function(t){
+        var _act=sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';});
+        if(!_act.length)return;
+        if(depth==='full'&&(sd.sd||sd.response)){inner+='<p style="margin:8px 0 1px;color:#374151"><strong>SD:</strong> '+esc(sd.sd||'')+'</p>';if(sd.response)inner+='<p style="margin:0 0 3px;color:#374151"><strong>R:</strong> '+esc(sd.response)+'</p>';}
+        _act.forEach(function(t){
           const entries=[];
           DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
           entries.sort(function(a,b){return a.date.localeCompare(b.date);});
@@ -2644,8 +2647,16 @@ function _ssPct(cells,tid,np){var cn=0,op=0;for(var i=0;i<np;i++){var v=cells[ti
 function _ssCycle(btn){var order=['','C','P','-','/'];var i=order.indexOf(btn.dataset.v);var nv=order[(i+1)%order.length];btn.dataset.v=nv;var m=_ssCellStyle(nv);btn.style.background=m.bg;btn.style.color=m.c;btn.style.borderColor=m.b;btn.textContent=nv||'\u00b7';_ssRecalc();}
 function _ssRecalc(){var byT={};document.querySelectorAll('.ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var t=el.dataset.t,o=byT[t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'\u2013';});}
 function _ssSetDate(v){if(!v)return;_ssDate=v;_ssEditDay=_ssWeekday(v);render();}
-function _ssSetEditDay(btn){_ssEditDay=btn.dataset.day;render();}
-function _ssAddPeriod(){var el=document.getElementById('ssp-container');if(el)el.insertAdjacentHTML('beforeend','<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" placeholder="Subject"><input class="ssp-time" type="text" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>');}
+function _ssPeriodRowHtml(pp){pp=pp||{};return '<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" value="'+esc(pp.subject||'')+'" placeholder="Subject"><input class="ssp-time" type="text" value="'+esc(pp.time||'')+'" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>';}
+function _ssSetEditDay(btn){
+  _ssEditDay=btn.dataset.day;
+  var c=DB.clients.find(function(x){return x.id===selectedClientId;});var ss=(c&&c.schoolShadow)||{};
+  var ed=(ss.timetable&&ss.timetable[_ssEditDay])||[];
+  var hdr=document.getElementById('ss-tt-header');if(hdr)hdr.textContent='Timetable — '+_SS_DAYLABEL[_ssEditDay];
+  document.querySelectorAll('.ss-day-btn').forEach(function(b){b.className='btn btn-xs ss-day-btn '+(b.dataset.day===_ssEditDay?'btn-primary':'btn-outline');});
+  var cont=document.getElementById('ssp-container');if(cont)cont.innerHTML=ed.map(_ssPeriodRowHtml).join('');
+}
+function _ssAddPeriod(){var el=document.getElementById('ssp-container');if(el)el.insertAdjacentHTML('beforeend',_ssPeriodRowHtml());}
 function _ssAddTarget(){var el=document.getElementById('sst-container');if(el)el.insertAdjacentHTML('beforeend','<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+uid()+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">\u2715</button></div>');}
 function _ssSaveSetup(){
   if(!['admin','supervisor','director','senior'].includes(currentUser.role)){toast('Only admin/supervisor/senior can edit setup.');return;}
@@ -2678,11 +2689,11 @@ function renderSchoolShadowTab(){
   let h='<div class="ss-tab" style="max-width:680px"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   if(canSetup){
     const ed=(ss.timetable&&ss.timetable[_ssEditDay])||[];
-    const dayBtns=_SS_DAYS.map(function(d){return '<button type="button" class="btn btn-xs '+(d===_ssEditDay?'btn-primary':'btn-outline')+'" data-day="'+d+'" onclick="_ssSetEditDay(this)">'+_SS_DAYLABEL[d].slice(0,3)+'</button>';}).join(' ');
-    const periodRows=ed.map(function(pp){return '<div class="ssp-row" style="display:grid;grid-template-columns:1.5fr .8fr auto;gap:6px;margin-bottom:6px"><input class="ssp-subject" type="text" value="'+esc(pp.subject||'')+'" placeholder="Subject"><input class="ssp-time" type="text" value="'+esc(pp.time||'')+'" placeholder="e.g. 9:10"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">✕</button></div>';}).join('');
+    const dayBtns=_SS_DAYS.map(function(d){return '<button type="button" class="btn btn-xs ss-day-btn '+(d===_ssEditDay?'btn-primary':'btn-outline')+'" data-day="'+d+'" onclick="_ssSetEditDay(this)">'+_SS_DAYLABEL[d].slice(0,3)+'</button>';}).join(' ');
+    const periodRows=ed.map(_ssPeriodRowHtml).join('');
     const tgtRows=targets.map(function(t){return '<div class="sst-row" style="display:flex;gap:6px;margin-bottom:6px"><input class="sst-name" type="text" data-id="'+t.id+'" value="'+esc(t.name||'')+'" placeholder="Target name" style="flex:1"><button type="button" class="btn btn-xs" style="color:#a3392b" onclick="this.parentElement.remove()">✕</button></div>';}).join('');
     h+='<details class="card"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
-      +'<div style="margin-top:10px"><div class="section-title">Timetable — '+_SS_DAYLABEL[_ssEditDay]+'</div><div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">'+dayBtns+'</div>'
+      +'<div style="margin-top:10px"><div class="section-title" id="ss-tt-header">Timetable — '+_SS_DAYLABEL[_ssEditDay]+'</div><div style="margin-bottom:8px;display:flex;gap:4px;flex-wrap:wrap">'+dayBtns+'</div>'
       +'<div id="ssp-container">'+periodRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddPeriod()">+ Add period</button></div>'
       +'<div style="margin-top:16px"><div class="section-title">School targets (first trial)</div><div id="sst-container">'+tgtRows+'</div><button type="button" class="btn btn-xs btn-outline" onclick="_ssAddTarget()">+ Add target</button></div>'
       +'<button type="button" class="btn btn-primary" style="margin-top:12px" onclick="_ssSaveSetup()">Save setup</button></details>';
