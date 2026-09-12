@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-11-C -->
+<!-- BUILD v2026-09-12-A -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-11-C</title>
+<title>CARE Client Binder v2026-09-12-A</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -475,7 +475,8 @@ async function loadFromSupabase(){
     DB.sessions=(sessions||[]).map(rowToSession);
     DB.behaviors=(behaviors||[]).map(rowToBehavior);
     DB.abcData=(abcData||[]).map(rowToABC);
-    try{var _fh=reconcileFirstTrialData();if(_fh>0)saveData();}catch(e){console.warn('FT reconcile failed',e);}
+    try{reconcileFirstTrialData();}catch(e){console.warn('FT reconcile failed',e);}
+    _captureBaselines();
     hideSyncStatus();return true;
   }catch(e){
     console.error('loadFromSupabase failed',e);
@@ -506,15 +507,29 @@ function reconcileFirstTrialData(){
   }
   return healed;
 }
+let _recBaseline={};
+function _captureBaselines(){
+  _recBaseline={};
+  (DB.clients||[]).forEach(function(c){_recBaseline['clients:'+c.id]=JSON.stringify(clientToRow(c));});
+  (DB.lessons||[]).forEach(function(l){_recBaseline['lessons:'+l.id]=JSON.stringify(lessonToRow(l));});
+  (DB.bips||[]).forEach(function(b){_recBaseline['bips:'+b.id]=JSON.stringify(bipToRow(b));});
+  (DB.abcData||[]).forEach(function(a){_recBaseline['abc_data:'+a.id]=JSON.stringify(abcToRow(a));});
+}
 async function sbSaveClient(cObj){
-  await sbUpsert('clients',clientToRow(cObj));
+  var _row=clientToRow(cObj);
+  await sbUpsert('clients',_row);
+  _recBaseline['clients:'+cObj.id]=JSON.stringify(_row);
   hideSyncStatus();
 }
 async function sbSaveLesson(lObj){
-  await sbUpsert('lessons',lessonToRow(lObj));
+  var _row=lessonToRow(lObj);
+  await sbUpsert('lessons',_row);
+  _recBaseline['lessons:'+lObj.id]=JSON.stringify(_row);
 }
 async function sbSaveBIP(bObj){
-  await sbUpsert('bips',bipToRow(bObj));
+  var _row=bipToRow(bObj);
+  await sbUpsert('bips',_row);
+  _recBaseline['bips:'+bObj.id]=JSON.stringify(_row);
 }
 async function sbSaveSession(rowObj){
   // Retry up to 3 times (helps on flaky mobile/iPad connections)
@@ -537,7 +552,9 @@ async function sbSaveUser(uObj){
   return await sbUpsert('users',userToRow(uObj));
 }
 async function sbSaveABC(aObj){
-  await sbUpsert('abc_data',abcToRow(aObj));
+  var _row=abcToRow(aObj);
+  await sbUpsert('abc_data',_row);
+  _recBaseline['abc_data:'+aObj.id]=JSON.stringify(_row);
 }
 async function deleteRecord(table,id){
   await sbFetch(table,'DELETE',null,'id=eq.'+id);
@@ -555,14 +572,17 @@ function saveData(){
 async function flushSave(){
   showSyncStatus('saving');
   try{
-    // Save clients first (lessons/bips have FK dependency on clients)
-    await Promise.all(DB.clients.map(c=>sbUpsert('clients',clientToRow(c))));
+    // Only push records THIS device actually changed since load (vs baseline).
+    // Prevents a stale copy from re-uploading — and overwriting — records it never touched.
+    const _push=function(table,row){var k=table+':'+row.id;var js=JSON.stringify(row);if(_recBaseline[k]===js)return null;return sbUpsert(table,row).then(function(r){if(r!==null)_recBaseline[k]=js;});};
+    // clients first (lessons/bips FK-depend on clients)
+    await Promise.all(DB.clients.map(c=>_push('clients',clientToRow(c))).filter(Boolean));
     await Promise.all([
-      ...DB.lessons.map(l=>sbUpsert('lessons',lessonToRow(l))),
-      ...(DB.bips||[]).map(b=>sbUpsert('bips',bipToRow(b))),
-      // behaviors saved individually at log time — do NOT bulk re-save (would overwrite manual corrections with stale null values)
-      ...(DB.abcData||[]).map(a=>sbUpsert('abc_data',abcToRow(a))),
-    ]);
+      ...DB.lessons.map(l=>_push('lessons',lessonToRow(l))),
+      ...(DB.bips||[]).map(b=>_push('bips',bipToRow(b))),
+      // behaviors saved individually at log time — never bulk re-saved here
+      ...(DB.abcData||[]).map(a=>_push('abc_data',abcToRow(a))),
+    ].filter(Boolean));
     hideSyncStatus();
   }catch(e){
     console.error('Save error',e);
