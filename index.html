@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-12-A -->
+<!-- BUILD v2026-09-12-C -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-12-A</title>
+<title>CARE Client Binder v2026-09-12-C</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -416,7 +416,7 @@ function rowToSession(r){
   // lesson_data / bip_data / abc_data may come back as a string if column is text, not jsonb
   function _parseCol(v){if(!v)return[];if(Array.isArray(v))return v;try{const p=JSON.parse(v);return Array.isArray(p)?p:[];}catch(e){return[];}}
   const _ld=_parseCol(r.lesson_data);
-  return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',lessonData:_ld,bipData:_parseCol(r.bip_data),abcData:_parseCol(r.abc_data)};
+  return{id:r.id,clientId:r.client_id,date:r.date,txId:r.tx_id||'',txName:r.tx_name||'',sessTime:r.sess_time||4,sessType:r.sess_type||'overlap',setting:r.setting||'therapy',parentNote:r.parent_note||'',notes:r.notes||'',createdAt:r.created_at||'',lessonData:_ld,bipData:_parseCol(r.bip_data),abcData:_parseCol(r.abc_data)};
 }
 
 function userToRow(u){
@@ -454,6 +454,36 @@ function rowToBehavior(r){
     avgDuration:r.avg_duration,rate:r.rate,notes,setting,
     txId:r.tx_id||'',txName:r.tx_name||''};
 }
+let _staleFlag=false;
+function _showStaleBanner(){
+  var el=document.getElementById('stale-banner');
+  if(!el){el=document.createElement('div');el.id='stale-banner';el.className='no-print';el.style.cssText='position:sticky;top:0;z-index:9999;background:#fff4d6;border-bottom:1px solid #f0d98f;color:#8a6410;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.85rem';document.body.insertBefore(el,document.body.firstChild);}
+  el.innerHTML='\U0001f504 <strong>This case was updated elsewhere</strong> since you opened it. Reload to avoid overwriting their changes. <span style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="reloadClientData()">Reload now</button><button class="btn btn-sm btn-outline" onclick="_hideStaleBanner()">Dismiss</button></span>';
+  el.style.display='flex';
+}
+function _hideStaleBanner(){_staleFlag=false;var el=document.getElementById('stale-banner');if(el)el.style.display='none';}
+async function _checkFreshness(){
+  try{
+    if(!currentUser||currentView!=='client'||!selectedClientId)return;
+    if(!Object.keys(_recBaseline).length)return;
+    const cid=selectedClientId;
+    const res=await Promise.all([
+      sbFetch('clients','GET',null,'select=*&id=eq.'+cid),
+      sbFetch('lessons','GET',null,'select=*&client_id=eq.'+cid)
+    ]);
+    const cRows=res[0],lRows=res[1];
+    if(cRows===null||lRows===null)return;
+    let stale=false;
+    (cRows||[]).forEach(function(r){if(_recBaseline['clients:'+r.id]!==JSON.stringify(clientToRow(rowToClient(r))))stale=true;});
+    const seen={};
+    (lRows||[]).forEach(function(r){seen[r.id]=1;if(_recBaseline['lessons:'+r.id]!==JSON.stringify(lessonToRow(rowToLesson(r))))stale=true;});
+    (DB.lessons||[]).forEach(function(l){if(l.clientId===cid&&!seen[l.id]&&_recBaseline['lessons:'+l.id]!==undefined)stale=true;});
+    if(stale&&!_staleFlag){_staleFlag=true;_showStaleBanner();}
+  }catch(e){}
+}
+async function reloadClientData(){_hideStaleBanner();showSyncStatus&&showSyncStatus('loading');await loadFromSupabase();render();}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_checkFreshness();});
+setInterval(function(){if(!document.hidden)_checkFreshness();},45000);
 async function loadFromSupabase(){
   showSyncStatus('loading');
   try{
@@ -2318,7 +2348,7 @@ function _stopSessAutoSave(){
 function showView(v){currentView=v;render();}
 function selectClient(id){
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
-if(selectedClientId!==id)clearSessionDraft();selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
+if(selectedClientId!==id)clearSessionDraft();_hideStaleBanner();selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
 function setTab(t){
   if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
   if(t==='session')_startSessAutoSave();
@@ -2475,6 +2505,14 @@ function showAddClient(){modal('<h3 style="margin-bottom:14px">Add Client</h3><l
 function addNewClient(){const name=document.getElementById('nc-n').value.trim();if(!name)return;const nc={id:uid(),name,dob:document.getElementById('nc-d').value,diagnosis:document.getElementById('nc-dx').value,supervisor:currentUser.id,notes:[],reinforcers:[]};DB.clients.push(nc);sbSaveClient(nc);render();}
 
 // ── CLIENT VIEW ──
+function _fmtWhen(ts){
+  if(!ts)return '';
+  if((''+ts).indexOf('T')<0)return fmtDateShort(ts);
+  var d=new Date(ts);if(isNaN(d.getTime()))return ts;
+  var sameDay=d.toDateString()===new Date().toDateString();
+  var hh=('0'+d.getHours()).slice(-2),mm=('0'+d.getMinutes()).slice(-2);
+  return (sameDay?'today':fmtDateShort((''+ts).slice(0,10)))+' '+hh+':'+mm;
+}
 function renderClientView(){
   const c=DB.clients.find(x=>x.id===selectedClientId);if(!c)return'';
   const flags=countFlags(selectedClientId);
@@ -2590,7 +2628,9 @@ function renderClientView(){
   }
   // TX notification badge
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
+  const _lsSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));})[0];
+  const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
+  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
