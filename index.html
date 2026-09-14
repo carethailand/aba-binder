@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-E -->
+<!-- BUILD v2026-09-14-F -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-E</title>
+<title>CARE Client Binder v2026-09-14-F</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,12 +327,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-14-E';
+const APP_VERSION='v2026-09-14-F';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG={
   fixed:'Stopped an old/stale device from overwriting saved work; fixed a false "updated elsewhere" alert.',
   improved:'Supervision type = 1:1 Overlap / Clinic / School Observation (label for reports; sups always see all tabs); School Shadow uses one date and is therapist-only; BIP graphs break for 4-week absences.',
-  added:'School Shadow session type (Type: 1:1 / School Shadow); update panel on the login page; Team Notes & Sup Notes channels.'
+  added:'One BIP now covers 1:1 and School Shadow via "appears in" checkboxes, with a 1:1 / School Shadow view toggle on the Behavior tab (replaces Copy to School); School Shadow session type.'
 };
 function initUpdatePanel(){
   var b=document.getElementById('update-body');
@@ -443,8 +443,8 @@ function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolIn
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
-function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[],breaks:Array.isArray(b.breaks)?b.breaks:[]}),created_date:b.createdDate||null};}
-function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[],_breaks=[];try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];_breaks=Array.isArray(_sn.breaks)?_sn.breaks:[];}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist,breaks:_breaks};}
+function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[],breaks:Array.isArray(b.breaks)?b.breaks:[],appearsIn:Array.isArray(b.appearsIn)?b.appearsIn:null}),created_date:b.createdDate||null};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[],_breaks=[],_appearsIn=null;try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];_breaks=Array.isArray(_sn.breaks)?_sn.breaks:[];_appearsIn=Array.isArray(_sn.appearsIn)?_sn.appearsIn:null;}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist,breaks:_breaks,appearsIn:_appearsIn};}
 
 function sessionToRow(s){const _ld=s.lessonData||[];const _bd=s.bipData||[];const _ad=s.abcData||[];return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:_ld,bip_data:_bd,abc_data:_ad};}
 function rowToSession(r){
@@ -2386,7 +2386,7 @@ function _stopSessAutoSave(){
 function showView(v){currentView=v;render();}
 function selectClient(id){
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
-if(selectedClientId!==id)clearSessionDraft();_hideStaleBanner();selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
+if(selectedClientId!==id)clearSessionDraft();_hideStaleBanner();_behViewCtx=null;selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
 function setTab(t){
   if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
   if(t==='session')_startSessAutoSave();
@@ -4905,6 +4905,13 @@ function switchBIPTab(bipId,tab){
 // ═══════════════════════════════════════════════════════
 // BIP — render
 // ═══════════════════════════════════════════════════════
+function _ctx(st){return st==='shadow'?'shadow':'1:1';}
+function _bipCtxList(b){if(Array.isArray(b.appearsIn)&&b.appearsIn.length)return b.appearsIn;return (b.setting==='shadow')?['shadow']:['1:1'];}
+function bipAppears(b,ctx){return _bipCtxList(b).indexOf(ctx)>=0;}
+var _behViewCtx=null;
+function _behSessCtx(){var se=getSessState();if(se.started&&se.clientId===selectedClientId)return _ctx(se.setting);if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){var sv=getSupState();if(sv.started&&sv.clientId===selectedClientId)return _ctx(sv.setting);}return null;}
+function _currentBehCtx(){return _behViewCtx||_behSessCtx()||'1:1';}
+function _setBehCtx(c){_behViewCtx=c;render();}
 function renderBehaviorTab(){
   if(!DB.bips)DB.bips=[];
   // TX must have session started to log BIP data
@@ -4912,11 +4919,13 @@ function renderBehaviorTab(){
   const _ss=getSessState();
   const _sessStarted=_ss&&_ss.started&&_ss.clientId===selectedClientId;
   
-  const _bipSetting=(()=>{
-    if(['supervisor','director'].includes(currentUser.role)){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
-    const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
-  })();
-  const bips=DB.bips.filter(b=>b.clientId===selectedClientId&&(b.setting||'therapy')===_bipSetting);
+  const behCtx=_currentBehCtx();
+  const _bhSessCtx=_behSessCtx();
+  const _canLog=(_bhSessCtx!=null)&&(_bhSessCtx===behCtx);
+  const _ctxToggle='<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-right:8px">'
+    +'<button class="btn btn-xs no-print" style="border:none;border-radius:0;'+(behCtx==='1:1'?'background:#1f8ec4;color:#fff':'background:#fff;color:#234b63')+'" onclick="_setBehCtx(\'1:1\')">🧩 1:1</button>'
+    +'<button class="btn btn-xs no-print" style="border:none;border-radius:0;'+(behCtx==='shadow'?'background:#c98a12;color:#fff':'background:#fff;color:#8a6410')+'" onclick="_setBehCtx(\'shadow\')">🏫 School Shadow</button></div>';
+  const bips=DB.bips.filter(b=>b.clientId===selectedClientId&&bipAppears(b,behCtx));
   const today=new Date().toISOString().slice(0,10);
   const addBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
@@ -4926,12 +4935,12 @@ function renderBehaviorTab(){
   const bipCards=bips.map(bip=>{
     const allMeas=bipMeasList(bip);
     const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
-    const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(b.setting||'therapy')===_bipSetting&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
+    const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&_ctx(b.setting)===behCtx&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
     const _isSup2=['supervisor','director'].includes(currentUser.role);
-    const _copySchBtn=(_isSup2&&(bip.setting||'therapy')==='therapy')?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();copyBIPToSchool(\''+bip.id+'\')" style="color:#8a6410;border-color:#c98a12">🏫 Copy to School</button>':'';
+    const _copySchBtn='';
     const editBipBtn=_isSup2?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button> <button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();markBIPBreak(\''+bip.id+'\')" title="Mark sick / absence break">⟋ Break</button> <button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();markBIPChange(\''+bip.id+'\')" title="Mark a plan change on the graph">✎ Change</button> '+_copySchBtn:'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
-    const bipSettingBadge=(bip.setting||'therapy')==='school'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏫 School</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏠 1:1</span>';
+    const bipSettingBadge=_bipCtxList(bip).map(function(cx){return cx==='shadow'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏫 Shadow</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🧩 1:1</span>';}).join(' ');
     const lastEntry=logs.length?logs[logs.length-1]:null;
     const lastBadges=lastEntry?allMeas.map(m=>{const v=bipValForMeas(lastEntry,m);return v!=null?'<span class="badge badge-gray" style="font-size:.72rem">'+measLabels[m].split(' ')[0]+': '+bipVal(lastEntry,m)+'</span>':''}).join(' '):'';
 
@@ -5010,7 +5019,7 @@ function renderBehaviorTab(){
       +(logs.length>=1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
         :'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>')
       +'</div>').join('');
-    const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+logForm+graphHtml+'</div>';
+    const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+(_canLog?logForm:'<div style="font-size:.8rem;color:var(--muted);background:#f5f6f8;border-radius:8px;padding:10px;margin-bottom:12px">Start a '+(behCtx==='shadow'?'School Shadow':'1:1')+' session to log here.</div>')+graphHtml+'</div>';
 
     // ── Tab nav ──
     const tabNav='<div class="bip-tab-nav">'
@@ -5092,7 +5101,7 @@ function renderBehaviorTab(){
       +'</details>';
   }).join('')||(['supervisor','director'].includes(currentUser.role)?'<p style="color:var(--muted)">No BIPs yet. Add one above.</p>':'<p style="color:var(--muted)">No behaviors tracked.</p>');
 
-  return _behaviorNotesCard()+'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><h2 style="flex:1;margin:0">🔴 Behavior Intervention Plans</h2>'+addBipBtn+'</div>'+bipCards+'</div>';
+  return _behaviorNotesCard()+'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><h2 style="flex:1;margin:0">🔴 Behavior Intervention Plans</h2>'+_ctxToggle+addBipBtn+'</div>'+bipCards+'</div>';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -5247,11 +5256,8 @@ function _makeBreakPlugin(pid,breaks){
 function drawBIPChart(bip){
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
-  const _chartSetting=(()=>{
-    if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
-    const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
-  })();
-  const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(b.setting||'therapy')===_chartSetting&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date)||_bLogTs(a)-_bLogTs(b));
+  const _chartCtx=_currentBehCtx();
+  const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&_ctx(b.setting)===_chartCtx&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date)||_bLogTs(a)-_bLogTs(b));
   if(logs.length<1)return;
   // group logs into unique sessions (date + therapist) so each function aligns on the same x
   const _sessKeys=[];const _sessMeta={};
@@ -5334,10 +5340,7 @@ function copyBIPToSchool(bipId){if(!requireActiveSession())return;
   toast('Copied to School BIP ✓ — switch to School session to view and edit it.');
 }
 function showAddBIP(){if(!requireActiveSession())return;
-  const _bipSetting=(()=>{
-    if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){const sv=getSupState();return sv.started&&sv.clientId===selectedClientId?(sv.setting||'therapy'):'therapy';}
-    const ss=getSessState();return ss.started&&ss.clientId===selectedClientId?(ss.setting||'therapy'):'therapy';
-  })();
+  const _addCtx=_currentBehCtx();
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="nb-fn-'+f.id+'" value="'+f.id+'"> '+f.label+'</label>').join('');
   modal('<h3 style="margin-bottom:14px">Add Behavior (BIP)</h3>'
     +'<label>Behavior name<input id="nb-n" type="text" placeholder="e.g. Tantrum"></label>'
@@ -5356,7 +5359,7 @@ function showAddBIP(){if(!requireActiveSession())return;
     +'</div>'
     +'<label style="margin-top:8px">Baseline<input id="nb-base" type="text" placeholder="e.g. 3/hr, 10 min avg"></label>'
     +'<label style="margin-top:8px">Goal value (for graph line, numeric)<input id="nb-gval" type="number" step="0.1" placeholder="e.g. 1"></label>'
-    +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Setting<select id="nb-setting" style="width:100%;margin-top:4px"><option value="therapy">🏠 1:1 Therapy</option><option value="school"'+((_bipSetting==='school')?' selected':'')+'>🏫 School</option></select></label>'
+    +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Appears in</label><div style="display:flex;gap:16px;margin-top:6px"><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="nb-ctx-1" '+(_addCtx!=='shadow'?'checked':'')+'> 🧩 1:1</label><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="nb-ctx-s" '+(_addCtx==='shadow'?'checked':'')+'> 🏫 School Shadow</label></div>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveBIP()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 
@@ -5379,13 +5382,15 @@ function saveBIP(){if(!requireActiveSession())return;
     goalValue:gvalEl&&gvalEl.value?parseFloat(gvalEl.value):null,
     baseline:document.getElementById('nb-base').value.trim(),
     createdDate:new Date().toISOString().slice(0,10),
-    setting:(document.getElementById('nb-setting')||{value:'therapy'}).value||'therapy'
+    setting:'therapy',
+    appearsIn:(function(){var a=[];if((document.getElementById('nb-ctx-1')||{}).checked)a.push('1:1');if((document.getElementById('nb-ctx-s')||{}).checked)a.push('shadow');return a.length?a:['1:1'];})()
   });
   saveData();render();closeModal();
 }
 
 function editBIP(bipId){if(!requireActiveSession())return;
   const bip=DB.bips.find(b=>b.id===bipId);if(!bip)return;
+  const _ecx=_bipCtxList(bip);
   const fns=bip.functions||['unknown'];
   const meas=bipMeasList(bip);
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-fn-'+f.id+'" value="'+f.id+'"'+(fns.includes(f.id)?' checked':'')+'>'+f.label+'</label>').join('');
@@ -5406,6 +5411,7 @@ function editBIP(bipId){if(!requireActiveSession())return;
     +'</div>'
     +'<label style="margin-top:8px">Baseline<input id="eb-base" type="text" value="'+esc(bip.baseline||'')+'"></label>'
     +'<label style="margin-top:8px">Goal value (numeric, for graph line)<input id="eb-gval" type="number" step="0.1" value="'+(bip.goalValue!=null?bip.goalValue:'')+'"></label>'
+    +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Appears in</label><div style="display:flex;gap:16px;margin-top:6px"><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="eb-ctx-1" '+(_ecx.indexOf('1:1')>=0?'checked':'')+'> 🧩 1:1</label><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="eb-ctx-s" '+(_ecx.indexOf('shadow')>=0?'checked':'')+'> 🏫 School Shadow</label></div>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveEditBIP(\''+bipId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
 
@@ -5424,7 +5430,7 @@ function saveEditBIP(bipId){if(!requireActiveSession())return;
   const gvalEl=document.getElementById('eb-gval');
   bip.goalValue=gvalEl&&gvalEl.value!==''?parseFloat(gvalEl.value):null;
   bip.baseline=document.getElementById('eb-base').value.trim();
-  const _afterBIP=JSON.stringify({name:bip.name,description:bip.description||'',measurements:bip.measurements||[],functions:bip.functions||[],goal:bip.goal||'',goalDeadline:bip.goalDeadline||'',goalValue:(bip.goalValue==null?null:bip.goalValue),baseline:bip.baseline||''});
+  var _eai=[];if((document.getElementById('eb-ctx-1')||{}).checked)_eai.push('1:1');if((document.getElementById('eb-ctx-s')||{}).checked)_eai.push('shadow');bip.appearsIn=_eai.length?_eai:['1:1'];
   /* plan-change is now manual (markBIPChange) */
   saveData();render();closeModal();
 }
