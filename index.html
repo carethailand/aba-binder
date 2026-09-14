@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-G -->
+<!-- BUILD v2026-09-14-I -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-G</title>
+<title>CARE Client Binder v2026-09-14-I</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -287,7 +287,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <body>
 
 <div id="login-screen">
-  <div style="display:flex;gap:18px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:24px;width:100%;box-sizing:border-box">
+  <div style="display:flex;gap:16px;align-items:flex-start;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:24px;width:100%;box-sizing:border-box">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:20px">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 46" width="110" height="38">
@@ -304,7 +304,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
   </div>
-  <div class="login-box" id="update-card" style="display:flex;flex-direction:column;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
+  <div class="login-box" id="update-card" style="width:320px;flex:0 0 320px;padding:26px 28px;display:flex;flex-direction:column;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
   </div>
 </div>
 
@@ -327,9 +327,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-14-G';
+const APP_VERSION='v2026-09-14-I';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-14-I',date:'14 Sep 2026',added:'',improved:'Friendlier, consistent in-app messages (no browser pop-ups).',fixed:'Reports now separate 1:1 and School Shadow behavior data instead of blending them; QCD can view any case but only records when assigned.'},
+  {version:'v2026-09-14-H',date:'14 Sep 2026',added:'School Shadow monthly overview — difficulty by subject and by time of day (hardest flagged), plus a NET progress trend graph.',improved:'',fixed:''},
   {version:'v2026-09-14-G',date:'14 Sep 2026',added:'',improved:'Update log now shows history (newest on top).',fixed:'Old "Copy to School" behavior plans now appear under the School Shadow toggle instead of duplicating under 1:1.'},
   {version:'v2026-09-14-F',date:'14 Sep 2026',added:'One BIP covers 1:1 and School Shadow via "appears in" checkboxes + a view toggle (replaces Copy to School); School Shadow session type.',improved:'Supervision type = 1:1 Overlap / Clinic / School Observation (label only; sups see all tabs); School Shadow one date + therapist-only; BIP graphs break for 4-week absences.',fixed:'Stale-device overwrite; false "updated elsewhere" alert.'},
   {version:'v2026-09-11',date:'11 Sep 2026',added:'Team Notes & Sup Notes; School Shadow observation notes; star (priority) lessons; manual plan-change + BIP break markers; login update panel.',improved:'Held lessons under Maintenance; BIP graphs straight lines + per-session alignment; target notes visible to therapists; Case Info full width.',fixed:'-'}
@@ -392,7 +394,7 @@ async function confirmPasswordRecovery(){
   if(error){toast('⚠ '+error.message,'error',5000);return;}
   await _supa.auth.signOut();
   closeModal();
-  toast('Password updated! Please log in with your new password ✓','success',6000);
+  toast('Password updated — log in with your new password ✓','success',6000);
 }
 
 // Keepalive: ping Supabase once every 24h so the free-tier project never pauses
@@ -710,7 +712,7 @@ async function runArchive(){
   const clientId=(document.getElementById('arch-client')||{}).value;
   const fromVal=(document.getElementById('arch-from')||{}).value;
   const toVal=(document.getElementById('arch-to')||{}).value;
-  if(!clientId||!fromVal||!toVal){toast('Please fill in all fields.','error');return;}
+  if(!clientId||!fromVal||!toVal){toast('Fill in all fields.','error');return;}
   const fromDate=fromVal+'-01';
   const toDate=toVal+'-31';
   if(fromVal>toVal){toast('From date must be before To date.','error');return;}
@@ -1004,7 +1006,7 @@ async function restoreArchive(file){
       const arc=JSON.parse(e.target.result);
       const sessions=arc.sessions||[];
       const behaviors=arc.behaviors||[];
-      if(!sessions.length&&!behaviors.length){alert('No session data found in file.');return;}
+      if(!sessions.length&&!behaviors.length){toast('No session data found in file.','error');return;}
       if(!confirm('Load '+sessions.length+' sessions and '+behaviors.length+' behavior records from archive '+arc.archiveUpTo+'?\nThis will merge into current data.'))return;
 
       // Merge — skip duplicates
@@ -1022,12 +1024,12 @@ async function restoreArchive(file){
 
       toast('Restored '+newSess.length+' sessions ✓');
       render();
-    }catch(x){alert('Invalid archive file.');}
+    }catch(x){toast('Invalid archive file.','error');}
   };
   r.readAsText(file);
 }
 function exportDB(){const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='aba_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importDB(file){const r=new FileReader();r.onload=async e=>{try{const imp=JSON.parse(e.target.result);DB=imp;await flushSave();toast('Imported & synced!');render();}catch(x){alert('Invalid file.');}};r.readAsText(file);}
+function importDB(file){const r=new FileReader();r.onload=async e=>{try{const imp=JSON.parse(e.target.result);DB=imp;await flushSave();toast('Imported & synced!');render();}catch(x){toast('Invalid file.','error');}};r.readAsText(file);}
 
 let DB={users:[],clients:[],lessons:[],bips:[],sessions:[],behaviors:[],abcData:[]};
 let currentUser=null;
@@ -2203,14 +2205,22 @@ function buildAndPrintReport(){
       bh+='<div class="lesson-title">'+esc(b.name)+'</div>';
       if(b.description)bh+='<p><strong>Definition:</strong> '+esc(b.description)+'</p>';
       if(b.replacement)bh+='<p><strong>Replacement:</strong> '+esc(b.replacement)+'</p>';
-      const allLogs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      const logs=allLogs.filter(function(x){return (!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT);});
-      if(logs.length)bh+='<p><strong>Data:</strong> '+logs.map(function(x){return _mmmD(x.date)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
-      if(_bgOn){
-        var meas=(bipMeasList(b)[0])||'frequency';
-        var gp=[];allLogs.forEach(function(x){if((!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT)){var v=bipValForMeas(x,meas);if(v!=null)gp.push({date:x.date,y:v});}});
-        if(gp.length){var mx=Math.max.apply(null,gp.map(function(pp){return pp.y;}));mx=(mx>0?mx*1.2:5);var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;bh+='<div style="margin:2px 0 10px">'+_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:'#d84a3a',mastery:(goal!=null&&!isNaN(goal)?goal:null)})+'</div>';}
-      }
+      var _allLogsB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
+      var _ctxs=_bipCtxList(b);
+      _ctxs.forEach(function(cx){
+        var cxLabel=cx==='shadow'?'School Shadow':'1:1';
+        var allLogs=_allLogsB.filter(function(x){return _ctx(x.setting)===cx;});
+        if(!allLogs.length&&_ctxs.length>1)return;
+        var logs=allLogs.filter(function(x){return (!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT);});
+        bh+='<p style="margin:8px 0 2px;font-weight:700;color:#234b63">'+cxLabel+'</p>';
+        if(logs.length)bh+='<p><strong>Data:</strong> '+logs.map(function(x){return _mmmD(x.date)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
+        else bh+='<p style="color:#6b7280">No data in range.</p>';
+        if(_bgOn){
+          var meas=(bipMeasList(b)[0])||'frequency';
+          var gp=[];allLogs.forEach(function(x){if((!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT)){var v=bipValForMeas(x,meas);if(v!=null)gp.push({date:x.date,y:v});}});
+          if(gp.length){var mx=Math.max.apply(null,gp.map(function(pp){return pp.y;}));mx=(mx>0?mx*1.2:5);var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;bh+='<div style="margin:2px 0 10px">'+_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:'#d84a3a',mastery:(goal!=null&&!isNaN(goal)?goal:null)})+'</div>';}
+        }
+      });
     });
     if(bh)body+='<div class="sec-title">Behavior (BIP)</div>'+bh;
   }
@@ -2298,7 +2308,7 @@ async function doLogin(){
     authErr=e;
   }
   if(authErr&&authErr.message&&authErr.message.toLowerCase().includes('email not confirmed')){
-    _loginErr('Please check your email and click the confirmation link before logging in.');return;
+    _loginErr('Check your email and confirm it before logging in.');return;
   }
   if(!authErr&&authData&&authData.user){
     const ok=await loadFromSupabase();
@@ -2594,7 +2604,7 @@ function renderClientView(){
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
   let stickyBar='';
-  if(!isSup||_supSessMode){
+  if((!isSup||_supSessMode)&&!isViewOnly()){
     const ss0=getSessState();
     if(!ss0.clientId||ss0.clientId!==selectedClientId){setSessState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),sessTime:4,started:false,sessType:'individual'});}
     const ss=getSessState();
@@ -2746,7 +2756,7 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 const _SS_DAYS=['mon','tue','wed','thu','fri'];
 const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
-var _ssDate='';var _ssSetupOpen=true;
+var _ssDate='';var _ssSetupOpen=true;var _ssMonth='';
 const _SS_CODES=[['C','C'],['P','P'],['-','−'],['/','N/A']];
 function _ssClient(){return DB.clients.find(function(x){return x.id===selectedClientId;});}
 function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
@@ -2787,6 +2797,53 @@ function _ssSaveEntry(){if(!['junior','senior'].includes(currentUser.role)){toas
 function _ssSaveNetDay(){if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
 function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();render();}
 function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
+function _ssSetMonth(v){if(v){_ssMonth=v;render();}}
+function _ssPctOf(o){return o&&o.op?Math.round(o.c/o.op*100):0;}
+function _ssBar(label,pct){
+  var col=pct>=80?'#3b6d11':pct>=50?'#BA7517':'#A32D2D';
+  var bg=pct>=80?'#C0DD97':pct>=50?'#FAC775':'#F09595';
+  return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px"><span>'+esc(label)+'</span><span style="font-weight:700;color:'+col+'">'+pct+'%</span></div><div style="height:8px;background:#eef1f4;border-radius:4px;overflow:hidden"><div style="height:8px;width:'+pct+'%;background:'+bg+';border-radius:4px"></div></div></div>';
+}
+function _ssMonthlyOverview(ss){
+  if(!_ssMonth)_ssMonth=new Date().toISOString().slice(0,7);
+  var mon=_ssMonth;
+  var targets=ss.targets||[];
+  var slotById={};(ss.slots||[]).forEach(function(s){slotById[s.id]=s;});
+  var agg={};targets.forEach(function(t){agg[t.id]={overall:{c:0,op:0},subj:{},bucket:{Morning:{c:0,op:0},Lunch:{c:0,op:0},Afternoon:{c:0,op:0}}};});
+  Object.keys(ss.log||{}).forEach(function(d){
+    if(d.slice(0,7)!==mon)return;
+    var wd=_ssWeekday(d);var grid=(ss.grid&&ss.grid[wd])||{};var cells=(ss.log[d].cells)||{};
+    Object.keys(cells).forEach(function(k){
+      var v=cells[k];if(v!=='C'&&v!=='P'&&v!=='-')return;
+      var u=k.indexOf('_');if(u<0)return;var tid=k.slice(0,u),sid=k.slice(u+1);
+      var a=agg[tid];if(!a)return;
+      var subj=grid[sid]||'';var slot=slotById[sid];var bk=slot?_ssBucket(slot.time):null;
+      var inc=function(o){if(v==='C'){o.c++;o.op++;}else{o.op++;}};
+      inc(a.overall);
+      if(subj){if(!a.subj[subj])a.subj[subj]={c:0,op:0};inc(a.subj[subj]);}
+      if(bk){inc(a.bucket[bk]);}
+    });
+  });
+  var diff=targets.map(function(t){
+    var a=agg[t.id];if(a.overall.op===0)return '';
+    var ov=_ssPctOf(a.overall);
+    var subjRows=Object.keys(a.subj).sort(function(x,y){return _ssPctOf(a.subj[y])-_ssPctOf(a.subj[x]);}).map(function(nm){return _ssBar(nm,_ssPctOf(a.subj[nm]));}).join('')||'<p style="font-size:.75rem;color:var(--muted)">—</p>';
+    var bkRows=['Morning','Lunch','Afternoon'].filter(function(b){return a.bucket[b].op>0;}).map(function(b){return _ssBar(b,_ssPctOf(a.bucket[b]));}).join('')||'<p style="font-size:.75rem;color:var(--muted)">—</p>';
+    var hs=101,hSubj=null;Object.keys(a.subj).forEach(function(nm){var pp=_ssPctOf(a.subj[nm]);if(pp<hs){hs=pp;hSubj=nm;}});
+    var hb=101,hBk=null;['Morning','Lunch','Afternoon'].forEach(function(b){if(a.bucket[b].op>0){var pp=_ssPctOf(a.bucket[b]);if(pp<hb){hb=pp;hBk=b;}}});
+    var hardest=(hSubj||hBk)?'<div style="background:#faeeda;border:1px solid #FAC775;border-radius:6px;padding:6px 10px;font-size:.8rem;color:#633806;margin-top:8px">Hardest: '+(hSubj?'<b>'+esc(hSubj)+' ('+hs+'%)</b>':'')+(hSubj&&hBk?' &amp; ':'')+(hBk?'<b>'+hBk+' ('+hb+'%)</b>':'')+'</div>':'';
+    return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:10px"><div style="font-weight:700;font-size:.9rem;margin-bottom:8px">'+esc(t.name)+' <span style="color:#1f8ec4">— '+ov+'%</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px"><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject</div>'+subjRows+'</div><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day</div>'+bkRows+'</div></div>'+hardest+'</div>';
+  }).join('');
+  if(!diff)diff='<p style="font-size:.85rem;color:var(--muted)">No school-shadow data recorded for this month.</p>';
+  var netTrend=(ss.net||[]).map(function(n){
+    var pts=Object.keys(ss.netLog||{}).sort().map(function(d){var dd=(ss.netLog[d].data||{})[n.id];return (dd&&dd.pct!=null)?{date:d,pct:dd.pct}:null;}).filter(Boolean);
+    return '<div style="margin-bottom:10px"><div style="font-weight:600;font-size:.85rem;margin-bottom:2px">'+esc(n.name)+'</div>'+(pts.length?makeSVGSparkline(pts,80):'<p style="font-size:.78rem;color:var(--muted)">No NET data yet.</p>')+'</div>';
+  }).join('')||'<p style="font-size:.8rem;color:var(--muted)">No NET targets.</p>';
+  return '<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">📊 Monthly overview</div><input type="month" value="'+mon+'" onchange="_ssSetMonth(this.value)" style="width:auto"></div>'
+    +'<div class="section-title" style="font-size:.8rem">First-trial difficulty</div>'+diff
+    +'<div class="section-title" style="font-size:.8rem;margin-top:14px">NET progress (all time)</div>'+netTrend
+    +'</div>';
+}
 function renderSchoolShadowTab(){
   const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();
   const _isTherapist=['junior','senior'].includes(currentUser.role);
@@ -2839,6 +2896,7 @@ function renderSchoolShadowTab(){
     h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';
   }
   h+='</div>';
+  h+=_ssMonthlyOverview(ss);
   h+='</div>';
   return h;
 }
@@ -3081,7 +3139,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     // First Trial only — C/P/I/N/A buttons are the sole data entry
     html+='<div style="margin-top:8px">';
     html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
-    if(['junior','senior','supervisor','director'].includes(currentUser.role)){
+    if(['junior','senior','qcd','supervisor','director'].includes(currentUser.role)){
       html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
@@ -3098,7 +3156,7 @@ function renderTargetSessionEntry(lesson,sd,target){
   if(target.dataType==='percent'){
   html+='<div class="ft-section" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px">';
   html+='<div style="font-size:.78rem;font-weight:600;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">First Trial</div>';
-  if(['junior','senior','supervisor','director'].includes(currentUser.role)){
+  if(['junior','senior','qcd','supervisor','director'].includes(currentUser.role)){
     html+='<div style="display:flex;gap:6px;margin-bottom:6px">';
     html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="C" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">C</button>';
     html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="P" onclick="toggleFT(this)" style="flex:1;padding:6px 0;font-size:.88rem;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">P</button>';
@@ -4303,7 +4361,7 @@ function saveReintroduce(){if(!requireActiveSession())return;
       t.stepMasteryRecords={};
     });
   });
-  if(!anySelected){alert('Please select at least one target to reintroduce.');return;}
+  if(!anySelected){toast('Select at least one target to reintroduce.','error');return;}
   lesson.phase='acquisition';
   saveData();
   closeModal();
@@ -4344,7 +4402,7 @@ function advancePhase(lId){if(!requireActiveSession())return;
 
 // ── Skip DT step (supervisor only) ──
 function skipDTStep(lId){if(!requireActiveSession())return;
-  if(currentUser.role!=='supervisor'){alert('Supervisors only');return;}
+  if(currentUser.role!=='supervisor'){toast('Supervisors only','error');return;}
   const l=DB.lessons.find(x=>x.id===lId);
   const dtSteps=l.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS;
   if((l.dtStepIndex||0)<dtSteps.length-1){l.dtStepIndex=(l.dtStepIndex||0)+1;saveData();toast('Skipped to: '+dtSteps[l.dtStepIndex]);render();}
@@ -4375,7 +4433,7 @@ function toggleDTField(){document.getElementById('nl-dt-wrap').style.display=doc
 function toggleTAFields(){const v=document.getElementById('nl-dtype').value;document.getElementById('nl-ta-wrap').style.display=v==='ta'?'':'none';document.getElementById('nl-rating-wrap').style.display=v==='rating'?'':'none';const _tw=document.getElementById('nl-trials-wrap');if(_tw)_tw.style.display=v==='tally'?'none':'';const _tlw=document.getElementById('nl-tally-wrap');if(_tlw)_tlw.style.display=v==='tally'?'':'none';}
 
 function saveNewLesson(){if(!requireActiveSession())return;
-  const name=document.getElementById('nl-name').value.trim();if(!name){alert('Name required');return;}
+  const name=document.getElementById('nl-name').value.trim();if(!name){toast('Name required','error');return;}
   const style='DTT';
   const dtype=document.getElementById('nl-dtype').value;
   const taSteps=dtype==='ta'?document.getElementById('nl-steps').value.split('\n').map(s=>s.trim()).filter(Boolean):[];
@@ -5370,10 +5428,10 @@ function showAddBIP(){if(!requireActiveSession())return;
 
 function saveBIP(){if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
-  const name=document.getElementById('nb-n').value.trim();if(!name){alert('Name required');return;}
+  const name=document.getElementById('nb-n').value.trim();if(!name){toast('Name required','error');return;}
   const measIdMap={frequency:'nb-mfreq',duration:'nb-mdur',rate:'nb-mrate'};
   const measurements=['frequency','duration','rate'].filter(m=>{const el=document.getElementById(measIdMap[m]);return el&&el.checked;});
-  if(!measurements.length){alert('Select at least one measurement');return;}
+  if(!measurements.length){toast('Select at least one measurement','error');return;}
   const functions=BIP_FUNCTIONS.map(f=>f.id).filter(id=>{const el=document.getElementById('nb-fn-'+id);return el&&el.checked;});
   const gvalEl=document.getElementById('nb-gval');
   DB.bips.push({
@@ -5596,7 +5654,7 @@ function renderNotesTab(){
 function saveReinforcer(){
   if(!requireActiveSession())return;
   const name=(document.getElementById('r-name').value||'').trim();
-  if(!name){alert('Enter a reinforcer name');return;}
+  if(!name){toast('Enter a reinforcer name','error');return;}
   const c=DB.clients.find(x=>x.id===selectedClientId);
   if(!c.reinforcers)c.reinforcers=[];
   c.reinforcers.push({name,type:document.getElementById('r-type').value,note:(document.getElementById('r-note').value||'').trim()});
@@ -5849,7 +5907,7 @@ async function confirmChangePassword(){
 
 function deactivateUser(id){
   if(!currentUser||!['director','admin'].includes(currentUser.role)){toast('⚠ No permission');return;}
-  if(id===currentUser.id){alert("Can't deactivate yourself");return;}
+  if(id===currentUser.id){toast("Can't deactivate yourself",'error');return;}
   const u=DB.users.find(x=>x.id===id);
   if(!u)return;
   const name=u.name;
@@ -5875,7 +5933,7 @@ async function reactivateUser(id){
 }
 function deleteUser(id){
   if(!currentUser||!['director','admin'].includes(currentUser.role)){toast('⚠ No permission');return;}
-  if(id===currentUser.id){alert("Can't remove yourself");return;}
+  if(id===currentUser.id){toast("Can't remove yourself",'error');return;}
   const u=DB.users.find(x=>x.id===id);
   const name=u?u.name:'this user';
   window._pendingDeleteId=id;
