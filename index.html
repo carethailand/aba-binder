@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-I -->
+<!-- BUILD v2026-09-14-J -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-I</title>
+<title>CARE Client Binder v2026-09-14-J</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-14-I';
+const APP_VERSION='v2026-09-14-J';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-14-J',date:'14 Sep 2026',added:'',improved:'School Shadow NET trend graph now shows under each NET target (like a 1:1 target); monthly overview keeps the difficulty analysis.',fixed:''},
   {version:'v2026-09-14-I',date:'14 Sep 2026',added:'',improved:'Friendlier, consistent in-app messages (no browser pop-ups).',fixed:'Reports now separate 1:1 and School Shadow behavior data instead of blending them; QCD can view any case but only records when assigned.'},
   {version:'v2026-09-14-H',date:'14 Sep 2026',added:'School Shadow monthly overview — difficulty by subject and by time of day (hardest flagged), plus a NET progress trend graph.',improved:'',fixed:''},
   {version:'v2026-09-14-G',date:'14 Sep 2026',added:'',improved:'Update log now shows history (newest on top).',fixed:'Old "Copy to School" behavior plans now appear under the School Shadow toggle instead of duplicating under 1:1.'},
@@ -2835,13 +2836,8 @@ function _ssMonthlyOverview(ss){
     return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:10px"><div style="font-weight:700;font-size:.9rem;margin-bottom:8px">'+esc(t.name)+' <span style="color:#1f8ec4">— '+ov+'%</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px"><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject</div>'+subjRows+'</div><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day</div>'+bkRows+'</div></div>'+hardest+'</div>';
   }).join('');
   if(!diff)diff='<p style="font-size:.85rem;color:var(--muted)">No school-shadow data recorded for this month.</p>';
-  var netTrend=(ss.net||[]).map(function(n){
-    var pts=Object.keys(ss.netLog||{}).sort().map(function(d){var dd=(ss.netLog[d].data||{})[n.id];return (dd&&dd.pct!=null)?{date:d,pct:dd.pct}:null;}).filter(Boolean);
-    return '<div style="margin-bottom:10px"><div style="font-weight:600;font-size:.85rem;margin-bottom:2px">'+esc(n.name)+'</div>'+(pts.length?makeSVGSparkline(pts,80):'<p style="font-size:.78rem;color:var(--muted)">No NET data yet.</p>')+'</div>';
-  }).join('')||'<p style="font-size:.8rem;color:var(--muted)">No NET targets.</p>';
   return '<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">📊 Monthly overview</div><input type="month" value="'+mon+'" onchange="_ssSetMonth(this.value)" style="width:auto"></div>'
     +'<div class="section-title" style="font-size:.8rem">First-trial difficulty</div>'+diff
-    +'<div class="section-title" style="font-size:.8rem;margin-top:14px">NET progress (all time)</div>'+netTrend
     +'</div>';
 }
 function renderSchoolShadowTab(){
@@ -2892,7 +2888,7 @@ function renderSchoolShadowTab(){
   h+='<div class="card"><div class="section-title">NET targets (% correct) — '+(_SS_DAYLABEL[wd]||wd)+'</div>';
   if(!(ss.net||[]).length){h+='<p style="color:var(--muted);font-size:.85rem">No NET targets yet.'+(canSetup?' Add them in setup above.':'')+'</p>';}
   else{
-    var _netCards=(ss.net||[]).map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+'</div>';}).join('');
+    var _netCards=(ss.net||[]).map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+(function(){var pts=Object.keys(ss.netLog||{}).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);return pts.length?('<div style="margin-top:8px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';})()+'</div>';}).join('');
     h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';
   }
   h+='</div>';
