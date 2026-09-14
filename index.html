@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-A -->
+<!-- BUILD v2026-09-14-C -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-A</title>
+<title>CARE Client Binder v2026-09-14-C</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -301,7 +301,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
     <div class="login-err" id="l-err">Invalid email or password.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
-    <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
+    <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div><div id="update-panel" style="margin-top:16px;border-top:1px solid #eef1f4;padding-top:12px;text-align:left"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:6px">Latest update</div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55"></div><div id="update-status" style="margin-top:8px"></div></div>
     
   </div>
 </div>
@@ -325,6 +325,39 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
+const APP_VERSION='v2026-09-14-C';
+const APP_UPDATED='14 Sep 2026';
+const CHANGELOG={
+  fixed:'Stopped an old/stale device from overwriting saved work; fixed a false "updated elsewhere" alert.',
+  improved:'School Shadow now uses one date (top bar) and is therapist-only to record; BIP graphs break for 4-week absences; manual plan-change markers.',
+  added:'Update panel on the login page with one-click Update; Team Notes and Sup Notes channels; School Shadow observation notes.'
+};
+function initUpdatePanel(){
+  var b=document.getElementById('update-body');
+  if(b){b.innerHTML='<div style="margin-bottom:5px"><b>'+APP_UPDATED+'</b> &middot; '+APP_VERSION+'</div>'
+    +(CHANGELOG.added?'<div style="margin-bottom:2px"><span style="color:#2f6b2c;font-weight:600">New:</span> '+esc(CHANGELOG.added)+'</div>':'')
+    +(CHANGELOG.improved?'<div style="margin-bottom:2px"><span style="color:#1a6f94;font-weight:600">Improved:</span> '+esc(CHANGELOG.improved)+'</div>':'')
+    +(CHANGELOG.fixed?'<div><span style="color:#a3392b;font-weight:600">Fixed:</span> '+esc(CHANGELOG.fixed)+'</div>':'');}
+  checkForUpdate();
+}
+async function checkForUpdate(showToast){
+  try{
+    var r=await fetch(location.pathname+'?vcheck='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    var t=await r.text();
+    var m=t.match(/BUILD (v[0-9A-Za-z-]+)/);
+    var latest=m?m[1]:null;
+    var el=document.getElementById('update-status');
+    if(latest&&latest!==APP_VERSION){
+      if(el)el.innerHTML='<div style="background:#fff4d6;border:1px solid #f0d98f;color:#8a6410;border-radius:8px;padding:8px 10px;font-size:.8rem">🔄 New version <b>'+latest+'</b> available. <button class="btn btn-xs btn-primary" style="margin-left:6px" onclick="_forceUpdate()">Update now</button></div>';
+      if(showToast)toast('🔄 A new version ('+latest+') is available — reload to update.','info',6000);
+    }else{
+      if(el)el.innerHTML='<div style="font-size:.72rem;color:#94a0ae">✓ You’re on the latest ('+APP_VERSION+')</div>';
+    }
+  }catch(e){}
+}
+function _forceUpdate(){location.href=location.pathname+'?v='+Date.now();}
+window.addEventListener('load',initUpdatePanel);
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
 const _supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'care_auth'}});
@@ -2192,6 +2225,7 @@ function doForgotPassword(){
 function enterApp(user,isLegacy){
     currentUser=user;
     document.getElementById('login-screen').style.display='none';
+    setTimeout(function(){checkForUpdate(true);},1500);
     document.getElementById('nav').style.display='flex';
     document.getElementById('nav-user').textContent=user.name+' ('+user.role+')';
     document.getElementById('btn-admin').style.display=['director','admin'].includes(user.role)?'':'none';
@@ -2525,8 +2559,8 @@ function renderClientView(){
   const txTabs=[
     {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
-    {id:'notes',l:'💬 Notes'},
-    {id:'commlog',l:'📨 Comm Log'},
+    {id:'notes',l:'💬 Sup Notes'},
+    {id:'commlog',l:'🗨 Team Notes'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'session',l:'📝 Session'},
@@ -2536,8 +2570,8 @@ function renderClientView(){
   const supTabs=[
     {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
-    {id:'notes',l:'💬 Notes'},
-    {id:'commlog',l:'📨 Comm Log'},
+    {id:'notes',l:'💬 Sup Notes'},
+    {id:'commlog',l:'🗨 Team Notes'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
@@ -2741,14 +2775,17 @@ function _ssNetModal(){if(!_ssCanSetup()){toast('Only admin/supervisor can edit 
 function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('ssnt-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}ss.net.push({id:uid(),name:nm,sd:((document.getElementById('ssnt-sd')||{}).value||'').trim(),r:((document.getElementById('ssnt-r')||{}).value||'').trim()});_ssSave();closeModal();render();}
 function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net||[]).filter(function(x){return x.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
-function _ssSaveEntry(){if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
-function _ssSaveNetDay(){if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssSaveEntry(){if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
+function _ssSaveNetDay(){if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
 function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();render();}
 function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
 function renderSchoolShadowTab(){
-  const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();const active=_ssActive();
-  const today=new Date().toISOString().slice(0,10);if(!_ssDate)_ssDate=today;
-  const date=_ssDate;const wd=_ssWeekday(date);
+  const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();
+  const _isTherapist=['junior','senior'].includes(currentUser.role);
+  const active=_ssActive()&&_isTherapist;
+  const _sess=getSessState();
+  const date=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:new Date().toISOString().slice(0,10);
+  _ssDate=date;const wd=_ssWeekday(date);
   const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
   const ttGtc='84px repeat(5,minmax(96px,1fr)) 26px';
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
@@ -2771,8 +2808,8 @@ function renderSchoolShadowTab(){
   }
   const periods=slots.filter(function(s){return (((ss.grid[wd]||{})[s.id])||'').trim();}).map(function(s){return {id:s.id,time:s.time,subject:(ss.grid[wd]||{})[s.id]};});
   const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
-  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><input type="date" value="'+date+'" onchange="_ssSetDate(this.value)" style="width:auto"><span style="font-size:.8rem;color:var(--muted)">'+(_SS_DAYLABEL[wd]||wd)+'</span></div>';
-  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">▶ Start a session (or supervision visit) to record data. You can still review below.</div>';
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>';
+  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session to record data. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a session.')+'</div>';
   if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet.'+(canSetup?' Add them in setup above.':'')+'</p>';}
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
@@ -5464,7 +5501,7 @@ function deleteABCEntry(id){
   toast('Deleted ✓');render();
 }
 function addCommNote(){
-  if(!currentUser)return;
+  if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists can post team notes.');return;}
   var el=document.getElementById('comm-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.commNotes)c.commNotes=[];
   c.commNotes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});
@@ -5479,8 +5516,8 @@ function delCommNote(btn){
 function renderCommLog(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});
   const ss=c.schoolShadow||{};
-  let h='<div class="ss-tab" style="max-width:760px"><h3 style="margin-bottom:4px">📨 Communication Log — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">One place to see what happened. Post a note below; session and school-shadow notes gather here automatically.</p>';
-  h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
+  let h='<div class="ss-tab"><h3 style="margin-bottom:4px">🗨 Team Notes — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Notes from therapists to the team; session and school-shadow notes gather here automatically.</p>';
+  if(["junior","senior"].includes(currentUser.role))h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
   var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
   h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(n.date)+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No team notes yet.</p>';
   h+='</div>';
