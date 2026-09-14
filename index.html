@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-15-D -->
+<!-- BUILD v2026-09-15-F -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-15-D</title>
+<title>CARE Client Binder v2026-09-15-F</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-15-D';
+const APP_VERSION='v2026-09-15-F';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-15-F',date:'15 Sep 2026',added:'',improved:'Per-lesson session notes now show in Team Notes under each 1:1 session (they were saved but not displayed).',fixed:''},
+  {version:'v2026-09-15-E',date:'15 Sep 2026',added:'',improved:'',fixed:'School Shadow "session note for the team" is now kept as you type and saved on End & Save (it was being cleared before saving).'},
   {version:'v2026-09-15-D',date:'15 Sep 2026',added:'School Shadow sessions can leave a "session note for the team" that lands in Team Notes.',improved:'Team Notes now routes 1:1 session notes and School Shadow notes to their own sections.',fixed:'Program Checklist tracks only 1:1 sessions (School Shadow excluded) and drops the old school colour-coding — one colour now.'},
   {version:'v2026-09-15-C',date:'15 Sep 2026',added:'',improved:'',fixed:'Ending a School Shadow session now auto-saves the day + NET and skips the irrelevant 1:1 "no data" prompt.'},
   {version:'v2026-09-15-B',date:'15 Sep 2026',added:'',improved:'',fixed:'End & Save now works during a School Shadow session (it no longer bounced between tabs).'},
@@ -2909,7 +2911,7 @@ function renderSchoolShadowTab(){
     h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';
   }
   h+='</div>';
-  if(active)h+='<div class="card"><div class="section-title">📝 Session note (for the team)</div><p style="font-size:.76rem;color:var(--muted);margin:0 0 6px">A note about today’s shadow — saved to Team Notes when you End &amp; Save.</p><textarea id="ss-sess-notes" rows="3" placeholder="How today went, anything the team should know..." style="font-size:.84rem"></textarea></div>';
+  if(active)h+='<div class="card"><div class="section-title">📝 Session note (for the team)</div><p style="font-size:.76rem;color:var(--muted);margin:0 0 6px">A note about today’s shadow — saved to Team Notes when you End &amp; Save.</p><textarea id="ss-sess-notes" rows="3" placeholder="How today went, anything the team should know..." style="font-size:.84rem" oninput="var _st=getSessState();_st._ssNote=this.value;setSessState(_st);">'+esc((getSessState()._ssNote)||'')+'</textarea></div>';
   h+=_ssMonthlyOverview(ss);
   h+='</div>';
   return h;
@@ -3649,7 +3651,7 @@ async function saveSession(){
     if(ld.targets.length||ld.dtData)lessonData.push(ld);
   });
 
-  const txNotes=(document.getElementById('tx-sess-notes')||document.getElementById('ss-sess-notes')||{}).value||'';
+  const txNotes=((document.getElementById('tx-sess-notes')||document.getElementById('ss-sess-notes')||{}).value)||(getSessState()._ssNote||'')||'';
   const ss_save=getSessState();
   // Save parent note to sessState so it persists until End Session
   const _pnEl=document.getElementById('parent-note-input');
@@ -5604,9 +5606,9 @@ function renderCommLog(){
   var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
   h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(n.date)+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No team notes yet.</p>';
   h+='</div>';
-  var sess=DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.notes&&(''+s.notes).trim()&&(s.setting||'therapy')!=='shadow';}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
+  var sess=DB.sessions.filter(function(s){if((s.setting||'therapy')==='shadow'||s.clientId!==selectedClientId)return false;var hasN=s.notes&&(''+s.notes).trim();var hasLn=(s.lessonData||[]).some(function(ld){return ld.note&&(''+ld.note).trim();});return hasN||hasLn;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
   h+='<div class="card"><div class="section-title">📝 1:1 session notes ('+sess.length+')</div>';
-  h+=sess.length?sess.map(function(s){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+_fmtWhen(s.createdAt||s.date)+'</strong>'+(s.txName?' · '+esc(s.txName.split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(s.notes)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No session notes yet.</p>';
+  h+=sess.length?sess.map(function(s){var _ln=(s.lessonData||[]).filter(function(ld){return ld.note&&(''+ld.note).trim();}).map(function(ld){return '<div style="margin-top:6px"><b style="color:#234b63">'+esc(ld.lessonName||'Lesson')+':</b> '+esc(ld.note)+'</div>';}).join('');var _sn=(s.notes&&(''+s.notes).trim())?'<div style="white-space:pre-wrap">'+esc(s.notes)+'</div>':'';return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+_fmtWhen(s.createdAt||s.date)+'</strong>'+(s.txName?' · '+esc(s.txName.split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+_sn+_ln+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No session notes yet.</p>';
   h+='</div>';
   var _shadowSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.notes&&(''+s.notes).trim()&&(s.setting||'therapy')==='shadow';}).map(function(s){return {date:s.createdAt||s.date,author:s.txName,text:s.notes};});
   var ssn=(ss.notes||[]).map(function(n){return {date:n.date,author:n.author,text:n.text};}).concat(_shadowSess).sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
