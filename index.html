@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-15-G -->
+<!-- BUILD v2026-09-15-H -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-15-G</title>
+<title>CARE Client Binder v2026-09-15-H</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -304,7 +304,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
   </div>
-  <div class="login-box" id="update-card" style="width:320px;flex:0 0 320px;padding:26px 28px;display:flex;flex-direction:column;max-height:520px;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
+  <div class="login-box" id="update-card" style="width:320px;flex:0 0 320px;padding:26px 28px;display:flex;flex-direction:column;max-height:520px;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;min-height:0;padding-right:6px"></div></div>
   </div>
 </div>
 
@@ -327,9 +327,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-15-G';
+const APP_VERSION='v2026-09-15-H';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-15-H',date:'15 Sep 2026',added:'',improved:'Team Notes: clearer empty-state wording and consistent, friendly date/time formatting for all notes.',fixed:''},
   {version:'v2026-09-15-G',date:'15 Sep 2026',added:'',improved:'',fixed:'Cleared remaining false "updated elsewhere" alarms — the check now ignores harmless structural/ordering differences and only flags real edits.'},
   {version:'v2026-09-15-F',date:'15 Sep 2026',added:'',improved:'Per-lesson session notes now show in Team Notes under each 1:1 session (they were saved but not displayed).',fixed:''},
   {version:'v2026-09-15-E',date:'15 Sep 2026',added:'',improved:'',fixed:'School Shadow "session note for the team" is now kept as you type and saved on End & Save (it was being cleared before saving).'},
@@ -354,6 +355,7 @@ function initUpdatePanel(){
       +(e.fixed&&e.fixed!=='-'?'<div><span style="color:#a3392b;font-weight:600">Fixed:</span> '+esc(e.fixed)+'</div>':'')
       +'</div>';
   }).join('');}
+  requestAnimationFrame(function(){try{var lb=document.querySelector('#login-screen .login-box');var uc=document.getElementById('update-card');if(lb&&uc&&lb.offsetHeight>120){uc.style.height=lb.offsetHeight+'px';}}catch(e){}});
   checkForUpdate();
 }
 async function checkForUpdate(showToast){
@@ -5605,7 +5607,7 @@ function renderCommLog(){
   let h='<div class="ss-tab"><h3 style="margin-bottom:4px">🗨 Team Notes — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Notes from therapists to the team; session and school-shadow notes gather here automatically.</p>';
   if(["junior","senior"].includes(currentUser.role))h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
   var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(n.date)+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No team notes yet.</p>';
+  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(_fmtWhen(n.date))+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No notes posted here yet \u2014 session and school-shadow notes appear below.</p>';
   h+='</div>';
   var sess=DB.sessions.filter(function(s){if((s.setting||'therapy')==='shadow'||s.clientId!==selectedClientId)return false;var hasN=s.notes&&(''+s.notes).trim();var hasLn=(s.lessonData||[]).some(function(ld){return ld.note&&(''+ld.note).trim();});return hasN||hasLn;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
   h+='<div class="card"><div class="section-title">📝 1:1 session notes ('+sess.length+')</div>';
@@ -5614,7 +5616,7 @@ function renderCommLog(){
   var _shadowSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.notes&&(''+s.notes).trim()&&(s.setting||'therapy')==='shadow';}).map(function(s){return {date:s.createdAt||s.date,author:s.txName,text:s.notes};});
   var ssn=(ss.notes||[]).map(function(n){return {date:n.date,author:n.author,text:n.text};}).concat(_shadowSess).sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
   h+='<div class="card"><div class="section-title">🏫 School Shadow notes ('+ssn.length+')</div>';
-  h+=ssn.length?ssn.map(function(n){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(n.date)+'</strong>'+(n.author?' · '+esc((n.author||'').split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No school shadow notes yet.</p>';
+  h+=ssn.length?ssn.map(function(n){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(_fmtWhen(n.date))+'</strong>'+(n.author?' · '+esc((n.author||'').split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No school shadow notes yet.</p>';
   h+='</div></div>';
   return h;
 }
