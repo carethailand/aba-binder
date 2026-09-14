@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-C -->
+<!-- BUILD v2026-09-14-E -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-C</title>
+<title>CARE Client Binder v2026-09-14-E</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -287,6 +287,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 <body>
 
 <div id="login-screen">
+  <div style="display:flex;gap:18px;align-items:flex-start;justify-content:center;flex-wrap:wrap;padding:24px;width:100%;box-sizing:border-box">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:20px">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 46" width="110" height="38">
@@ -301,8 +302,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
     <div class="login-err" id="l-err">Invalid email or password.</div>
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
-    <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div><div id="update-panel" style="margin-top:16px;border-top:1px solid #eef1f4;padding-top:12px;text-align:left"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:6px">Latest update</div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55"></div><div id="update-status" style="margin-top:8px"></div></div>
-    
+    <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
+  </div>
+  <div class="login-box" style="display:flex;flex-direction:column;max-height:440px"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div><div id="update-status" style="margin-top:10px"></div></div>
   </div>
 </div>
 
@@ -325,12 +327,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-14-C';
+const APP_VERSION='v2026-09-14-E';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG={
   fixed:'Stopped an old/stale device from overwriting saved work; fixed a false "updated elsewhere" alert.',
-  improved:'School Shadow now uses one date (top bar) and is therapist-only to record; BIP graphs break for 4-week absences; manual plan-change markers.',
-  added:'Update panel on the login page with one-click Update; Team Notes and Sup Notes channels; School Shadow observation notes.'
+  improved:'Supervision type = 1:1 Overlap / Clinic / School Observation (label for reports; sups always see all tabs); School Shadow uses one date and is therapist-only; BIP graphs break for 4-week absences.',
+  added:'School Shadow session type (Type: 1:1 / School Shadow); update panel on the login page; Team Notes & Sup Notes channels.'
 };
 function initUpdatePanel(){
   var b=document.getElementById('update-body');
@@ -1047,15 +1049,15 @@ function startSession(){
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
-  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});
+  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
   render();
 }
 function startSessionFromBar(){
   hideUnsavedBanner();
   const d=(document.getElementById('ss-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
-  const ty=(document.getElementById('ss-type')||{}).value||'overlap';
-  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});
+  const ty=(document.getElementById('ss-type')||{}).value||'individual';
+  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
   render();
 }
 function confirmEndSession(){
@@ -2579,7 +2581,9 @@ function renderClientView(){
     {id:'report',l:'📄 Report'},
     {id:'schoolshadow',l:'🏫 School Shadow'}
   ];
-  const tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
+  let tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
+  var _actSess=getSessState();
+  if(['junior','senior'].includes(currentUser.role)&&_actSess.started&&_actSess.clientId===selectedClientId&&_actSess.setting==='shadow'){tabs=tabs.filter(function(t){return t.id!=='session';});if(selectedTab==='session')selectedTab='schoolshadow';}
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
   if((!isSup||_supSessMode)&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
@@ -2604,16 +2608,15 @@ function renderClientView(){
         +'<span style="color:#eba99d;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
         +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
-        +'<span class="ss-label">Type</span><select id="ss-type" onchange="updateSessState(\'sessType\',this.value)">'+sessTypeOpts+'</select>'
-        +'<span class="ss-label">Setting</span><select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_ssSetting==='therapy'?' selected':'')+'>🏠 1:1 Therapy</option><option value="school"'+(_ssSetting==='school'?' selected':'')+'>🏫 School</option></select>'
+        +'<span class="ss-label">Type</span><select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_ssSetting!=='shadow'?' selected':'')+'>🧩 1:1 Therapy</option><option value="shadow"'+(_ssSetting==='shadow'?' selected':'')+'>🏫 School Shadow</option></select>'
         +'<div style="flex:1"></div>'
         +_lastSessBtns
         +'<button style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="startSessionFromBar()">▶ Start Session</button>'
         +'</div>';
     } else {
-      const sessTypeLabel='1:1 Therapy';
       const _ssSettingActive=ss.setting||'therapy';
-      const settingBadge=_ssSettingActive==='school'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏠 1:1</span>';
+      const sessTypeLabel=_ssSettingActive==='shadow'?'School Shadow':'1:1 Therapy';
+      const settingBadge=_ssSettingActive==='shadow'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School Shadow</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🧩 1:1</span>';
       stickyBar='<div id="sess-sticky" class="ss-active">'
         +'<span class="ss-label">✅ SESSION IN PROGRESS</span>'
         +'<span class="ss-val">'+esc(c.name)+'</span>'
@@ -2633,7 +2636,8 @@ function renderClientView(){
     const sv=getSupState();
     if(!sv.clientId||sv.clientId!==selectedClientId){setSupState({clientId:selectedClientId,date:new Date().toISOString().slice(0,10),supType:'overlap',setting:'therapy',started:false});}
     const sv2=getSupState();
-    const supTypeOpts=['overlap','clinic'].map(v=>'<option value="'+v+'"'+(sv2.supType===v?' selected':'')+'>'+v.charAt(0).toUpperCase()+v.slice(1)+'</option>').join('');
+    const _supTypeLabels={overlap:'1:1 Overlap',clinic:'Clinic',school:'School Observation'};
+    const supTypeOpts=['overlap','clinic','school'].map(v=>'<option value="'+v+'"'+(sv2.supType===v?' selected':'')+'>'+_supTypeLabels[v]+'</option>').join('');
     const _svSetting=sv2.setting||'therapy';
     if(!sv2.started){
       supBar='<div id="sess-sticky" class="ss-idle">'
@@ -2641,16 +2645,15 @@ function renderClientView(){
         +'<span class="ss-val">'+esc(c.name)+'</span>'
         +'<span style="color:#eba99d;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="sv-date" value="'+sv2.date+'" onchange="updateSupState(\'date\',this.value)" style="width:130px">'
-        +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value)">'+supTypeOpts+'</select>'
-        +'<span class="ss-label">Setting</span><select id="sv-setting" onchange="updateSupState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_svSetting==='therapy'?' selected':'')+'>🏠 1:1</option><option value="school"'+(_svSetting==='school'?' selected':'')+'>🏫 School Obs</option></select>'
+        +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value);updateSupState(\'setting\',this.value===\'school\'?\'school\':\'therapy\')">'+supTypeOpts+'</select>'
         +'<div style="flex:1"></div>'
         +'<button class="unlock-exempt" style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
         +'<button class="unlock-exempt" style="background:#1f8ec4;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:6px" onclick="startSessionAsSup()">▶ Start Session (as therapist)</button>'
         +'</div>';
     } else {
-      const supTypeLabel=(sv2.supType||'overlap').charAt(0).toUpperCase()+(sv2.supType||'overlap').slice(1);
+      const supTypeLabel=({overlap:'1:1 Overlap',clinic:'Clinic',school:'School Observation'})[sv2.supType||'overlap']||'1:1 Overlap';
       const _svSettingActive=sv2.setting||'therapy';
-      const supSettingBadge=_svSettingActive==='school'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School Obs</span>':'';
+      const supSettingBadge='';
       supBar='<div id="sess-sticky" class="ss-active">'
         +'<span class="ss-label">✅ SUPERVISION IN PROGRESS</span>'
         +'<span class="ss-val">'+esc(c.name)+'</span>'
@@ -2782,8 +2785,8 @@ function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentU
 function renderSchoolShadowTab(){
   const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();
   const _isTherapist=['junior','senior'].includes(currentUser.role);
-  const active=_ssActive()&&_isTherapist;
   const _sess=getSessState();
+  const active=_isTherapist&&_sess.started&&_sess.clientId===selectedClientId&&_sess.setting==='shadow';
   const date=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:new Date().toISOString().slice(0,10);
   _ssDate=date;const wd=_ssWeekday(date);
   const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
@@ -2809,7 +2812,7 @@ function renderSchoolShadowTab(){
   const periods=slots.filter(function(s){return (((ss.grid[wd]||{})[s.id])||'').trim();}).map(function(s){return {id:s.id,time:s.time,subject:(ss.grid[wd]||{})[s.id]};});
   const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
   h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>';
-  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session to record data. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a session.')+'</div>';
+  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session with Type = School Shadow to record data. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a School Shadow session.')+'</div>';
   if(!targets.length){h+='<p style="color:var(--muted);font-size:.85rem">No school targets yet.'+(canSetup?' Add them in setup above.':'')+'</p>';}
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
