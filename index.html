@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-12-C -->
+<!-- BUILD v2026-09-14-A -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-12-C</title>
+<title>CARE Client Binder v2026-09-14-A</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -402,14 +402,14 @@ const DT_SIMULTANEOUS=[
   'Generalization (New contexts)'
 ];
 
-function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;if(c.behaviorNotes&&c.behaviorNotes.length)o._behaviorNotes=c.behaviorNotes;if(c.driveLinks&&Object.keys(c.driveLinks).length)o._driveLinks=c.driveLinks;if(c.starred&&Object.keys(c.starred).length)o._starred=c.starred;return Object.keys(o).length?o:null;})()};}
-function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _bn=_sn&&_sn._behaviorNotes?_sn._behaviorNotes:[];const _dl=_sn&&_sn._driveLinks?_sn._driveLinks:{};const _st=_sn&&_sn._starred?_sn._starred:{};const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh,behaviorNotes:_bn,driveLinks:_dl,starred:_st};}
+function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;if(c.behaviorNotes&&c.behaviorNotes.length)o._behaviorNotes=c.behaviorNotes;if(c.driveLinks&&Object.keys(c.driveLinks).length)o._driveLinks=c.driveLinks;if(c.starred&&Object.keys(c.starred).length)o._starred=c.starred;if(c.commNotes&&c.commNotes.length)o._commNotes=c.commNotes;return Object.keys(o).length?o:null;})()};}
+function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _bn=_sn&&_sn._behaviorNotes?_sn._behaviorNotes:[];const _dl=_sn&&_sn._driveLinks?_sn._driveLinks:{};const _st=_sn&&_sn._starred?_sn._starred:{};const _cn=_sn&&_sn._commNotes?_sn._commNotes:[];const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh,behaviorNotes:_bn,driveLinks:_dl,starred:_st,commNotes:_cn};}
 
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
 
-function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[]}),created_date:b.createdDate||null};}
-function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[];try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist};}
+function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[],breaks:Array.isArray(b.breaks)?b.breaks:[]}),created_date:b.createdDate||null};}
+function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[],_breaks=[];try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];_breaks=Array.isArray(_sn.breaks)?_sn.breaks:[];}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist,breaks:_breaks};}
 
 function sessionToRow(s){const _ld=s.lessonData||[];const _bd=s.bipData||[];const _ad=s.abcData||[];return{id:s.id,client_id:s.clientId,date:s.date,tx_id:s.txId||null,tx_name:s.txName||null,sess_time:s.sessTime||null,sess_type:s.sessType||'overlap',setting:s.setting||'therapy',parent_note:s.parentNote||null,notes:s.notes||null,lesson_data:_ld,bip_data:_bd,abc_data:_ad};}
 function rowToSession(r){
@@ -458,10 +458,12 @@ let _staleFlag=false;
 function _showStaleBanner(){
   var el=document.getElementById('stale-banner');
   if(!el){el=document.createElement('div');el.id='stale-banner';el.className='no-print';el.style.cssText='position:sticky;top:0;z-index:9999;background:#fff4d6;border-bottom:1px solid #f0d98f;color:#8a6410;padding:8px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.85rem';document.body.insertBefore(el,document.body.firstChild);}
-  el.innerHTML='\U0001f504 <strong>This case was updated elsewhere</strong> since you opened it. Reload to avoid overwriting their changes. <span style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="reloadClientData()">Reload now</button><button class="btn btn-sm btn-outline" onclick="_hideStaleBanner()">Dismiss</button></span>';
+  el.innerHTML='🔄 <strong>This case was updated elsewhere</strong> since you opened it. Reload to avoid overwriting their changes. <span style="margin-left:auto;display:flex;gap:8px"><button class="btn btn-sm btn-primary" onclick="reloadClientData()">Reload now</button><button class="btn btn-sm btn-outline" onclick="_hideStaleBanner()">Dismiss</button></span>';
   el.style.display='flex';
 }
 function _hideStaleBanner(){_staleFlag=false;var el=document.getElementById('stale-banner');if(el)el.style.display='none';}
+function _cliRowSig(r){try{return JSON.stringify(clientToRow(rowToClient(r)));}catch(e){return '';}}
+function _lesRowSig(r){try{return JSON.stringify(lessonToRow(rowToLesson(r)));}catch(e){return '';}}
 async function _checkFreshness(){
   try{
     if(!currentUser||currentView!=='client'||!selectedClientId)return;
@@ -474,9 +476,9 @@ async function _checkFreshness(){
     const cRows=res[0],lRows=res[1];
     if(cRows===null||lRows===null)return;
     let stale=false;
-    (cRows||[]).forEach(function(r){if(_recBaseline['clients:'+r.id]!==JSON.stringify(clientToRow(rowToClient(r))))stale=true;});
+    (cRows||[]).forEach(function(r){var b=_recBaseline['clients:'+r.id];if(b&&_cliRowSig(JSON.parse(b))!==_cliRowSig(r))stale=true;});
     const seen={};
-    (lRows||[]).forEach(function(r){seen[r.id]=1;if(_recBaseline['lessons:'+r.id]!==JSON.stringify(lessonToRow(rowToLesson(r))))stale=true;});
+    (lRows||[]).forEach(function(r){seen[r.id]=1;var b=_recBaseline['lessons:'+r.id];if(!b){stale=true;}else if(_lesRowSig(JSON.parse(b))!==_lesRowSig(r)){stale=true;}});
     (DB.lessons||[]).forEach(function(l){if(l.clientId===cid&&!seen[l.id]&&_recBaseline['lessons:'+l.id]!==undefined)stale=true;});
     if(stale&&!_staleFlag){_staleFlag=true;_showStaleBanner();}
   }catch(e){}
@@ -2524,6 +2526,7 @@ function renderClientView(){
     {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
     {id:'notes',l:'💬 Notes'},
+    {id:'commlog',l:'📨 Comm Log'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'session',l:'📝 Session'},
@@ -2534,6 +2537,7 @@ function renderClientView(){
     {id:'schoolinfo',l:'🗂 Case Info'},
     {id:'checklist',l:'☑ Checklist'},
     {id:'notes',l:'💬 Notes'},
+    {id:'commlog',l:'📨 Comm Log'},
     {id:'abc',l:'ABC'},
     {id:'behavior',l:'🔔 Behavior'},
     {id:'lessons',l:'📋 Program Edit'+(flags?' ⚑':'')},
@@ -2681,6 +2685,7 @@ function renderTab(){
   if(selectedTab==='maintenance')return renderMaintenanceTab();
   if(selectedTab==='behavior')return renderBehaviorTab();
   if(selectedTab==='abc')return renderABCTab();
+  if(selectedTab==='commlog')return renderCommLog();
   if(selectedTab==='notes')return renderNotesTab();
   if(selectedTab==='report')return renderReport();
   return '';
@@ -2708,7 +2713,7 @@ function _ssBucket(t){var mn=_ssTimeMin(t);return mn<720?'Morning':mn<780?'Lunch
 function _ssSortSlots(a){return (a||[]).slice().sort(function(x,y){return _ssTimeMin(x.time)-_ssTimeMin(y.time);});}
 function _ssGet(){var c=_ssClient();if(!c.schoolShadow)c.schoolShadow={slots:[],grid:{},targets:[],net:[],log:{},netLog:{}};var s=c.schoolShadow;
   if(s.timetable&&!s.slots){var tm={};var slots=[];var grid={};_SS_DAYS.forEach(function(d){grid[d]={};});_SS_DAYS.forEach(function(d){(s.timetable[d]||[]).forEach(function(p){var key=(p.time||'').trim();var sid;if(tm[key]){sid=tm[key];}else{sid=uid();tm[key]=sid;slots.push({id:sid,time:key});}grid[d][sid]=p.subject||'';});});s.slots=slots;s.grid=grid;delete s.timetable;}
-  if(!s.slots)s.slots=[];if(!s.grid)s.grid={};_SS_DAYS.forEach(function(d){if(!s.grid[d])s.grid[d]={};});if(!s.targets)s.targets=[];if(!s.net)s.net=[];if(!s.log)s.log={};if(!s.netLog)s.netLog={};
+  if(!s.slots)s.slots=[];if(!s.grid)s.grid={};_SS_DAYS.forEach(function(d){if(!s.grid[d])s.grid[d]={};});if(!s.targets)s.targets=[];if(!s.net)s.net=[];if(!s.log)s.log={};if(!s.netLog)s.netLog={};if(!s.notes)s.notes=[];
   return s;}
 function _ssSave(){sbSaveClient(_ssClient());}
 function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role);}
@@ -2738,6 +2743,8 @@ function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net|
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
 function _ssSaveEntry(){if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
 function _ssSaveNetDay(){if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();render();}
+function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
 function renderSchoolShadowTab(){
   const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();const active=_ssActive();
   const today=new Date().toISOString().slice(0,10);if(!_ssDate)_ssDate=today;
@@ -2745,6 +2752,11 @@ function renderSchoolShadowTab(){
   const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
   const ttGtc='84px repeat(5,minmax(96px,1fr)) 26px';
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
+  var _canSSNote=['admin','supervisor','director'].includes(currentUser.role);
+  var _ssNotes=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
+  var _ssNoteCards=_ssNotes.length?_ssNotes.map(function(nn){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+(_canSSNote?' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+nn.id+'" onclick="event.preventDefault();_ssDelNote(this)">✕</button>':'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(nn.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
+  var _ssNoteAdd=_canSSNote?'<div style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><textarea id="ssn-note-in" rows="2" placeholder="Overlap overview / recommendations for the team..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="_ssAddNote()">Add</button></div>':'';
+  h+='<div class="card"><div class="section-title">📝 Supervisor observation notes</div>'+_ssNoteCards+_ssNoteAdd+'</div>';
   if(canSetup){
     var ttHead='<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;margin-bottom:6px;font-size:.72rem;font-weight:700;color:#234b63"><span style="text-align:center">Time</span>'+_SS_DAYS.map(function(d){return '<span style="text-align:center">'+_SS_DAYLABEL[d].slice(0,3)+'</span>';}).join('')+'<span></span></div>';
     var rows=slots.map(function(s){var subs=_SS_DAYS.map(function(d){return '<input type="text" data-day="'+d+'" data-slot="'+s.id+'" value="'+esc((ss.grid[d]||{})[s.id]||'')+'" onchange="_ssGridSet(this)" placeholder="—" style="width:100%;font-size:.8rem;padding:4px 6px;box-sizing:border-box">';}).join('');return '<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;align-items:center;margin-bottom:6px"><input type="text" data-id="'+s.id+'" value="'+esc(s.time||'')+'" onchange="_ssSlotTime(this)" placeholder="8:00" style="width:100%;font-size:.8rem;padding:4px 6px;text-align:center;box-sizing:border-box">'+subs+'<button type="button" data-id="'+s.id+'" onclick="_ssSlotDel(this)" style="color:#a3392b;background:none;border:none;cursor:pointer;font-size:.9rem">✕</button></div>';}).join('');
@@ -2834,7 +2846,7 @@ function renderSessionEntry(){
   const held=lessons.filter(l=>l.phase==='hold');
   const blocks=active.map(l=>renderLessonSessionBlock(l)).join('');
   const maintBlock=maint.length?'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0">🔁 Maintenance Lessons</h2><button class="btn btn-outline btn-sm no-print" onclick="setTab(\'maintenance\')">Open Maintenance tab →</button></div><p style="font-size:.78rem;color:var(--muted);margin:0 0 10px">Maintenance data is recorded in the Maintenance tab.</p>'+maint.map(function(l){var _n=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status==='mastered';}).length;return '<div class="cl-row" style="align-items:center"><span style="flex:1">'+esc(l.name)+' <span class="badge badge-green" style="font-size:.68rem">MAINT</span></span><span style="font-size:.76rem;color:var(--muted)">'+esc(l.maintenanceSchedule||'schedule not set')+(_n?' · '+_n+' target'+(_n>1?'s':''):'')+'</span></div>';}).join('')+'</div>':'';
-  const heldBlock=held.length?'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0">⏸ Held Lessons</h2><span style="font-size:.76rem;color:var(--muted)">'+held.length+' paused · review only</span></div>'+held.map(renderHeldLessonReadOnly).join('')+'</div>':'';
+  const heldBlock=held.length?'<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0">⏸ Held Lessons</h2><span style="font-size:.76rem;color:var(--muted)">'+held.length+' paused</span></div><p style="font-size:.78rem;color:var(--muted);margin:0 0 10px">Paused — not recorded. A supervisor can resume them in Program Edit.</p>'+held.map(function(l){var _n=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status!=='mastered';}).length;return '<div class="cl-row" style="align-items:center"><span style="flex:1">'+esc(l.name)+' <span class="badge" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-size:.68rem">ON HOLD</span></span><span style="font-size:.76rem;color:var(--muted)">'+(_n?_n+' target'+(_n>1?'s':''):'')+'</span></div>';}).join('')+'</div>':'';
   const txNotesCard='<div class="card" style="margin-top:14px">'
     +'<h2 style="margin-bottom:8px">📝 Session Notes</h2>'
     +'<p style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Record anything significant from this session — behavior observations, client mood, parent communication, environment notes, etc. <strong>Tip:</strong> Type as you go — notes are kept until you End Session.</p>'
@@ -2848,7 +2860,7 @@ function renderSessionEntry(){
     +'<p style="font-size:.78rem;color:var(--muted);margin-bottom:8px">Brief note visible to parents about how today went.</p>'
     +'<textarea id="parent-note-input" rows="3" placeholder="e.g. Great session today! AVM managed Phonics independently for the first time..." style="font-size:.84rem">'+esc(_ssNow.parentNote||'')+'</textarea>'
     +'</div>':'';
-  return '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+'<div style="flex:1;min-width:170px">'+'<div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:3px">'+'<span style="font-weight:700;color:var(--text)">Session coverage</span>'+'<span id="cov-bar-lbl" style="color:var(--muted)">0 / 0 recorded</span></div>'+'<div style="height:9px;background:#e6e9ee;border-radius:5px;overflow:hidden">'+'<div id="cov-bar-fill" style="height:9px;width:0%;background:#e6e9ee;transition:width .2s,background .2s"></div></div></div>'+'<div id="draft-ts" style="font-size:.72rem;color:var(--muted);white-space:nowrap">Auto-saving\u2026</div>'+'</div>'+heldBlock+(blocks||'<div class="empty-state">No active lessons.</div>')+maintBlock+txNotesCard+_parentNoteCard;
+  return '<div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">'+'<div style="flex:1;min-width:170px">'+'<div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:3px">'+'<span style="font-weight:700;color:var(--text)">Session coverage</span>'+'<span id="cov-bar-lbl" style="color:var(--muted)">0 / 0 recorded</span></div>'+'<div style="height:9px;background:#e6e9ee;border-radius:5px;overflow:hidden">'+'<div id="cov-bar-fill" style="height:9px;width:0%;background:#e6e9ee;transition:width .2s,background .2s"></div></div></div>'+'<div id="draft-ts" style="font-size:.72rem;color:var(--muted);white-space:nowrap">Auto-saving\u2026</div>'+'</div>'+(blocks||'<div class="empty-state">No active lessons.</div>')+maintBlock+heldBlock+txNotesCard+_parentNoteCard;
 }
 
 function renderLessonSessionBlock(lesson){
@@ -2897,12 +2909,13 @@ function _ftMarkerCell(color,label){
     +'<div style="font-size:10px;color:'+(color==='#4fa14a'?'#2f6b2c':'#a35f0a')+';margin-top:2px;white-space:nowrap">'+label+'</div>'
     +'</div></div>';
 }
-function _ftStrip(lesson,target,points,label){
+function _ftStrip(lesson,target,points,label,sd){
   points=(points||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   if(!points.length)return '';
   const marks=[];
   (target.dtStepChanges||[]).filter(function(c){return c.date;}).forEach(function(c){marks.push({date:c.date,color:'#EF9F27',label:'S'+((c.to||0)+1)});});
   if(target.masteredDate)marks.push({date:target.masteredDate,color:'#4fa14a',label:'M'});
+  if(sd&&sd.modHistory)sd.modHistory.forEach(function(m){if(m.date)marks.push({date:m.date,color:'#8b5cf6',label:'✎'});});
   const byGap={};
   marks.forEach(function(m){
     var idx=points.findIndex(function(p){return p.date>=m.date;});
@@ -3031,7 +3044,7 @@ function renderTargetSessionEntry(lesson,sd,target){
       html+='<button class="ft-btn" data-id="ft_'+id+'" data-val="N/A" onclick="toggleFT(this)" style="flex:1;padding:8px 0;font-size:.95rem;font-weight:700;border-radius:6px;border:1px solid var(--border);background:var(--bg);cursor:pointer">N/A</button>';
       html+='</div>';
     }
-    html+=_ftStrip(lesson,target,target.firstTrialData||[],'Recent');
+    html+=_ftStrip(lesson,target,target.firstTrialData||[],'Recent',sd);
     html+=_ftCriteriaProgress(lesson,target);
     html+='</div>';
   }
@@ -3051,7 +3064,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<p style="font-size:.78rem;color:var(--muted)">First trial recorded by TX during session.</p>';
   }
   // history dots (all roles see this)
-  html+=_ftStrip(lesson,target,target.firstTrialData||[],'Data recorded');
+  html+=_ftStrip(lesson,target,target.firstTrialData||[],'Data recorded',sd);
   html+='</div>';
   } // end First Trial recorder
 
@@ -3149,7 +3162,7 @@ function drawSessionGraph(lesson,sd,target,canvasId){
   const sgSdModLines=((sd&&sd.modHistory)||[]).map(function(m){
     if(!m.date||!rawDates.length)return null;
     const _ai=rawDates.findIndex(function(d){return d>=m.date;});
-    return _ai>=0?{idx:_ai}:null;
+    return _ai>=0?{idx:_ai,label:m.label}:null;
   }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
   const sgSdModPlugin=_makeModPlugin('sgSdMod',sgSdModLines);
   const sgPhasePlugin={id:'sgPhaseLines',afterDraw(chart){
@@ -3894,7 +3907,7 @@ function renderLessonCard(lesson){
       let ratingInfo='';
       if(t.dataType==='tally'&&t.tallyGoal){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Goal: '+t.tallyGoal+(t.tallyPeriod?' per '+t.tallyPeriod+' min':'')+'</p>';}
       if(t.dataType==='rating'&&t.ratingScale){ratingInfo='<p style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Scale: '+Object.entries(t.ratingScale.labels).map(([k,v])=>k+'='+v).join(' · ')+'</p>';}
-      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;min-width:170px;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+_ftStrip(lesson,t,t.firstTrialData||[],'Data recorded')
+      return '<div class="target-block" style="margin-bottom:8px"><div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:6px"><span style="flex:1;min-width:170px;font-weight:600;font-size:.87rem">'+esc(t.name)+'</span><span class="badge badge-'+(t.dataType==='ta'?'green':t.dataType==='rating'?'purple':t.dataType==='tally'?'orange':'blue')+'">'+dtLabel(t.dataType)+'</span>'+(t.teachingSteps&&t.teachingSteps.length?'<span class="badge" style="background:#e2f0f7;color:#1a6f94;font-size:.72rem" title="Current teaching step">📍 Step '+((t.dtStepIndex||0)+1)+': '+(t.teachingSteps[t.dtStepIndex||0]||'')+'</span>':'')+'<span class="target-status status-'+t.status+'">'+t.status.replace(/_/g,' ')+'</span>'+editBtn+'</div>'+chainInfo+ratingInfo+(t.note?'<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:6px">📌 '+esc(t.note)+'</div>':'')+(isFlagged?'<div class="mastery-flag">⚑ <strong>Criteria met!</strong> '+confirmBtns+'</div>':'')+(t.introducedDate?'<p style="font-size:.75rem;color:var(--muted)">Introduced: '+t.introducedDate+(t.masteredDate?' | Mastered: '+t.masteredDate:'')+'</p>':'')+_ftStrip(lesson,t,t.firstTrialData||[],'Data recorded',sd)
       +(t.dataType!=='checklist'?'<div class="chart-wrap" id="wrap_lch_'+lesson.id+'_'+sd.id+'_'+t.id+'" style="height:140px"><canvas id="'+chartId+'" style="height:140px"></canvas></div>':'')+'</div>';
     }).join('');
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
@@ -3921,7 +3934,7 @@ function renderLessonCard(lesson){
         +'</div>';
     }
     if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
-    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbe0da;color:#a3392b;border:1px solid #e6b3aa" onclick="event.stopPropagation();deleteSD(\''+lesson.id+'\',\''+sd.id+'\')" title="Delete this SD">🗑</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
+    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();markSDChange(\''+lesson.id+'\',\''+sd.id+'\')" title="Mark a plan change on the graph">✎ Change</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbe0da;color:#a3392b;border:1px solid #e6b3aa" onclick="event.stopPropagation();deleteSD(\''+lesson.id+'\',\''+sd.id+'\')" title="Delete this SD">🗑</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -4015,7 +4028,7 @@ function _makeModPlugin(pid,lines){
       c2.beginPath();c2.moveTo(x,yA.top);c2.lineTo(x,yA.bottom);c2.stroke();
       c2.setLineDash([]);
       c2.font='bold 8px sans-serif';
-      const tag='✎ Plan edited';const tw=c2.measureText(tag).width+8;
+      const tag=pl.label?('✎ '+pl.label):'✎ Plan edited';const tw=c2.measureText(tag).width+8;
       c2.fillStyle='#8b5cf6';
       c2.beginPath();c2.rect(x-tw/2,yA.top-1,tw,13);c2.fill();
       c2.fillStyle='#fff';c2.textAlign='center';
@@ -4064,7 +4077,7 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
   const sdModLines=((sd&&sd.modHistory)||[]).map(function(m){
     if(!m.date||!sessionDates.length)return null;
     const _ai=sessionDates.findIndex(function(d){return d>=m.date;});
-    return _ai>=0?{idx:_ai}:null;
+    return _ai>=0?{idx:_ai,label:m.label}:null;
   }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
   const sdModPlugin=_makeModPlugin('sdMod',sdModLines);
   // Custom plugin: draw vertical phase change lines + labels
@@ -4474,7 +4487,7 @@ function saveEditSD(lId,sId){if(!requireActiveSession())return;
   sd.teachingStyle=(document.getElementById('esd-ts')||{value:'DTT'}).value||'DTT';
   sd.teachingSteps=(document.getElementById('esd-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
   const _afterSD=JSON.stringify({sd:sd.sd||'',response:sd.response||'',teachingStyle:sd.teachingStyle||'DTT',teachingSteps:sd.teachingSteps||[]});
-  if(_afterSD!==_beforeSD){if(!Array.isArray(sd.modHistory))sd.modHistory=[];sd.modHistory.push({date:new Date().toISOString().slice(0,10),by:currentUser.id,byName:currentUser.name});}
+  /* plan-change is now manual (markSDChange) */
   saveData();closeModal();render();
 }
 // ── Edit lesson / target ──
@@ -4876,7 +4889,7 @@ function renderBehaviorTab(){
     const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&(b.setting||'therapy')===_bipSetting&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date));
     const _isSup2=['supervisor','director'].includes(currentUser.role);
     const _copySchBtn=(_isSup2&&(bip.setting||'therapy')==='therapy')?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();copyBIPToSchool(\''+bip.id+'\')" style="color:#8a6410;border-color:#c98a12">🏫 Copy to School</button>':'';
-    const editBipBtn=_isSup2?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button> '+_copySchBtn:'';
+    const editBipBtn=_isSup2?'<button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();editBIP(\''+bip.id+'\')">✏ Edit</button> <button class="btn btn-xs btn-danger no-print" onclick="event.stopPropagation();deleteBIP(\''+bip.id+'\')">✕</button> <button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();markBIPBreak(\''+bip.id+'\')" title="Mark sick / absence break">⟋ Break</button> <button class="btn btn-xs btn-outline no-print" onclick="event.stopPropagation();markBIPChange(\''+bip.id+'\')" title="Mark a plan change on the graph">✎ Change</button> '+_copySchBtn:'';
     const fnBadges=allFns.map(f=>'<span style="background:'+bipFnColor(f)+'22;color:'+bipFnColor(f)+';border:1px solid '+bipFnColor(f)+'44;border-radius:4px;padding:1px 7px;font-size:.74rem;font-weight:600">'+bipFnLabel(f)+'</span>').join(' ');
     const bipSettingBadge=(bip.setting||'therapy')==='school'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏫 School</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 7px;font-size:.72rem;font-weight:600">🏠 1:1</span>';
     const lastEntry=logs.length?logs[logs.length-1]:null;
@@ -5121,6 +5134,76 @@ function saveBIPField(bipId,field,value){if(!requireActiveSession())return;
 // BIP — draw charts
 // ═══════════════════════════════════════════════════════
 function _bLogTs(b){var t=parseInt((''+(b.id||'')).slice(7),36);return isNaN(t)?0:t;}
+function markSDChange(lid,sdid){
+  if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can mark plan changes.');return;}
+  var l=DB.lessons.find(function(x){return x.id===lid;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===sdid;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
+  sd.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
+  var existing=sd.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-l="'+lid+'" data-sd="'+sdid+'" data-id="'+m.id+'" onclick="delSDChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
+  modal('<h3 style="margin-bottom:8px">Mark plan change</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the % graph and a ✎ marker on the first-trial strip.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. faded prompt, added SD-R" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-l="'+lid+'" data-sd="'+sdid+'" onclick="addSDChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+}
+function addSDChange(btn){
+  var l=DB.lessons.find(function(x){return x.id===btn.dataset.l;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===btn.dataset.sd;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
+  var d=(document.getElementById('chg-date')||{}).value;var lb=((document.getElementById('chg-label')||{}).value||'').trim();
+  if(!d){toast('Pick a date');return;}
+  sd.modHistory.push({id:uid(),date:d,label:lb,by:currentUser.id,byName:currentUser.name});
+  saveData();closeModal();render();
+}
+function delSDChange(btn){
+  var l=DB.lessons.find(function(x){return x.id===btn.dataset.l;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===btn.dataset.sd;});if(!sd)return;
+  sd.modHistory=(sd.modHistory||[]).filter(function(m){return m.id!==btn.dataset.id;});
+  saveData();markSDChange(l.id,sd.id);
+}
+function markBIPChange(bipId){
+  if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can mark plan changes.');return;}
+  var bip=(DB.bips||[]).find(function(x){return x.id===bipId;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
+  bip.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
+  var existing=bip.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-bip="'+bipId+'" data-id="'+m.id+'" onclick="delBIPChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
+  modal('<h3 style="margin-bottom:8px">Mark plan change — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the BIP graph.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. changed extinction, new reinforcer" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+}
+function addBIPChange(btn){
+  var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
+  var d=(document.getElementById('chg-date')||{}).value;var lb=((document.getElementById('chg-label')||{}).value||'').trim();
+  if(!d){toast('Pick a date');return;}
+  bip.modHistory.push({id:uid(),date:d,label:lb,by:currentUser.id,byName:currentUser.name});
+  sbSaveBIP(bip);closeModal();render();
+}
+function delBIPChange(btn){
+  var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;
+  bip.modHistory=(bip.modHistory||[]).filter(function(m){return m.id!==btn.dataset.id;});
+  sbSaveBIP(bip);markBIPChange(bip.id);
+}
+function markBIPBreak(bipId){
+  if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can mark breaks.');return;}
+  var bip=(DB.bips||[]).find(function(x){return x.id===bipId;});if(!bip)return;if(!Array.isArray(bip.breaks))bip.breaks=[];
+  var existing=bip.breaks.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(bk){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(bk.date)+' — '+esc(bk.reason||'break')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-bip="'+bipId+'" data-id="'+bk.id+'" onclick="delBIPBreak(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No breaks marked.</p>';
+  modal('<h3 style="margin-bottom:8px">Mark a break — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Breaks the graph line where data collection paused (illness, absence). Gaps over 4 weeks break automatically.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="brk-date" type="date" value="'+new Date().toISOString().slice(0,10)+'" style="display:block"></label><label style="font-size:.8rem">Reason<select id="brk-reason" style="display:block"><option value="sick">Sick</option><option value="away">Away</option><option value="other">Other</option></select></label><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPBreak(this)">Add break</button></div><div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+}
+function addBIPBreak(btn){
+  var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;if(!Array.isArray(bip.breaks))bip.breaks=[];
+  var d=(document.getElementById('brk-date')||{}).value;var r=(document.getElementById('brk-reason')||{}).value||'break';
+  if(!d){toast('Pick a date');return;}
+  bip.breaks.push({id:uid(),date:d,reason:r});
+  sbSaveBIP(bip);closeModal();render();
+}
+function delBIPBreak(btn){
+  var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;
+  bip.breaks=(bip.breaks||[]).filter(function(x){return x.id!==btn.dataset.id;});
+  sbSaveBIP(bip);markBIPBreak(bip.id);
+}
+function _makeBreakPlugin(pid,breaks){
+  return {id:pid,afterDraw:function(chart){
+    if(!breaks||!breaks.length)return;
+    var c2=chart.ctx,xA=chart.scales.x,yA=chart.scales.y;
+    breaks.forEach(function(bk){
+      if(bk.idx>=xA.ticks.length)return;
+      var x=xA.getPixelForTick(bk.idx);
+      c2.save();
+      c2.strokeStyle='#9aa3ad';c2.lineWidth=2;c2.setLineDash([2,3]);
+      c2.beginPath();c2.moveTo(x,yA.top);c2.lineTo(x,yA.bottom);c2.stroke();
+      c2.restore();
+    });
+  }};
+}
 function drawBIPChart(bip){
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
@@ -5134,12 +5217,28 @@ function drawBIPChart(bip){
   const _sessKeys=[];const _sessMeta={};
   logs.forEach(function(b){var k=b.date+'|'+(b.txName||'');if(!_sessMeta[k]){_sessMeta[k]={date:b.date,tx:b.txName||''};_sessKeys.push(k);}});
   const _logDates=_sessKeys.map(function(k){return _sessMeta[k].date;});
+  const _daysBetween=function(d1,d2){return Math.round((new Date(d2+'T00:00')-new Date(d1+'T00:00'))/86400000);};
+  var _events=_sessKeys.map(function(k){return {type:'session',key:k,date:_sessMeta[k].date};});
+  (Array.isArray(bip.breaks)?bip.breaks:[]).forEach(function(bk){if(bk.date)_events.push({type:'break',date:bk.date,label:bk.reason||'break',manual:true});});
+  _events.sort(function(a,b){if(a.date!==b.date)return a.date<b.date?-1:1;return (a.type==='break'?0:1)-(b.type==='break'?0:1);});
+  var _cols=[];
+  _events.forEach(function(ev){
+    if(ev.type==='session'){
+      var prev=_cols[_cols.length-1];
+      if(prev&&prev.type==='session'){var gap=_daysBetween(prev.date,ev.date);if(gap>28)_cols.push({type:'break',label:Math.round(gap/7)+'w',auto:true});}
+      _cols.push(ev);
+    }else{_cols.push(ev);}
+  });
+  var _breakIdx=[];_cols.forEach(function(c,i){if(c.type==='break')_breakIdx.push(i);});
+  var _breakCells=_breakIdx.map(function(i){return {idx:i};});
+  var _spansBreak=function(a,b){var lo=Math.min(a,b),hi=Math.max(a,b);for(var i=0;i<_breakIdx.length;i++){if(_breakIdx[i]>lo&&_breakIdx[i]<hi)return true;}return false;};
   const bipModLines=((bip.modHistory)||[]).map(function(m){
-    if(!m.date||!_logDates.length)return null;
-    const _ai=_logDates.findIndex(function(d){return d>=m.date;});
-    return _ai>=0?{idx:_ai}:null;
+    if(!m.date)return null;
+    var ci=-1;for(var i=0;i<_cols.length;i++){if(_cols[i].type==='session'&&_cols[i].date>=m.date){ci=i;break;}}
+    return ci>=0?{idx:ci,label:m.label}:null;
   }).filter(Boolean).filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});
   const bipModPlugin=_makeModPlugin('bipMod',bipModLines);
+  const bipBreakPlugin=_makeBreakPlugin('bipBreak',_breakCells);
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
@@ -5154,15 +5253,16 @@ function drawBIPChart(bip){
     const existing=Chart.getChart(canvas);if(existing)existing.destroy();
 
     // x-axis = unique sessions; each function plotted at the same x for the same session
-    const labels=_sessKeys.map(function(k){return fmtDateShort(_sessMeta[k].date)+'\n'+(_sessMeta[k].tx?_sessMeta[k].tx.split(' ')[0]:'');});
+    const labels=_cols.map(function(c){return c.type==='break'?('⟋ '+(c.label||'break')):(fmtDateShort(c.date)+'\n'+((_sessMeta[c.key]&&_sessMeta[c.key].tx)?_sessMeta[c.key].tx.split(' ')[0]:''));});
     const _agg=function(arr){if(!arr||!arr.length)return null;var sum=arr.reduce(function(a,x){return a+x;},0);return meas==='frequency'?sum:sum/arr.length;};
     const datasets=allFns.map(function(fn,fi){
       const color=bipFnColor(fn);
-      const fData=_sessKeys.map(function(k){
-        var vals=logs.filter(function(b){return (b.date+'|'+(b.txName||''))===k&&(b.function===fn||(allFns.length===1&&!b.function));}).map(function(b){return bipValForMeas(b,meas);}).filter(function(v){return v!=null;});
+      const fData=_cols.map(function(c){
+        if(c.type!=='session')return null;
+        var vals=logs.filter(function(b){return (b.date+'|'+(b.txName||''))===c.key&&(b.function===fn||(allFns.length===1&&!b.function));}).map(function(b){return bipValForMeas(b,meas);}).filter(function(v){return v!=null;});
         return _agg(vals);
       });
-      return{label:bipFnLabel(fn),data:fData,borderColor:color,backgroundColor:'transparent',tension:0,fill:false,pointRadius:4,borderWidth:2,borderDash:fi===0?[]:(fi===1?[6,4]:[2,3]),spanGaps:true};
+      return{label:bipFnLabel(fn),data:fData,borderColor:color,backgroundColor:'transparent',tension:0,fill:false,pointRadius:4,borderWidth:2,borderDash:fi===0?[]:(fi===1?[6,4]:[2,3]),spanGaps:true,segment:{borderColor:function(ctx){return _spansBreak(ctx.p0DataIndex,ctx.p1DataIndex)?'rgba(0,0,0,0)':color;}}};
     });
 
     // goal line
@@ -5171,7 +5271,7 @@ function drawBIPChart(bip){
     }
 
     const yLabel=measYLabels[meas]||meas;
-    new Chart(canvas,{type:'line',data:{labels,datasets},plugins:[bipModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},
+    new Chart(canvas,{type:'line',data:{labels,datasets},plugins:[bipModPlugin,bipBreakPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:16}},
       plugins:{legend:{display:allFns.length>1||bip.goalValue!=null,labels:{boxWidth:12,font:{size:10}}},
         tooltip:{callbacks:{title:ctx=>ctx[0].label}}},
       scales:{y:{beginAtZero:true,grace:'8%',title:{display:true,text:yLabel,font:{size:10}}},
@@ -5285,7 +5385,7 @@ function saveEditBIP(bipId){if(!requireActiveSession())return;
   bip.goalValue=gvalEl&&gvalEl.value!==''?parseFloat(gvalEl.value):null;
   bip.baseline=document.getElementById('eb-base').value.trim();
   const _afterBIP=JSON.stringify({name:bip.name,description:bip.description||'',measurements:bip.measurements||[],functions:bip.functions||[],goal:bip.goal||'',goalDeadline:bip.goalDeadline||'',goalValue:(bip.goalValue==null?null:bip.goalValue),baseline:bip.baseline||''});
-  if(_afterBIP!==_beforeBIP){if(!Array.isArray(bip.modHistory))bip.modHistory=[];bip.modHistory.push({date:new Date().toISOString().slice(0,10),by:currentUser.id,byName:currentUser.name});}
+  /* plan-change is now manual (markBIPChange) */
   saveData();render();closeModal();
 }
 
@@ -5362,6 +5462,37 @@ function deleteABCEntry(id){
   sbFetch('abc_data','DELETE',null,'id=eq.'+id);
   DB.abcData=DB.abcData.filter(a=>a.id!==id);
   toast('Deleted ✓');render();
+}
+function addCommNote(){
+  if(!currentUser)return;
+  var el=document.getElementById('comm-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}
+  var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.commNotes)c.commNotes=[];
+  c.commNotes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});
+  sbSaveClient(c);render();
+}
+function delCommNote(btn){
+  var c=DB.clients.find(function(x){return x.id===selectedClientId;});var n=(c.commNotes||[]).find(function(x){return x.id===btn.dataset.id;});
+  if(!n)return;
+  if(!(['admin','supervisor','director'].includes(currentUser.role)||n.author===currentUser.name)){toast('You can only delete your own note.');return;}
+  c.commNotes=(c.commNotes||[]).filter(function(x){return x.id!==btn.dataset.id;});sbSaveClient(c);render();
+}
+function renderCommLog(){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});
+  const ss=c.schoolShadow||{};
+  let h='<div class="ss-tab" style="max-width:760px"><h3 style="margin-bottom:4px">📨 Communication Log — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">One place to see what happened. Post a note below; session and school-shadow notes gather here automatically.</p>';
+  h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
+  var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
+  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(n.date)+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No team notes yet.</p>';
+  h+='</div>';
+  var sess=DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.notes&&(''+s.notes).trim();}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
+  h+='<div class="card"><div class="section-title">📝 1:1 session notes ('+sess.length+')</div>';
+  h+=sess.length?sess.map(function(s){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+_fmtWhen(s.createdAt||s.date)+'</strong>'+(s.txName?' · '+esc(s.txName.split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(s.notes)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No session notes yet.</p>';
+  h+='</div>';
+  var ssn=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
+  h+='<div class="card"><div class="section-title">🏫 School Shadow notes ('+ssn.length+')</div>';
+  h+=ssn.length?ssn.map(function(n){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(n.date)+'</strong>'+(n.author?' · '+esc((n.author||'').split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No school shadow notes yet.</p>';
+  h+='</div></div>';
+  return h;
 }
 function renderNotesTab(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
