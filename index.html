@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-14-F -->
+<!-- BUILD v2026-09-14-G -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-14-F</title>
+<title>CARE Client Binder v2026-09-14-G</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -304,7 +304,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
   </div>
-  <div class="login-box" style="display:flex;flex-direction:column;max-height:440px"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div><div id="update-status" style="margin-top:10px"></div></div>
+  <div class="login-box" id="update-card" style="display:flex;flex-direction:column;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
   </div>
 </div>
 
@@ -327,19 +327,24 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-14-F';
+const APP_VERSION='v2026-09-14-G';
 const APP_UPDATED='14 Sep 2026';
-const CHANGELOG={
-  fixed:'Stopped an old/stale device from overwriting saved work; fixed a false "updated elsewhere" alert.',
-  improved:'Supervision type = 1:1 Overlap / Clinic / School Observation (label for reports; sups always see all tabs); School Shadow uses one date and is therapist-only; BIP graphs break for 4-week absences.',
-  added:'One BIP now covers 1:1 and School Shadow via "appears in" checkboxes, with a 1:1 / School Shadow view toggle on the Behavior tab (replaces Copy to School); School Shadow session type.'
-};
+const CHANGELOG=[
+  {version:'v2026-09-14-G',date:'14 Sep 2026',added:'',improved:'Update log now shows history (newest on top).',fixed:'Old "Copy to School" behavior plans now appear under the School Shadow toggle instead of duplicating under 1:1.'},
+  {version:'v2026-09-14-F',date:'14 Sep 2026',added:'One BIP covers 1:1 and School Shadow via "appears in" checkboxes + a view toggle (replaces Copy to School); School Shadow session type.',improved:'Supervision type = 1:1 Overlap / Clinic / School Observation (label only; sups see all tabs); School Shadow one date + therapist-only; BIP graphs break for 4-week absences.',fixed:'Stale-device overwrite; false "updated elsewhere" alert.'},
+  {version:'v2026-09-11',date:'11 Sep 2026',added:'Team Notes & Sup Notes; School Shadow observation notes; star (priority) lessons; manual plan-change + BIP break markers; login update panel.',improved:'Held lessons under Maintenance; BIP graphs straight lines + per-session alignment; target notes visible to therapists; Case Info full width.',fixed:'-'}
+];
 function initUpdatePanel(){
   var b=document.getElementById('update-body');
-  if(b){b.innerHTML='<div style="margin-bottom:5px"><b>'+APP_UPDATED+'</b> &middot; '+APP_VERSION+'</div>'
-    +(CHANGELOG.added?'<div style="margin-bottom:2px"><span style="color:#2f6b2c;font-weight:600">New:</span> '+esc(CHANGELOG.added)+'</div>':'')
-    +(CHANGELOG.improved?'<div style="margin-bottom:2px"><span style="color:#1a6f94;font-weight:600">Improved:</span> '+esc(CHANGELOG.improved)+'</div>':'')
-    +(CHANGELOG.fixed?'<div><span style="color:#a3392b;font-weight:600">Fixed:</span> '+esc(CHANGELOG.fixed)+'</div>':'');}
+  if(b){b.innerHTML=CHANGELOG.map(function(e){
+    return '<div style="margin-bottom:12px;border-bottom:1px solid #f0f1f4;padding-bottom:10px">'
+      +'<div style="margin-bottom:4px"><b>'+e.date+'</b> &middot; '+e.version+'</div>'
+      +(e.added&&e.added!=='-'?'<div style="margin-bottom:2px"><span style="color:#2f6b2c;font-weight:600">New:</span> '+esc(e.added)+'</div>':'')
+      +(e.improved&&e.improved!=='-'?'<div style="margin-bottom:2px"><span style="color:#1a6f94;font-weight:600">Improved:</span> '+esc(e.improved)+'</div>':'')
+      +(e.fixed&&e.fixed!=='-'?'<div><span style="color:#a3392b;font-weight:600">Fixed:</span> '+esc(e.fixed)+'</div>':'')
+      +'</div>';
+  }).join('');}
+  try{var lb=document.querySelector('#login-screen .login-box');var uc=document.getElementById('update-card');if(lb&&uc){uc.style.height=lb.offsetHeight+'px';}}catch(e){}
   checkForUpdate();
 }
 async function checkForUpdate(showToast){
@@ -4905,8 +4910,8 @@ function switchBIPTab(bipId,tab){
 // ═══════════════════════════════════════════════════════
 // BIP — render
 // ═══════════════════════════════════════════════════════
-function _ctx(st){return st==='shadow'?'shadow':'1:1';}
-function _bipCtxList(b){if(Array.isArray(b.appearsIn)&&b.appearsIn.length)return b.appearsIn;return (b.setting==='shadow')?['shadow']:['1:1'];}
+function _ctx(st){return (st==='shadow'||st==='school')?'shadow':'1:1';}
+function _bipCtxList(b){if(Array.isArray(b.appearsIn)&&b.appearsIn.length)return b.appearsIn;return (b.setting==='shadow'||b.setting==='school')?['shadow']:['1:1'];}
 function bipAppears(b,ctx){return _bipCtxList(b).indexOf(ctx)>=0;}
 var _behViewCtx=null;
 function _behSessCtx(){var se=getSessState();if(se.started&&se.clientId===selectedClientId)return _ctx(se.setting);if(['supervisor','director'].includes(currentUser&&currentUser.role||'')){var sv=getSupState();if(sv.started&&sv.clientId===selectedClientId)return _ctx(sv.setting);}return null;}
