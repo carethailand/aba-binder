@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-15-F -->
+<!-- BUILD v2026-09-15-G -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-15-F</title>
+<title>CARE Client Binder v2026-09-15-G</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -304,7 +304,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
     <button class="btn btn-primary" style="width:100%;margin-top:18px;padding:11px" onclick="doLogin()">Log In</button>
     <div style="text-align:center;margin-top:12px"><button type="button" onclick="doForgotPassword()" style="background:none;border:none;color:#1f8ec4;font-size:.82rem;cursor:pointer;text-decoration:underline">Forgot password?</button></div>
   </div>
-  <div class="login-box" id="update-card" style="width:320px;flex:0 0 320px;padding:26px 28px;display:flex;flex-direction:column;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
+  <div class="login-box" id="update-card" style="width:320px;flex:0 0 320px;padding:26px 28px;display:flex;flex-direction:column;max-height:520px;overflow:hidden"><div style="font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:#94a0ae;margin-bottom:8px">Latest update</div><div id="update-status" style="margin-bottom:10px"></div><div id="update-body" style="font-size:.8rem;color:#374151;line-height:1.55;overflow-y:auto;flex:1;padding-right:6px"></div></div>
   </div>
 </div>
 
@@ -327,9 +327,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-15-F';
+const APP_VERSION='v2026-09-15-G';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-15-G',date:'15 Sep 2026',added:'',improved:'',fixed:'Cleared remaining false "updated elsewhere" alarms — the check now ignores harmless structural/ordering differences and only flags real edits.'},
   {version:'v2026-09-15-F',date:'15 Sep 2026',added:'',improved:'Per-lesson session notes now show in Team Notes under each 1:1 session (they were saved but not displayed).',fixed:''},
   {version:'v2026-09-15-E',date:'15 Sep 2026',added:'',improved:'',fixed:'School Shadow "session note for the team" is now kept as you type and saved on End & Save (it was being cleared before saving).'},
   {version:'v2026-09-15-D',date:'15 Sep 2026',added:'School Shadow sessions can leave a "session note for the team" that lands in Team Notes.',improved:'Team Notes now routes 1:1 session notes and School Shadow notes to their own sections.',fixed:'Program Checklist tracks only 1:1 sessions (School Shadow excluded) and drops the old school colour-coding — one colour now.'},
@@ -353,7 +354,6 @@ function initUpdatePanel(){
       +(e.fixed&&e.fixed!=='-'?'<div><span style="color:#a3392b;font-weight:600">Fixed:</span> '+esc(e.fixed)+'</div>':'')
       +'</div>';
   }).join('');}
-  try{var lb=document.querySelector('#login-screen .login-box');var uc=document.getElementById('update-card');if(lb&&uc){uc.style.height=lb.offsetHeight+'px';}}catch(e){}
   checkForUpdate();
 }
 async function checkForUpdate(showToast){
@@ -511,8 +511,9 @@ function _showStaleBanner(){
   el.style.display='flex';
 }
 function _hideStaleBanner(){_staleFlag=false;var el=document.getElementById('stale-banner');if(el)el.style.display='none';}
-function _cliRowSig(r){try{return JSON.stringify(clientToRow(rowToClient(r)));}catch(e){return '';}}
-function _lesRowSig(r){try{var l=JSON.parse(JSON.stringify(rowToLesson(r)));(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){delete t.firstTrialData;});});return JSON.stringify(lessonToRow(l));}catch(e){return '';}}
+function _stableStr(o){return JSON.stringify(o,function(k,v){if(v&&typeof v==='object'&&!Array.isArray(v)){var s={};Object.keys(v).sort().forEach(function(kk){s[kk]=v[kk];});return s;}return v;});}
+function _cliRowSig(r){try{var c=rowToClient(r);if(c.schoolShadow){var sh=c.schoolShadow;if(!sh.slots)sh.slots=[];if(!sh.grid)sh.grid={};if(!sh.targets)sh.targets=[];if(!sh.net)sh.net=[];if(!sh.log)sh.log={};if(!sh.netLog)sh.netLog={};if(!sh.notes)sh.notes=[];}return _stableStr(clientToRow(c));}catch(e){return '';}}
+function _lesRowSig(r){try{var l=JSON.parse(JSON.stringify(rowToLesson(r)));(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){delete t.firstTrialData;});});return _stableStr(lessonToRow(l));}catch(e){return '';}}
 async function _checkFreshness(){
   try{
     if(!currentUser||currentView!=='client'||!selectedClientId)return;
