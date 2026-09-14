@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-15-A -->
+<!-- BUILD v2026-09-15-B -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-15-A</title>
+<title>CARE Client Binder v2026-09-15-B</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-15-A';
+const APP_VERSION='v2026-09-15-B';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-15-B',date:'15 Sep 2026',added:'',improved:'',fixed:'End & Save now works during a School Shadow session (it no longer bounced between tabs).'},
   {version:'v2026-09-15-A',date:'15 Sep 2026',added:'School Shadow targets (first-trial & NET) can be edited, mastered, or put on hold; mastered/held drop out of the daily grid.',improved:'',fixed:'Fixed a false "updated elsewhere" alert (caused by the first-trial cache) and a case where the reload banner covered the End & Save button.'},
   {version:'v2026-09-14-J',date:'14 Sep 2026',added:'',improved:'School Shadow NET trend graph now shows under each NET target (like a 1:1 target); monthly overview keeps the difficulty analysis.',fixed:''},
   {version:'v2026-09-14-I',date:'14 Sep 2026',added:'',improved:'Friendlier, consistent in-app messages (no browser pop-ups).',fixed:'Reports now separate 1:1 and School Shadow behavior data instead of blending them; QCD can view any case but only records when assigned.'},
@@ -1070,6 +1071,8 @@ function startSessionFromBar(){
   render();
 }
 function confirmEndSession(){
+  var _es=getSessState();
+  if((_es.setting||'therapy')==='shadow'){saveSession();return;}
   // If not on the Session tab, switch to it first so entered data (draft) is in the DOM before saving
   if(selectedTab!=='session'){setTab('session');setTimeout(confirmEndSession,220);return;}
   // Count unscored targets
