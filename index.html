@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-15-H -->
+<!-- BUILD v2026-09-16-L -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-15-H</title>
+<title>CARE Client Binder v2026-09-16-L</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,21 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-15-H';
+const APP_VERSION='v2026-09-16-L';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-16-L',date:'16 Sep 2026',added:'',improved:'School Shadow target names now wrap in the grid header instead of being cut off.',fixed:'School Shadow NET data no longer gets lost — the grid and NET now save together (one Save button saves both), so typed NET trials are kept when you save the day or end the session. A NET entry with no Total now warns instead of silently dropping.'},
+  {version:'v2026-09-16-K',date:'16 Sep 2026',added:'',improved:'QCD can now record School Shadow data on cases they are assigned to (same as 1:1). Unassigned cases stay view-only.',fixed:''},
+  {version:'v2026-09-16-J',date:'16 Sep 2026',added:'',improved:'',fixed:'Tally (count) targets no longer save a misleading 0 when untouched — an empty count is simply not recorded (and shows in the end-session “no data” reminder). Press − or type 0 to record a real zero.'},
+  {version:'v2026-09-16-I',date:'16 Sep 2026',added:'Progress report can now include a School Shadow summary — each school target’s % independent by subject (hardest flagged) and NET progress, over the report’s date range.',improved:'',fixed:''},
+  {version:'v2026-09-16-H',date:'16 Sep 2026',added:'',improved:'',fixed:'Team Notes no longer duplicates School Shadow observation notes (those live on the School Shadow tab). It now shows only the shadow session notes therapists post for the team.'},
+  {version:'v2026-09-16-G',date:'16 Sep 2026',added:'',improved:'Edit and delete a session right from the Program Checklist — small ✏/🗑 icons sit under each session column. Therapists can act on their own sessions; supervisors and directors on any. (Moved out of the client header.)',fixed:''},
+  {version:'v2026-09-16-F',date:'16 Sep 2026',added:'',improved:'‘Edit session’ and ‘Delete session’ now sit in the client header (next to Archive) for supervisors and directors, so they show on any tab instead of only on the start-of-visit bar.',fixed:''},
+  {version:'v2026-09-16-E',date:'16 Sep 2026',added:'Supervisors and directors can delete a session (‘Delete Session’ on the top bar). A blank session removes with one confirm; a session with data needs typing DELETE.',improved:'Deleting a session now removes only that session’s BIP and ABC data — a second session on the same date is left untouched.',fixed:''},
+  {version:'v2026-09-16-D',date:'16 Sep 2026',added:'',improved:'Edit Session shows each BIP log’s rate and a note that it recalculates.',fixed:'BIP rate (per hour) now recalculates from the session time when you edit a session’s length or a behavior count — previously the rate stayed frozen at its original value. Only logs from that same session are recalculated.'},
+  {version:'v2026-09-16-C',date:'16 Sep 2026',added:'Edit Session now lets you correct the session time (hours) — handy when a session was logged with the wrong length.',improved:'',fixed:''},
+  {version:'v2026-09-16-B',date:'16 Sep 2026',added:'',improved:'All notes (Team Notes, session, School Shadow, behavior) now share one style — bold “Label:” headings and ▸ bullets — so they read the same everywhere.',fixed:''},
+  {version:'v2026-09-16-A',date:'16 Sep 2026',added:'',improved:'School Shadow recording grid now shows the time first, then the subject, so periods read in schedule order.',fixed:''},
   {version:'v2026-09-15-H',date:'15 Sep 2026',added:'',improved:'Team Notes: clearer empty-state wording and consistent, friendly date/time formatting for all notes.',fixed:''},
   {version:'v2026-09-15-G',date:'15 Sep 2026',added:'',improved:'',fixed:'Cleared remaining false "updated elsewhere" alarms — the check now ignores harmless structural/ordering differences and only flags real edits.'},
   {version:'v2026-09-15-F',date:'15 Sep 2026',added:'',improved:'Per-lesson session notes now show in Team Notes under each 1:1 session (they were saved but not displayed).',fixed:''},
@@ -1080,8 +1092,7 @@ function startSessionFromBar(){
 function confirmEndSession(){
   var _es=getSessState();
   if((_es.setting||'therapy')==='shadow'){
-    try{if(document.getElementById('ss-grid'))_ssSaveEntry();}catch(e){}
-    try{if(document.querySelector('.ssn-c'))_ssSaveNetDay();}catch(e){}
+    try{_ssCaptureAll();}catch(e){}
     saveSession();return;
   }
   // If not on the Session tab, switch to it first so entered data (draft) is in the DOM before saving
@@ -1098,7 +1109,8 @@ function confirmEndSession(){
       const sel=document.querySelector('.cpi-btn[data-id="rt_'+id+'"].rating-sel');
       if(!sel)unscored++;
     } else if(t.dataType==='tally'){
-      // tally defaults to 0 — always has a value, never unscored
+      const tEl=document.getElementById('tally_'+id);
+      if(!tEl||tEl.value.trim()==='')unscored++;
     } else if(t.dataType==='ta'){
       // ta — check if any step button is selected
       const anyStep=document.querySelector('.cpi-btn[data-id^="ta_'+id+'_"].sel');
@@ -1177,7 +1189,10 @@ function buildBIPRows(sess){
   if(!bips.length)return'';
   const logsOnDate=(DB.behaviors||[]).filter(function(b){return b.clientId===selectedClientId&&b.date===sess.date;});
   if(!logsOnDate.length)return'<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fdeae4;border-radius:6px;border-left:3px solid #d84a3a">🔔 Behavior (BIP)</div><div style="font-size:.78rem;color:var(--muted);padding:0 10px 8px">No BIP logs recorded on this date.</div>'+_seAddBipForm(sess.date);
+  var _nSameDate=(DB.sessions||[]).filter(function(x){return x.clientId===selectedClientId&&x.date===sess.date;}).length;
   let html='<div style="font-weight:700;font-size:.88rem;margin:14px 0 6px;padding:6px 10px;background:#fdeae4;border-radius:6px;border-left:3px solid #d84a3a">🔔 Behavior (BIP)</div>';
+  html+='<div style="font-size:.74rem;color:var(--muted);padding:0 10px 6px">Rate (per hour) is recalculated from this session’s time when you save.</div>';
+  if(_nSameDate>1)html+='<div style="font-size:.76rem;color:#8a3a2e;background:#fdeae4;border-radius:6px;padding:6px 10px;margin:0 0 6px;border-left:3px solid #d84a3a">⚠ There is more than one session on this date. Only logs from this session (same therapist and context) will have their rate recalculated — others are left as they are.</div>';
   logsOnDate.forEach(function(log){
     const bip=bips.find(function(b){return b.id===log.bipId;});
     const bipName=bip?bip.name:log.bipId;
@@ -1186,7 +1201,9 @@ function buildBIPRows(sess){
     const hasDur=allMeas.includes('duration');
     html+='<div style="padding:7px 10px;border-bottom:1px solid #eef1f4">'
       +'<div style="font-size:.82rem;font-weight:600;margin-bottom:6px">'+esc(bipName)
-      +'<span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:8px">'+esc(log.txName||'')+'</span></div>'
+      +'<span style="font-size:.72rem;font-weight:400;color:var(--muted);margin-left:8px">'+esc(log.txName||'')+'</span>'
+      +((log.rate!=null)?'<span style="font-size:.72rem;font-weight:400;color:#1a6f94;margin-left:8px">'+log.rate+'/hr</span>':'')
+      +(((log.txId||'')!==(sess.txId||'')||(log.setting||'therapy')!==(sess.setting||'therapy'))?'<span style="font-size:.7rem;font-weight:400;color:#8a3a2e;margin-left:8px">· different session — rate unchanged</span>':'')+'</div>'
       +'<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">'
       +(hasFreq?'<label style="font-size:.8rem">Count <input type="number" class="se-bip-count" data-bid="'+log.id+'" min="0" style="width:65px;margin-left:4px" value="'+(log.count!=null?log.count:'')+'"></label>':'')
       +(hasDur?'<label style="font-size:.8rem">Duration <input type="text" class="se-bip-dur" data-bid="'+log.id+'" style="width:80px;margin-left:4px" placeholder="min or m:ss" value="'+(log.duration!=null?log.duration:'')+'"></label>':'')
@@ -1391,6 +1408,7 @@ function _doEditSession(sess){
     +'<div style="background:#eef6fb;border:1px solid #b8dcef;border-radius:6px;padding:7px 12px;font-size:.8rem;color:#1a5276;margin-bottom:10px">'
     +'✏ Edit individual values below. Only changed fields are updated — nothing is deleted.'
     +'</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><label style="font-size:.85rem;font-weight:600">Session time (hrs)</label><input type="number" class="se-sess-time" step=".5" min=".5" max="12" value="'+(sess.sessTime||4)+'" style="width:70px"></div>'
     +buildLessonRows(sess)
     +'<div id="se-bip-section" data-sess-id="'+sess.id+'">'
     +buildBIPRows(sess)
@@ -1432,6 +1450,8 @@ async function _saveEditedSession(sessId){
   if(notesEl)sess.notes=notesEl.value.trim();
   const pnEl=document.querySelector('.se-parent-note');
   if(pnEl)sess.parentNote=pnEl.value.trim();
+  const stEl=document.querySelector('.se-sess-time');
+  if(stEl&&stEl.value!==''){var _st=parseFloat(stEl.value);if(!isNaN(_st)&&_st>0)sess.sessTime=_st;}
 
   // Update lesson data
   if(!sess.lessonData)sess.lessonData=[];
@@ -1519,6 +1539,13 @@ async function _saveEditedSession(sessId){
     }
     if(el.classList.contains('se-bip-notes'))log.notes=el.value;
     if(log.duration!=null){var _occ=(log.count&&log.count>0)?log.count:1;log.avgDuration=log.duration>0?Math.round(log.duration/_occ*100)/100:0;}
+    // Rate = count / session-hours. Recompute from this session's (possibly edited) time,
+    // but only for logs that belong to this session (same therapist + same context) so a
+    // same-date log from a different session is never rescaled by mistake.
+    if(log.count!=null&&(log.txId||'')===(sess.txId||'')&&(log.setting||'therapy')===(sess.setting||'therapy')){
+      var _stH=parseFloat(sess.sessTime)||0;
+      if(_stH>0)log.rate=Math.round(log.count/_stH*10)/10;
+    }
     sbUpsert('behaviors',{id:log.id,client_id:log.clientId,bip_id:log.bipId,date:log.date,func:log.function,count:log.count!=null?log.count:null,duration:log.duration!=null?log.duration:null,avg_duration:log.avgDuration!=null?log.avgDuration:null,rate:log.rate!=null?log.rate:null,notes:JSON.stringify({text:log.notes||'',setting:log.setting||'therapy'}),tx_id:log.txId||null,tx_name:log.txName||null});
   });
 
@@ -1568,6 +1595,7 @@ function _restoreEditSession(sess){
 }
 
 function deleteLastSession(){
+  if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can delete a session.','error');return;}
   const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
   if(sessions.length===1){
@@ -1591,24 +1619,66 @@ function deleteLastSession(){
   }
 }
 
-async function _doDeleteSession(sess){
-  if(!confirm('Delete this session?\n\nDate: '+fmtDateShort(sess.date)+'  TX: '+(sess.txName||'')+'\n\nThis will also delete ABC data and BIP logs from this date. Cannot be undone.'))return;
-  // Remove from local DB
-  DB.sessions=DB.sessions.filter(s=>s.id!==sess.id);
+function _editSessById(id){var s=DB.sessions.find(function(x){return x.id===id;});if(s)_doEditSession(s);}
+function _delSessById(id){var s=DB.sessions.find(function(x){return x.id===id;});if(s)_doDeleteSession(s);}
+function _sessionHasData(sess){
+  var ld=sess.lessonData||[];
+  var hasLesson=ld.some(function(l){return (l.targets||[]).some(function(t){return t.pct!=null||t.rating!=null||t.count!=null||(t.firstTrial&&t.firstTrial!=='')||(t.steps&&t.steps.some(function(x){return x&&x.result;}))||t.na===true;});});
+  var hasLnote=ld.some(function(l){return l.note&&(''+l.note).trim();});
+  var hasNotes=(sess.notes&&(''+sess.notes).trim())||(sess.parentNote&&(''+sess.parentNote).trim());
+  var _mB=function(b){return b.clientId===sess.clientId&&b.date===sess.date&&(b.txId||'')===(sess.txId||'')&&(b.setting||'therapy')===(sess.setting||'therapy');};
+  var _mA=function(a){return a.clientId===sess.clientId&&a.date===sess.date&&(a.txId||'')===(sess.txId||'')&&(a.setting||'therapy')===(sess.setting||'therapy');};
+  var hasBip=(DB.behaviors||[]).some(_mB);
+  var hasAbc=(DB.abcData||[]).some(_mA);
+  return !!(hasLesson||hasLnote||hasNotes||hasBip||hasAbc);
+}
+async function _reallyDeleteSession(sess){
+  if(!sess)return;
+  DB.sessions=DB.sessions.filter(function(s){return s.id!==sess.id;});
   _undoSessionFirstTrials(sess);
-  // Also remove abc_data and behaviors for this client+date
-  const abcsToDelete=(DB.abcData||[]).filter(a=>a.clientId===sess.clientId&&a.date===sess.date);
-  const behaviorsToDelete=(DB.behaviors||[]).filter(b=>b.clientId===sess.clientId&&b.date===sess.date);
-  DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===sess.clientId&&a.date===sess.date));
-  DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===sess.clientId&&b.date===sess.date));
-  // Delete from Supabase
+  // Scope ABC + BIP deletion to THIS session only (same date + therapist + context)
+  // so a sibling session on the same date is never affected.
+  var _mA=function(x){return x.clientId===sess.clientId&&x.date===sess.date&&(x.txId||'')===(sess.txId||'')&&(x.setting||'therapy')===(sess.setting||'therapy');};
+  var _mB=function(x){return x.clientId===sess.clientId&&x.date===sess.date&&(x.txId||'')===(sess.txId||'')&&(x.setting||'therapy')===(sess.setting||'therapy');};
+  var abcsToDelete=(DB.abcData||[]).filter(_mA);
+  var behaviorsToDelete=(DB.behaviors||[]).filter(_mB);
+  DB.abcData=(DB.abcData||[]).filter(function(a){return !_mA(a);});
+  DB.behaviors=(DB.behaviors||[]).filter(function(b){return !_mB(b);});
   await sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
-  await Promise.all([
-    ...abcsToDelete.map(a=>sbFetch('abc_data','DELETE',null,'id=eq.'+a.id)),
-    ...behaviorsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)),
-  ]);
-  toast('Session deleted ✓'+(abcsToDelete.length?' ('+abcsToDelete.length+' ABC entries removed)':'')+(behaviorsToDelete.length?' ('+behaviorsToDelete.length+' BIP logs removed)':''));
+  await Promise.all([].concat(
+    abcsToDelete.map(function(a){return sbFetch('abc_data','DELETE',null,'id=eq.'+a.id);}),
+    behaviorsToDelete.map(function(b){return sbFetch('behaviors','DELETE',null,'id=eq.'+b.id);})
+  ));
+  window._pendingDelSess=null;
+  closeModal();
+  toast('Session deleted ✓'+(behaviorsToDelete.length?' ('+behaviorsToDelete.length+' BIP log'+(behaviorsToDelete.length>1?'s':'')+' removed)':'')+(abcsToDelete.length?' ('+abcsToDelete.length+' ABC removed)':''));
   render();
+}
+function _confirmDeleteSessionTyped(){
+  var inp=document.getElementById('delsess-confirm');
+  if(!inp||inp.value.trim().toUpperCase()!=='DELETE'){toast('Type DELETE to confirm.');return;}
+  _reallyDeleteSession(window._pendingDelSess);
+}
+async function _doDeleteSession(sess){
+  var _dRole=currentUser&&currentUser.role;
+  var _dSup=['supervisor','director'].includes(_dRole);
+  var _dOwn=['junior','senior'].includes(_dRole)&&(sess.txId||'')===((currentUser&&currentUser.id)||'');
+  if(!_dSup&&!_dOwn){toast('You can only delete your own session.','error');return;}
+  window._pendingDelSess=sess;
+  var _info='Date: '+fmtDateShort(sess.date)+' \u00b7 '+esc(sess.txName||'')+(sess.setting==='shadow'?' \u00b7 School Shadow':'');
+  if(!_sessionHasData(sess)){
+    modal('<div style="max-width:420px"><h3 style="margin-bottom:6px">\ud83d\uddd1 Delete blank session?</h3>'
+      +'<p style="font-size:.85rem;color:var(--muted);margin-bottom:4px">'+_info+'</p>'
+      +'<p style="font-size:.83rem;margin-bottom:14px">This session has no recorded data \u2014 it will be removed.</p>'
+      +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="_reallyDeleteSession(window._pendingDelSess)">Delete</button></div></div>');
+    return;
+  }
+  modal('<div style="max-width:450px"><h3 style="margin-bottom:6px;color:#a3392b">\ud83d\uddd1 Delete session with data</h3>'
+    +'<p style="font-size:.85rem;color:var(--muted);margin-bottom:4px">'+_info+'</p>'
+    +'<p style="font-size:.83rem;margin-bottom:10px">This session has recorded data. Deleting it also removes this session\u2019s BIP logs and ABC entries. <strong>This cannot be undone.</strong></p>'
+    +'<label style="font-weight:600;font-size:.82rem;display:block;margin-bottom:4px">Type <strong>DELETE</strong> to confirm</label>'
+    +'<input id="delsess-confirm" type="text" autocomplete="off" style="width:100%" placeholder="DELETE">'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="_confirmDeleteSessionTyped()">Delete</button></div></div>');
 }
 
 // ── Supervision state ──
@@ -2141,6 +2211,7 @@ function openReportBuilder(){
    +'<div style="display:flex;align-items:center;gap:8px;padding:9px 0 4px;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-graphs" checked onchange="_rbToggleGraph(this)"> Include graphs <span style="font-size:.72rem;color:#94a0ae">(% / rating / behavior)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:8px;padding:0 0 8px 26px;font-size:.8rem;color:#6b7280" id="rb-graph-row">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-bip" checked> BIP <span style="font-size:.72rem;color:#94a0ae">(protocol + last 5 data)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-school" checked> School Shadow <span style="font-size:.72rem;color:#94a0ae">(targets by subject + NET)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Reinforcer list</label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
@@ -2239,6 +2310,10 @@ function buildAndPrintReport(){
       });
     });
     if(bh)body+='<div class="sec-title">Behavior (BIP)</div>'+bh;
+  }
+  if(gc('rb-school')){
+    const _ssHtml=_ssReportSummary(c.schoolShadow,gv('rb-gfrom'),gv('rb-gto'),gc('rb-graphs'));
+    if(_ssHtml)body+='<div class="sec-title">School Shadow</div>'+_ssHtml;
   }
   if(gc('rb-reinf')&&(c.reinforcers||[]).length){
     body+='<div class="sec-title">Reinforcers</div><ul>'+c.reinforcers.map(function(r){return '<li>'+esc(r.name)+(r.type?' ('+esc(r.type)+')':'')+'</li>';}).join('')+'</ul>';
@@ -2614,7 +2689,7 @@ function renderClientView(){
   ];
   let tabs=(isSup&&!_supSessMode)?supTabs:txTabs;
   var _actSess=getSessState();
-  if(['junior','senior'].includes(currentUser.role)&&_actSess.started&&_actSess.clientId===selectedClientId&&_actSess.setting==='shadow'){tabs=tabs.filter(function(t){return t.id!=='session';});if(selectedTab==='session')selectedTab='schoolshadow';}
+  if(['junior','senior','qcd'].includes(currentUser.role)&&_actSess.started&&_actSess.clientId===selectedClientId&&_actSess.setting==='shadow'){tabs=tabs.filter(function(t){return t.id!=='session';});if(selectedTab==='session')selectedTab='schoolshadow';}
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
   if((!isSup||_supSessMode)&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
@@ -2812,8 +2887,25 @@ function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document
 function _ssSetNetStatus(btn){if(!_ssCanSetup())return;var ss=_ssGet();var n=(ss.net||[]).find(function(x){return x.id===btn.dataset.id;});if(n){n.status=btn.dataset.st;}_ssSave();render();}
 function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net||[]).filter(function(x){return x.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
-function _ssSaveEntry(){if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
-function _ssSaveNetDay(){if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssSaveEntry(){if(!(['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly()))){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
+function _ssSaveNetDay(){if(!(['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly()))){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssCanRecord(){return ['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly());}
+function _ssCaptureAll(){
+  if(!_ssCanRecord())return false;
+  var ss=_ssGet();var changed=false;
+  if(document.getElementById('ss-grid')){var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};changed=true;}
+  if(document.querySelector('.ssn-c')){var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};changed=true;}
+  if(changed)_ssSave();
+  return changed;
+}
+function _ssSaveAll(){
+  if(!_ssCanRecord()){toast('Only therapists record school shadow data.');return;}
+  if(!requireActiveSession())return;
+  var miss=false;document.querySelectorAll('.ssn-c').forEach(function(cel){var id=cel.dataset.id;var cv=(cel.value||'').trim();var tEl=document.querySelector('.ssn-t[data-id="'+id+'"]');var tv=tEl?(''+tEl.value).trim():'';if(cv!==''&&(tv===''||parseFloat(tv)<=0))miss=true;});
+  _ssCaptureAll();
+  if(miss){toast('Saved. Add “Total” for the NET target to record its %.','error');return;}
+  toast('Saved ✓');render();
+}
 function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();render();}
 function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
 function _ssSetMonth(v){if(v){_ssMonth=v;render();}}
@@ -2822,6 +2914,48 @@ function _ssBar(label,pct){
   var col=pct>=80?'#3b6d11':pct>=50?'#BA7517':'#A32D2D';
   var bg=pct>=80?'#C0DD97':pct>=50?'#FAC775':'#F09595';
   return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px"><span>'+esc(label)+'</span><span style="font-weight:700;color:'+col+'">'+pct+'%</span></div><div style="height:8px;background:#eef1f4;border-radius:4px;overflow:hidden"><div style="height:8px;width:'+pct+'%;background:'+bg+';border-radius:4px"></div></div></div>';
+}
+function _ssReportSummary(ss,fromD,toD,graphsOn){
+  if(!ss)return '';
+  var targets=(ss.targets||[]).filter(function(t){return (t.status||'active')==='active';});
+  var netAll=(ss.net||[]).filter(function(t){return (t.status||'active')==='active';});
+  var slotById={};(ss.slots||[]).forEach(function(x){slotById[x.id]=x;});
+  var inRange=function(d){return (!fromD||d>=fromD)&&(!toD||d<=toD);};
+  var agg={};targets.forEach(function(t){agg[t.id]={overall:{c:0,op:0},subj:{}};});
+  Object.keys(ss.log||{}).forEach(function(d){
+    if(!inRange(d))return;
+    var wd=_ssWeekday(d);var grid=(ss.grid&&ss.grid[wd])||{};var cells=(ss.log[d].cells)||{};
+    Object.keys(cells).forEach(function(k){
+      var v=cells[k];if(v!=='C'&&v!=='P'&&v!=='-')return;
+      var u=k.indexOf('_');if(u<0)return;var tid=k.slice(0,u),sid=k.slice(u+1);
+      var a=agg[tid];if(!a)return;
+      var subj=grid[sid]||'';
+      var inc=function(o){if(v==='C'){o.c++;o.op++;}else{o.op++;}};
+      inc(a.overall);
+      if(subj){if(!a.subj[subj])a.subj[subj]={c:0,op:0};inc(a.subj[subj]);}
+    });
+  });
+  var ftHtml=targets.map(function(t){
+    var a=agg[t.id];
+    if(!a||a.overall.op===0)return '<div style="margin:6px 0;font-size:.85rem"><strong>'+esc(t.name)+'</strong> \u2014 <span style="color:#6b7280">no data in range</span></div>';
+    var ov=_ssPctOf(a.overall);
+    var subjRows=Object.keys(a.subj).sort(function(x,y){return _ssPctOf(a.subj[y])-_ssPctOf(a.subj[x]);}).map(function(nm){return _ssBar(nm,_ssPctOf(a.subj[nm]));}).join('');
+    var hs=101,hSubj=null;Object.keys(a.subj).forEach(function(nm){var pp=_ssPctOf(a.subj[nm]);if(pp<hs){hs=pp;hSubj=nm;}});
+    var hardest=hSubj?'<div style="font-size:.78rem;color:#633806;margin-top:2px">Hardest: <strong>'+esc(hSubj)+' ('+hs+'%)</strong></div>':'';
+    return '<div style="margin:8px 0"><div style="font-weight:600;font-size:.86rem;margin-bottom:3px">'+esc(t.name)+' <span style="color:#1f8ec4">\u2014 '+ov+'% independent</span></div>'+subjRows+hardest+'</div>';
+  }).join('');
+  var netHtml=netAll.map(function(nn){
+    var pts=Object.keys(ss.netLog||{}).filter(inRange).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);
+    if(!pts.length)return '<div style="margin:6px 0;font-size:.85rem"><strong>'+esc(nn.name)+'</strong> (NET) \u2014 <span style="color:#6b7280">no data in range</span></div>';
+    var last=pts[pts.length-1].y;
+    var g=graphsOn?('<div style="margin:2px 0 6px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';
+    return '<div style="margin:8px 0"><div style="font-weight:600;font-size:.86rem">'+esc(nn.name)+' (NET) <span style="color:#1f8ec4">\u2014 latest '+last+'%</span></div>'+g+'</div>';
+  }).join('');
+  if(!ftHtml&&!netHtml)return '';
+  var out='';
+  if(ftHtml)out+='<p style="margin:6px 0 2px;font-weight:700;color:#234b63">School targets (first-trial, % independent by subject)</p>'+ftHtml;
+  if(netHtml)out+='<p style="margin:10px 0 2px;font-weight:700;color:#234b63">NET targets (% correct)</p>'+netHtml;
+  return out;
 }
 function _ssMonthlyOverview(ss){
   if(!_ssMonth)_ssMonth=new Date().toISOString().slice(0,7);
@@ -2860,7 +2994,7 @@ function _ssMonthlyOverview(ss){
 }
 function renderSchoolShadowTab(){
   const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();
-  const _isTherapist=['junior','senior'].includes(currentUser.role);
+  const _isTherapist=['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly());
   const _sess=getSessState();
   const active=_isTherapist&&_sess.started&&_sess.clientId===selectedClientId&&_sess.setting==='shadow';
   const date=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:new Date().toISOString().slice(0,10);
@@ -2870,7 +3004,7 @@ function renderSchoolShadowTab(){
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   var _canSSNote=['admin','supervisor','director'].includes(currentUser.role);
   var _ssNotes=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  var _ssNoteCards=_ssNotes.length?_ssNotes.map(function(nn){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+(_canSSNote?' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+nn.id+'" onclick="event.preventDefault();_ssDelNote(this)">✕</button>':'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(nn.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
+  var _ssNoteCards=_ssNotes.length?_ssNotes.map(function(nn){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+(_canSSNote?' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+nn.id+'" onclick="event.preventDefault();_ssDelNote(this)">✕</button>':'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+formatNoteText(nn.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
   var _ssNoteAdd=_canSSNote?'<div style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><textarea id="ssn-note-in" rows="2" placeholder="Overlap overview / recommendations for the team..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="_ssAddNote()">Add</button></div>':'';
   h+='<div class="card"><div class="section-title">📝 Supervisor observation notes</div>'+_ssNoteCards+_ssNoteAdd+'</div>';
   if(canSetup){
@@ -2897,13 +3031,13 @@ function renderSchoolShadowTab(){
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
     const gtc='1.5fr repeat('+dTargets.length+',minmax(150px,1fr))';
-    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+dTargets.map(function(t){return '<span style="text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
+    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+dTargets.map(function(t){return '<span style="text-align:center;white-space:normal;word-break:break-word;line-height:1.2" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
     var lastB='';var body='';
-    periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=dTargets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong>'+esc(pp.subject||'')+'</strong> <span style="color:#6b7280">'+esc(pp.time||'')+'</span></span>'+cc+'</div>';});
+    periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=dTargets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong style="color:#1f2733">'+esc(pp.time||'')+'</strong> <span style="color:#4b5563">'+esc(pp.subject||'')+'</span></span>'+cc+'</div>';});
     var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem">Daily %</span>'+dTargets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
     h+='<div style="overflow-x:auto"><div id="ss-grid" style="min-width:'+(170+dTargets.length*155)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
       +'<div style="display:flex;gap:14px;font-size:.72rem;color:#6b7280;margin-top:6px;flex-wrap:wrap"><span><b style="color:#2f6b2c">C</b> independent</span><span><b style="color:#8a6410">P</b> shadow support</span><span><b style="color:#b23a2a">−</b> did not perform</span><span><b style="color:#6b7280">N/A</b> no opportunity</span></div>';
-    if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveEntry()">Save day</button>';
+    if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveAll()">Save day</button>';
   }
   h+='</div>';
   var _netToday=(ss.netLog&&ss.netLog[date])?(ss.netLog[date].data||{}):{};
@@ -2911,7 +3045,7 @@ function renderSchoolShadowTab(){
   if(!activeNet.length){h+='<p style="color:var(--muted);font-size:.85rem">'+((ss.net||[]).length?'No active NET targets — all mastered or on hold.':'No NET targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else{
     var _netCards=activeNet.map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+(function(){var pts=Object.keys(ss.netLog||{}).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);return pts.length?('<div style="margin-top:8px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';})()+'</div>';}).join('');
-    h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveNetDay()">Save NET</button>';
+    h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveAll()">Save NET</button>';
   }
   h+='</div>';
   if(active)h+='<div class="card"><div class="section-title">📝 Session note (for the team)</div><p style="font-size:.76rem;color:var(--muted);margin:0 0 6px">A note about today’s shadow — saved to Team Notes when you End &amp; Save.</p><textarea id="ss-sess-notes" rows="3" placeholder="How today went, anything the team should know..." style="font-size:.84rem" oninput="var _st=getSessState();_st._ssNote=this.value;setSessState(_st);">'+esc((getSessState()._ssNote)||'')+'</textarea></div>';
@@ -3151,7 +3285,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     html+='<label style="font-size:.82rem;color:var(--muted)">Count observed'+goalTxt+'</label>';
     html+='<div style="display:flex;align-items:center;gap:8px;margin-top:4px">';
     html+='<button class="cpi-btn minus" style="font-size:1.2rem;width:36px;height:36px" onclick="adjustTally(\'dec_'+id+'\',\'tally_'+id+'\')">−</button>';
-    html+='<input type="number" id="tally_'+id+'" min="0" value="0" style="width:70px;font-size:1.3rem;font-weight:700;text-align:center;border:2px solid var(--primary);border-radius:8px;padding:4px">';
+    html+='<input type="number" id="tally_'+id+'" min="0" value="" placeholder="0" style="width:70px;font-size:1.3rem;font-weight:700;text-align:center;border:2px solid var(--primary);border-radius:8px;padding:4px">';
     html+='<button class="cpi-btn plus" style="font-size:1.2rem;width:36px;height:36px" onclick="adjustTally(\'inc_'+id+'\',\'tally_'+id+'\')">\+</button>';
     html+='</div></div>';
   } else if(target.dataType==='checklist'){
@@ -3611,7 +3745,8 @@ async function saveSession(){
             }
           } else if(target.dataType==='tally'){
             const tallyEl=document.getElementById('tally_'+id);
-            const tallyVal=tallyEl?parseInt(tallyEl.value):NaN;
+            const tallyRaw=tallyEl?tallyEl.value.trim():'';
+            const tallyVal=tallyRaw!==''?parseInt(tallyRaw):NaN;
             if(!isNaN(tallyVal)){entry.count=tallyVal;entry.pct=null;}
             else{entry._skipped=true;}
           } else if(target.dataType==='checklist'){
@@ -4120,7 +4255,7 @@ function _behaviorNotesCard(){
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});
   var isSup=['supervisor','director'].includes(currentUser.role);
   var notes=(c.behaviorNotes||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-  var list=notes.length?notes.map(function(nn){return '<div style="border-left:3px solid #d84a3a;background:#fdf1ef;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#8a3a2e;font-weight:600;margin-bottom:2px">'+esc(nn.date)+' · '+esc((nn.authorName||'').split(' ')[0])+(isSup?' <button class="btn btn-xs no-print" style="color:#a3392b;background:none;border:none;cursor:pointer;padding:0 4px" onclick="delBehaviorNote(\''+nn.id+'\')">✕</button>':'')+'</div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(nn.text)+'</div></div>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No behavior notes yet.</p>';
+  var list=notes.length?notes.map(function(nn){return '<div style="border-left:3px solid #d84a3a;background:#fdf1ef;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#8a3a2e;font-weight:600;margin-bottom:2px">'+esc(nn.date)+' · '+esc((nn.authorName||'').split(' ')[0])+(isSup?' <button class="btn btn-xs no-print" style="color:#a3392b;background:none;border:none;cursor:pointer;padding:0 4px" onclick="delBehaviorNote(\''+nn.id+'\')">✕</button>':'')+'</div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No behavior notes yet.</p>';
   var addBox=isSup?'<div style="margin-top:8px;display:flex;gap:6px;align-items:flex-start"><textarea id="beh-note-in" rows="2" placeholder="Unexpected behavior a sup noticed — no formal BIP needed..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="addBehaviorNote()">Add</button></div>':'';
   return '<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0;font-size:1.05rem">🗒 Behavior Notes</h2><span style="font-size:.74rem;color:var(--muted)">informal · '+(isSup?'you can add':'read only')+'</span></div><p style="font-size:.76rem;color:var(--muted);margin:0 0 8px">For unexpected behavior worth noting that doesn’t need a full BIP. Visible to the whole team.</p>'+list+addBox+'</div>';
 }
@@ -4872,7 +5007,7 @@ function renderProgramChecklist(){
   const colHeaders=sessions.map(s=>{
     const d=fmtDateShort(s.date);
     const init=(s.txName||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    return {date:d,init,sessId:s.id,txName:s.txName,fullDate:s.date,setting:s.setting||'therapy'};
+    return {date:d,init,sessId:s.id,txId:s.txId||'',txName:s.txName,fullDate:s.date,setting:s.setting||'therapy'};
   });
 
   // build set of lessonIds run per session
@@ -4894,13 +5029,18 @@ function renderProgramChecklist(){
 
   // single header row: dd.mm.yy + first name at 45 degrees
   let initRow='<tr><td style="background:#e2f0f7;font-weight:700;min-width:150px;padding:7px 10px;position:sticky;left:0;z-index:3">Session</td>';
+  const _ckRole=currentUser&&currentUser.role;
+  const _ckSupAll=['supervisor','director'].includes(_ckRole)&&!isViewOnly();
   colHeaders.forEach(h=>{
     const d=h.fullDate.slice(2).replace(/-/g,'.');// yy.mm.dd -> need dd.mm.yy
     const parts=h.fullDate.split('-');
     const ddmmyy=parts[2]+'.'+parts[1]+'.'+parts[0].slice(2);
     const firstName=h.txName?h.txName.split(' ')[0]:'';
+    const _ckOwn=['junior','senior'].includes(_ckRole)&&(h.txId||'')===((currentUser&&currentUser.id)||'');
+    const _ckAct=_ckSupAll||_ckOwn;
+    const _icons=_ckAct?'<div class="no-print" style="white-space:nowrap;margin-top:2px"><span onclick="_editSessById(\''+h.sessId+'\')" title="Edit session" style="cursor:pointer;font-size:.74rem;color:#1f8ec4;padding:0 3px">\u270f</span><span onclick="_delSessById(\''+h.sessId+'\')" title="Delete session" style="cursor:pointer;font-size:.74rem;color:#a3392b;padding:0 3px">\ud83d\uddd1</span></div>':'';
     initRow+='<td style="text-align:center;background:#e2f0f7;padding:4px 6px;min-width:52px;vertical-align:middle">'
-      +'<div style="white-space:nowrap;font-size:.72rem;font-weight:600;line-height:1.5">'+esc(ddmmyy)+'<br>'+esc(firstName)+'</div></td>';
+      +'<div style="white-space:nowrap;font-size:.72rem;font-weight:600;line-height:1.5">'+esc(ddmmyy)+'<br>'+esc(firstName)+'</div>'+_icons+'</td>';
   });
   initRow+='</tr>';
   let dateRow='';
@@ -5607,16 +5747,16 @@ function renderCommLog(){
   let h='<div class="ss-tab"><h3 style="margin-bottom:4px">🗨 Team Notes — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Notes from therapists to the team; session and school-shadow notes gather here automatically.</p>';
   if(["junior","senior"].includes(currentUser.role))h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
   var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(_fmtWhen(n.date))+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No notes posted here yet \u2014 session and school-shadow notes appear below.</p>';
+  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(_fmtWhen(n.date))+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No notes posted here yet \u2014 session and school-shadow notes appear below.</p>';
   h+='</div>';
   var sess=DB.sessions.filter(function(s){if((s.setting||'therapy')==='shadow'||s.clientId!==selectedClientId)return false;var hasN=s.notes&&(''+s.notes).trim();var hasLn=(s.lessonData||[]).some(function(ld){return ld.note&&(''+ld.note).trim();});return hasN||hasLn;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
   h+='<div class="card"><div class="section-title">📝 1:1 session notes ('+sess.length+')</div>';
-  h+=sess.length?sess.map(function(s){var _ln=(s.lessonData||[]).filter(function(ld){return ld.note&&(''+ld.note).trim();}).map(function(ld){return '<div style="margin-top:6px"><b style="color:#234b63">'+esc(ld.lessonName||'Lesson')+':</b> '+esc(ld.note)+'</div>';}).join('');var _sn=(s.notes&&(''+s.notes).trim())?'<div style="white-space:pre-wrap">'+esc(s.notes)+'</div>':'';return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+_fmtWhen(s.createdAt||s.date)+'</strong>'+(s.txName?' · '+esc(s.txName.split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+_sn+_ln+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No session notes yet.</p>';
+  h+=sess.length?sess.map(function(s){var _ln=(s.lessonData||[]).filter(function(ld){return ld.note&&(''+ld.note).trim();}).map(function(ld){return '<div style="margin-top:6px"><b style="color:#234b63">'+esc(ld.lessonName||'Lesson')+':</b> '+esc(ld.note)+'</div>';}).join('');var _sn=(s.notes&&(''+s.notes).trim())?'<div>'+formatNoteText(s.notes)+'</div>':'';return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+_fmtWhen(s.createdAt||s.date)+'</strong>'+(s.txName?' · '+esc(s.txName.split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+_sn+_ln+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No session notes yet.</p>';
   h+='</div>';
   var _shadowSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.notes&&(''+s.notes).trim()&&(s.setting||'therapy')==='shadow';}).map(function(s){return {date:s.createdAt||s.date,author:s.txName,text:s.notes};});
-  var ssn=(ss.notes||[]).map(function(n){return {date:n.date,author:n.author,text:n.text};}).concat(_shadowSess).sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
+  var ssn=_shadowSess.slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
   h+='<div class="card"><div class="section-title">🏫 School Shadow notes ('+ssn.length+')</div>';
-  h+=ssn.length?ssn.map(function(n){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(_fmtWhen(n.date))+'</strong>'+(n.author?' · '+esc((n.author||'').split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;white-space:pre-wrap;line-height:1.5">'+esc(n.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No school shadow notes yet.</p>';
+  h+=ssn.length?ssn.map(function(n){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(_fmtWhen(n.date))+'</strong>'+(n.author?' · '+esc((n.author||'').split(' ')[0]):'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+formatNoteText(n.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No school shadow notes yet.</p>';
   h+='</div></div>';
   return h;
 }
