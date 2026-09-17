@@ -51,6 +51,7 @@
 ## INBOX (unsorted — anything new lands here first)
 _Jot it and move on. Sort later._
 - When new supervisor account is added, if we move the case from one supervisor to this new account. in the client interface doesn't move along. they also doesn't create a section area for new supervisor in client page. Need to fix this
+- Mark on the calendar on what day we have sup update on program, this is to help the sup visually to generate report more precisely. this is improvement area we can do
 
 ---
 
