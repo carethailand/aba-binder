@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-16-M -->
+<!-- BUILD v2026-09-17-O -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-16-M</title>
+<title>CARE Client Binder v2026-09-17-O</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-16-M';
+const APP_VERSION='v2026-09-17-O';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-17-O',date:'17 Sep 2026',added:'',improved:'',fixed:'Fixed a data-loss bug: saving one part of a client (e.g. a 1:1 note) from a device holding an out-of-date copy could wipe another part (e.g. School Shadow setup, logs, and supervisor notes) that someone else had just added. Client saves now re-read the latest record and merge \u2014 only the sections this device actually changed are written; everything else keeps the server\u2019s latest.'},
+  {version:'v2026-09-16-N',date:'17 Sep 2026',added:'',improved:'School Shadow tab is easier to read: the C / P / − / N/A legend now uses colour-matched chips that match the tap cells, with a plain-language note on how Daily % is worked out; “Recorded by” now shows as a small badge. The NET targets cards were tidied — clearer name header, the % result shown as a pill, and each trend graph is labelled with an 80% mastery note.',fixed:''},
   {version:'v2026-09-16-M',date:'17 Sep 2026',added:'School Shadow daily log can now be reviewed for any past day \u2014 pick a date or choose from the list of recorded days. Past days are read-only.',improved:'The School Shadow daily log and NET section now show who recorded the data (therapist name).',fixed:''},
   {version:'v2026-09-16-L',date:'16 Sep 2026',added:'',improved:'School Shadow target names now wrap in the grid header instead of being cut off.',fixed:'School Shadow NET data no longer gets lost — the grid and NET now save together (one Save button saves both), so typed NET trials are kept when you save the day or end the session. A NET entry with no Total now warns instead of silently dropping.'},
   {version:'v2026-09-16-K',date:'16 Sep 2026',added:'',improved:'QCD can now record School Shadow data on cases they are assigned to (same as 1:1). Unassigned cases stay view-only.',fixed:''},
@@ -612,9 +614,38 @@ function _captureBaselines(){
   (DB.bips||[]).forEach(function(b){_recBaseline['bips:'+b.id]=JSON.stringify(bipToRow(b));});
   (DB.abcData||[]).forEach(function(a){_recBaseline['abc_data:'+a.id]=JSON.stringify(abcToRow(a));});
 }
+function _mergeClientRow(dev,srv,base){
+  // Section-level merge: keep the latest server value for any section this device did NOT change,
+  // and only overwrite sections this device actually changed vs its load baseline.
+  // Prevents a stale copy from clobbering another role's concurrent edits (e.g. School Shadow).
+  if(!srv||!base)return dev;
+  var _sig=function(v){return JSON.stringify(v===undefined?null:v);};
+  var out=Object.assign({},dev);
+  ['name','dob','diagnosis','supervisor','notes','reinforcers'].forEach(function(k){
+    if(_sig(dev[k])===_sig(base[k]))out[k]=(srv[k]!==undefined?srv[k]:dev[k]);
+  });
+  var dsn=dev.sup_notif||{},ssn=srv.sup_notif||{},bsn=base.sup_notif||{};
+  var msn={},keys={};
+  [dsn,ssn,bsn].forEach(function(o){Object.keys(o).forEach(function(k){keys[k]=1;});});
+  Object.keys(keys).forEach(function(k){
+    if(_sig(dsn[k])!==_sig(bsn[k])){if(dsn[k]!==undefined)msn[k]=dsn[k];}
+    else{if(ssn[k]!==undefined)msn[k]=ssn[k];}
+  });
+  out.sup_notif=Object.keys(msn).length?msn:null;
+  return out;
+}
 async function sbSaveClient(cObj){
-  var _row=clientToRow(cObj);
+  var _dev=clientToRow(cObj);
+  var _row=_dev;
+  try{
+    var _res=await sbFetch('clients','GET',null,'select=*&id=eq.'+cObj.id);
+    if(_res&&_res.length){
+      var _base=null;try{_base=JSON.parse(_recBaseline['clients:'+cObj.id]||'null');}catch(e){}
+      if(_base)_row=_mergeClientRow(_dev,_res[0],_base);
+    }
+  }catch(e){/* server read failed -> fall back to device row (previous behaviour) */}
   await sbUpsert('clients',_row);
+  try{var _mc=rowToClient(_row);var _c=DB.clients.find(function(x){return x.id===cObj.id;});if(_c)Object.assign(_c,_mc);}catch(e){}
   _recBaseline['clients:'+cObj.id]=JSON.stringify(_row);
   hideSyncStatus();
 }
@@ -3030,7 +3061,7 @@ function renderSchoolShadowTab(){
   const activeNet=(ss.net||[]).filter(function(x){return (x.status||'active')==='active';});
   const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
   var _recDates=Array.from(new Set([].concat(Object.keys(ss.log||{}),Object.keys(ss.netLog||{})))).filter(Boolean).sort().reverse();
-  var _recBy=(entry&&entry.tx)?('<span style="font-size:.76rem;color:#6b7280">Recorded by '+esc((''+entry.tx).split(' ')[0])+'</span>'):'';
+  var _recBy=(entry&&entry.tx)?('<span style="font-size:.72rem;color:#234b63;background:#eef6fb;border:1px solid #cfe6f5;border-radius:999px;padding:2px 9px;white-space:nowrap">✎ Recorded by '+esc((''+entry.tx).split(' ')[0])+'</span>'):'';
   var _dpick=(!active)?('<div class="no-print" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px"><input type="date" value="'+date+'" max="'+_todayStr+'" onchange="_ssSetViewDate(this.value)" style="width:auto;font-size:.8rem;padding:2px 6px">'+(_recDates.length?('<select onchange="if(this.value)_ssSetViewDate(this.value)" style="width:auto;font-size:.78rem;padding:2px 6px"><option value="">Recorded days\u2026</option>'+_recDates.map(function(dk){return '<option value="'+dk+'"'+(dk===date?' selected':'')+'>'+esc(fmtDateShort(dk))+((ss.log&&ss.log[dk]&&ss.log[dk].tx)?(' \u00b7 '+esc((''+ss.log[dk].tx).split(' ')[0])):'')+'</option>';}).join('')+'</select>'):'')+((date!==_todayStr)?'<button type="button" class="btn btn-xs btn-outline" onclick="_ssSetViewDate(\'\')">Today</button>':'')+'</div>'):'';
   h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div>'+_recBy+'<span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>'+_dpick;
   if(!active&&date!==_todayStr)h+='<div class="no-print" style="background:#eef6fb;border:1px solid #cfe6f5;color:#234b63;border-radius:8px;padding:6px 10px;font-size:.8rem;margin-bottom:10px">Viewing '+fmtDateShort(date)+' \u2014 past day, read only.</div>';
@@ -3042,18 +3073,24 @@ function renderSchoolShadowTab(){
     var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+dTargets.map(function(t){return '<span style="text-align:center;white-space:normal;word-break:break-word;line-height:1.2" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
     var lastB='';var body='';
     periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=dTargets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong style="color:#1f2733">'+esc(pp.time||'')+'</strong> <span style="color:#4b5563">'+esc(pp.subject||'')+'</span></span>'+cc+'</div>';});
-    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem">Daily %</span>'+dTargets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
+    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem" title="Independent (C) ÷ opportunities (C + P + −). N/A is not counted.">Daily % <span style="color:#94a0ae;font-weight:400">ⓘ</span></span>'+dTargets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
     h+='<div style="overflow-x:auto"><div id="ss-grid" style="min-width:'+(170+dTargets.length*155)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
-      +'<div style="display:flex;gap:14px;font-size:.72rem;color:#6b7280;margin-top:6px;flex-wrap:wrap"><span><b style="color:#2f6b2c">C</b> independent</span><span><b style="color:#8a6410">P</b> shadow support</span><span><b style="color:#b23a2a">−</b> did not perform</span><span><b style="color:#6b7280">N/A</b> no opportunity</span></div>';
+      +'<div style="margin-top:8px"><div style="display:flex;gap:12px 18px;font-size:.74rem;color:#4b5563;flex-wrap:wrap;align-items:center">'
+        +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#e2f2df;color:#2f6b2c;border:1px solid #9fce97">C</span>independent</span>'
+        +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#fbeecb;color:#8a6410;border:1px solid #e8c14e">P</span>shadow support</span>'
+        +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#fbe0da;color:#b23a2a;border:1px solid #e6b3aa">−</span>did not perform</span>'
+        +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:20px;border-radius:4px;font-weight:700;font-size:.66rem;background:#eef1f4;color:#6b7280;border:1px solid #d5dae1">N/A</span>no opportunity</span>'
+      +'</div>'
+      +'<div style="font-size:.72rem;color:#6b7280;margin-top:6px"><b style="color:#1f8ec4">Daily %</b> = independent (C) ÷ opportunities (C + P + −). N/A doesn’t count.</div></div>';
     if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveAll()">Save day</button>';
   }
   h+='</div>';
   var _netToday=(ss.netLog&&ss.netLog[date])?(ss.netLog[date].data||{}):{};
-  var _netBy=(ss.netLog&&ss.netLog[date]&&ss.netLog[date].tx)?(' <span style="font-size:.72rem;color:#6b7280;font-weight:600">\u00b7 recorded by '+esc((''+ss.netLog[date].tx).split(' ')[0])+'</span>'):'';
+  var _netBy=(ss.netLog&&ss.netLog[date]&&ss.netLog[date].tx)?(' <span style="font-size:.7rem;color:#234b63;background:#eef6fb;border:1px solid #cfe6f5;border-radius:999px;padding:1px 8px;font-weight:600;white-space:nowrap;vertical-align:middle">\u270e '+esc((''+ss.netLog[date].tx).split(' ')[0])+'</span>'):'';
   h+='<div class="card"><div class="section-title">NET targets (% correct) — '+(_SS_DAYLABEL[wd]||wd)+_netBy+'</div>';
   if(!activeNet.length){h+='<p style="color:var(--muted);font-size:.85rem">'+((ss.net||[]).length?'No active NET targets — all mastered or on hold.':'No NET targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else{
-    var _netCards=activeNet.map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+(function(){var pts=Object.keys(ss.netLog||{}).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);return pts.length?('<div style="margin-top:8px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';})()+'</div>';}).join('');
+    var _netCards=activeNet.map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0;display:inline-flex;align-items:center;gap:5px">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="color:#c0c7ce">/</span><label style="font-size:.78rem;margin:0;display:inline-flex;align-items:center;gap:5px">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="margin-left:auto;font-size:.85rem;font-weight:700;color:#1f8ec4;background:#eef6fb;border:1px solid #cfe6f5;border-radius:999px;padding:3px 12px;white-space:nowrap">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<span style="font-weight:700;color:#1f8ec4;background:#eef6fb;border:1px solid #cfe6f5;border-radius:999px;padding:2px 11px">'+d.pct+'% correct</span> <span style="color:#6b7280;margin-left:4px">'+d.c+' of '+d.t+'</span>'):'<span style="color:var(--muted)">no entry yet</span>')+'</div>');var _graph=(function(){var pts=Object.keys(ss.netLog||{}).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);return pts.length?('<div style="margin-top:10px;border-top:1px solid #f2f4f6;padding-top:8px"><div style="font-size:.68rem;color:#94a0ae;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px">Trend · % correct over time</div>'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'<div style="font-size:.68rem;color:#6b7280;margin-top:2px"><span style="color:#22c55e;font-weight:700">– –</span> 80% mastery</div></div>'):'';})();return '<div style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:10px;overflow:hidden"><div style="background:#f7f9fb;border-bottom:1px solid #eef1f4;padding:8px 12px"><div style="font-weight:700;font-size:.9rem">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.74rem;color:#6b7280;margin-top:2px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+'</div><div style="padding:10px 12px">'+ea+_graph+'</div></div>';}).join('');
     h+=_netCards;if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:6px" onclick="_ssSaveAll()">Save NET</button>';
   }
   h+='</div>';
