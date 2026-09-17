@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-16-L -->
+<!-- BUILD v2026-09-16-M -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-16-L</title>
+<title>CARE Client Binder v2026-09-16-M</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -327,9 +327,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-16-L';
+const APP_VERSION='v2026-09-16-M';
 const APP_UPDATED='14 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-16-M',date:'17 Sep 2026',added:'School Shadow daily log can now be reviewed for any past day \u2014 pick a date or choose from the list of recorded days. Past days are read-only.',improved:'The School Shadow daily log and NET section now show who recorded the data (therapist name).',fixed:''},
   {version:'v2026-09-16-L',date:'16 Sep 2026',added:'',improved:'School Shadow target names now wrap in the grid header instead of being cut off.',fixed:'School Shadow NET data no longer gets lost — the grid and NET now save together (one Save button saves both), so typed NET trials are kept when you save the day or end the session. A NET entry with no Total now warns instead of silently dropping.'},
   {version:'v2026-09-16-K',date:'16 Sep 2026',added:'',improved:'QCD can now record School Shadow data on cases they are assigned to (same as 1:1). Unassigned cases stay view-only.',fixed:''},
   {version:'v2026-09-16-J',date:'16 Sep 2026',added:'',improved:'',fixed:'Tally (count) targets no longer save a misleading 0 when untouched — an empty count is simply not recorded (and shows in the end-session “no data” reminder). Press − or type 0 to record a real zero.'},
@@ -1078,7 +1079,7 @@ function startSession(){
   const d=(document.getElementById('pre-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
-  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
+  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
   render();
 }
 function startSessionFromBar(){
@@ -1086,7 +1087,7 @@ function startSessionFromBar(){
   const d=(document.getElementById('ss-date')||{}).value||new Date().toISOString().slice(0,10);
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'individual';
-  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
+  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
   render();
 }
 function confirmEndSession(){
@@ -1732,7 +1733,7 @@ function startSessionAsSup(){
   if(typeof hideUnsavedBanner==='function')hideUnsavedBanner();
   const d=(document.getElementById('sv-date')||{}).value||new Date().toISOString().slice(0,10);
   const _set=(document.getElementById('sv-setting')||{}).value||'therapy';
-  setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
+  _ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
   selectedTab='session';
   render();
 }
@@ -2847,7 +2848,7 @@ function renderSupLocked(tabName){
 // ════════════════════════════════════════════════
 const _SS_DAYS=['mon','tue','wed','thu','fri'];
 const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
-var _ssDate='';var _ssSetupOpen=true;var _ssMonth='';
+var _ssDate='';var _ssViewDate='';var _ssSetupOpen=true;var _ssMonth='';
 const _SS_CODES=[['C','C'],['P','P'],['-','−'],['/','N/A']];
 function _ssClient(){return DB.clients.find(function(x){return x.id===selectedClientId;});}
 function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
@@ -2873,6 +2874,7 @@ function _ssPick(btn){var cell=btn.parentNode;var nv=btn.dataset.v;if(cell.datas
 function _ssRecalc(){var byT={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
 function _ssPct(cells,tid,periods){var cn=0,op=0;periods.forEach(function(pp){var v=cells[tid+'_'+pp.id];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}});return op?Math.round(cn/op*100)+'%':'–';}
 function _ssSetDate(v){if(v){_ssDate=v;render();}}
+function _ssSetViewDate(v){_ssViewDate=v||'';render();}
 function _ssSlotTime(el){if(!_ssCanSetup())return;var ss=_ssGet();var s=(ss.slots||[]).find(function(x){return x.id===el.dataset.id;});if(s){s.time=el.value.trim();_ssSave();}}
 function _ssGridSet(el){if(!_ssCanSetup())return;var ss=_ssGet();var d=el.dataset.day,sid=el.dataset.slot;if(!ss.grid[d])ss.grid[d]={};ss.grid[d][sid]=el.value.trim();_ssSave();}
 function _ssSlotAdd(){if(!_ssCanSetup())return;var ss=_ssGet();ss.slots.push({id:uid(),time:''});_ssSave();render();}
@@ -2997,7 +2999,9 @@ function renderSchoolShadowTab(){
   const _isTherapist=['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly());
   const _sess=getSessState();
   const active=_isTherapist&&_sess.started&&_sess.clientId===selectedClientId&&_sess.setting==='shadow';
-  const date=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:new Date().toISOString().slice(0,10);
+  const _liveDate=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:new Date().toISOString().slice(0,10);
+  const _todayStr=new Date().toISOString().slice(0,10);
+  const date=(!active&&_ssViewDate)?_ssViewDate:_liveDate;
   _ssDate=date;const wd=_ssWeekday(date);
   const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
   const ttGtc='84px repeat(5,minmax(96px,1fr)) 26px';
@@ -3025,7 +3029,11 @@ function renderSchoolShadowTab(){
   const dTargets=targets.filter(function(t){return (t.status||'active')==='active';});
   const activeNet=(ss.net||[]).filter(function(x){return (x.status||'active')==='active';});
   const entry=(ss.log&&ss.log[date])||{cells:{}};const cells=entry.cells||{};
-  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div><span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>';
+  var _recDates=Array.from(new Set([].concat(Object.keys(ss.log||{}),Object.keys(ss.netLog||{})))).filter(Boolean).sort().reverse();
+  var _recBy=(entry&&entry.tx)?('<span style="font-size:.76rem;color:#6b7280">Recorded by '+esc((''+entry.tx).split(' ')[0])+'</span>'):'';
+  var _dpick=(!active)?('<div class="no-print" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px"><input type="date" value="'+date+'" max="'+_todayStr+'" onchange="_ssSetViewDate(this.value)" style="width:auto;font-size:.8rem;padding:2px 6px">'+(_recDates.length?('<select onchange="if(this.value)_ssSetViewDate(this.value)" style="width:auto;font-size:.78rem;padding:2px 6px"><option value="">Recorded days\u2026</option>'+_recDates.map(function(dk){return '<option value="'+dk+'"'+(dk===date?' selected':'')+'>'+esc(fmtDateShort(dk))+((ss.log&&ss.log[dk]&&ss.log[dk].tx)?(' \u00b7 '+esc((''+ss.log[dk].tx).split(' ')[0])):'')+'</option>';}).join('')+'</select>'):'')+((date!==_todayStr)?'<button type="button" class="btn btn-xs btn-outline" onclick="_ssSetViewDate(\'\')">Today</button>':'')+'</div>'):'';
+  h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div>'+_recBy+'<span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>'+_dpick;
+  if(!active&&date!==_todayStr)h+='<div class="no-print" style="background:#eef6fb;border:1px solid #cfe6f5;color:#234b63;border-radius:8px;padding:6px 10px;font-size:.8rem;margin-bottom:10px">Viewing '+fmtDateShort(date)+' \u2014 past day, read only.</div>';
   if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session with Type = School Shadow to record data. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a School Shadow session.')+'</div>';
   if(!dTargets.length){h+='<p style="color:var(--muted);font-size:.85rem">'+(targets.length?'No active targets — all mastered or on hold.':'No school targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
@@ -3041,7 +3049,8 @@ function renderSchoolShadowTab(){
   }
   h+='</div>';
   var _netToday=(ss.netLog&&ss.netLog[date])?(ss.netLog[date].data||{}):{};
-  h+='<div class="card"><div class="section-title">NET targets (% correct) — '+(_SS_DAYLABEL[wd]||wd)+'</div>';
+  var _netBy=(ss.netLog&&ss.netLog[date]&&ss.netLog[date].tx)?(' <span style="font-size:.72rem;color:#6b7280;font-weight:600">\u00b7 recorded by '+esc((''+ss.netLog[date].tx).split(' ')[0])+'</span>'):'';
+  h+='<div class="card"><div class="section-title">NET targets (% correct) — '+(_SS_DAYLABEL[wd]||wd)+_netBy+'</div>';
   if(!activeNet.length){h+='<p style="color:var(--muted);font-size:.85rem">'+((ss.net||[]).length?'No active NET targets — all mastered or on hold.':'No NET targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else{
     var _netCards=activeNet.map(function(nn){var d=_netToday[nn.id]||{};var ea=active?('<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><label style="font-size:.78rem;margin:0">Correct <input class="ssn-c" data-id="'+nn.id+'" type="number" min="0" value="'+(d.c!=null?d.c:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><label style="font-size:.78rem;margin:0">Total <input class="ssn-t" data-id="'+nn.id+'" type="number" min="0" value="'+(d.t!=null?d.t:'')+'" oninput="_ssNetCalc(this)" style="width:64px"></label><span style="font-weight:700;color:#1f8ec4">= <span id="ssn-p-'+nn.id+'">'+(d.pct!=null?d.pct+'%':'–')+'</span></span></div>'):('<div style="font-size:.82rem;color:#374151">'+(d.pct!=null?('<b style="color:#1f8ec4">'+d.pct+'%</b> ('+d.c+'/'+d.t+')'):'<span style="color:var(--muted)">no entry</span>')+'</div>');return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+esc(nn.name)+'</div>'+(nn.sd?'<div style="font-size:.75rem;color:#6b7280;margin-bottom:6px">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</div>':'')+ea+(function(){var pts=Object.keys(ss.netLog||{}).sort().map(function(dk){var dd=(ss.netLog[dk].data||{})[nn.id];return (dd&&dd.pct!=null)?{date:dk,y:dd.pct}:null;}).filter(Boolean);return pts.length?('<div style="margin-top:8px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';})()+'</div>';}).join('');
