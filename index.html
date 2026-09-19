@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-P -->
+<!-- BUILD v2026-09-19-Q -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-P</title>
+<title>CARE Client Binder v2026-09-19-Q</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -256,8 +256,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   #sess-sticky button[onclick*="startSupervision"]{width:100%;margin-top:2px;}
 }
 
-/* ══ Stage 1 · Mobile Layout shared shell (v2026-09-19-P) · presentation-only ══ */
-/* Applies to phones + tablets (touch widths). Desktop (>1024px) is untouched. */
+/* ══ Mobile Layout · shared shell + calm layout (v2026-09-19-Q) · presentation-only ══ */
+/* Phones + tablets (touch widths). Desktop (>1024px) untouched. */
 @media (max-width: 1024px){
   /* Scrolling pill tabs — no wrap, no "More" menu, active pill filled */
   .tabs{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;
@@ -280,33 +280,64 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 }
 
 @media (max-width: 600px){
-  /* Roomier cards — a little more breathing room, less wasted side padding */
+  /* NAV — stable two rows; name and Log out never wrap oddly or get cut off */
+  #nav{height:auto;min-height:50px;flex-wrap:wrap;column-gap:8px;row-gap:6px;padding:6px 12px;align-items:center;}
+  #nav h1{flex:0 0 auto;}
+  #nav h1 span{display:none;}                  /* hide "CLIENT BINDER" subtitle on phone */
+  #nav-user{flex:1 1 auto;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.74rem;opacity:.9;}
+  #nav .btn-nav{flex:0 0 auto;padding:5px 12px;font-size:.78rem;}
+
+  /* One consistent spacing rhythm for every block */
+  #app{padding:0 14px;margin-top:14px;}
+  .card,.lesson-card,.alert,.client-head{margin-bottom:12px;}
+
+  /* Roomier cards */
   .card{padding:16px 13px;border-radius:12px;}
   .lesson-body{padding:14px 12px;}
   .sd-body{padding:12px 10px;}
   .target-block{padding:12px 11px;}
 
-  /* Stacked field rows — every field goes full-width, one per line */
+  /* Stacked field rows — full-width, one per line */
   .form-row{flex-direction:column;align-items:stretch;gap:10px;}
   .form-row .fg,.form-row .fg-sm,.form-row .fg-xs{flex:1 1 auto;min-width:0;width:100%;}
 
-  /* Bigger tap targets — comfortable to hit one-handed mid-session */
+  /* Bigger tap targets (16px inputs also stop iOS Safari zooming on focus) */
   input:not([type=checkbox]):not([type=radio]),select,textarea{min-height:44px;font-size:16px;}
-  /* 16px inputs also stop iOS Safari from zooming in on focus */
   .btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;}
   .btn-sm{min-height:38px;}
   input[type=checkbox],input[type=radio]{min-height:0;width:22px;height:22px;}
   .cpi-btn{min-width:44px;height:44px;font-size:.95rem;}
   .status-btn{min-height:34px;}
 
-  /* Session / supervision card — light touch here (full redesign is Stage 2) */
-  #sess-sticky input:not([type=checkbox]),#sess-sticky select{min-height:38px;}
-  #sess-sticky button[onclick*="startSession"],
-  #sess-sticky button[onclick*="startSupervision"],
-  #sess-sticky button[onclick*="startSessionAsSup"],
-  #sess-sticky button[onclick*="confirmEndSession"]{min-height:44px;font-size:.85rem!important;}
+  /* SESSION / SUPERVISION BAR — ACTIVE: pinned, one compact line, fixed height (no wiggle) */
+  #sess-sticky.ss-active{height:52px;min-height:52px;flex-wrap:nowrap;overflow:hidden;gap:8px;padding:0 12px;align-items:center;}
+  #sess-sticky.ss-active .ss-label{display:none;}
+  #sess-sticky.ss-active input{display:none;}                    /* date/time are set at start; hidden while recording */
+  #sess-sticky.ss-active span[style*="4fa14a22"]{display:none;}  /* drop the redundant verbose type badge */
+  #sess-sticky.ss-active .ss-val{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem;font-weight:700;}
+  #sess-sticky.ss-active .btn{flex:0 0 auto;}
+  #sess-sticky.ss-active div[style*="flex:1"]{display:block!important;flex:1 1 auto;} /* keep buttons right-aligned */
+  /* End & Save = green (positive save); Discard/Cancel = compact red ✕, freeing room for session info */
+  #sess-sticky.ss-active button[onclick*="confirmEndSession"]{background:var(--sup)!important;color:#fff!important;border-color:var(--sup)!important;}
+  #sess-sticky.ss-active button[onclick*="confirmDiscard"],
+  #sess-sticky.ss-active button[onclick*="cancelSupervision"]{font-size:0!important;width:44px;min-width:44px;padding:0!important;flex:0 0 auto;color:var(--danger)!important;border:1.5px solid var(--danger)!important;background:#fff!important;}
+  #sess-sticky.ss-active button[onclick*="confirmDiscard"]::before,
+  #sess-sticky.ss-active button[onclick*="cancelSupervision"]::before{content:"✕";font-size:1.15rem;font-weight:800;line-height:1;}
+
+  /* SESSION / SUPERVISION BAR — IDLE: calm setup card, scrolls with the page (nothing floats) */
+  #sess-sticky.ss-idle{position:static;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:12px;border-bottom:none;border:1px solid var(--border);border-radius:12px;}
+  #sess-sticky.ss-idle input:not([type=checkbox]),#sess-sticky.ss-idle select{min-height:38px;}
+
+  /* CLIENT HEADER — name on its own line, nothing cut off */
+  .client-head{flex-wrap:wrap;align-items:center;gap:6px 8px;}
+  .client-head h2{flex:1 1 100%!important;order:-1;font-size:1.05rem!important;margin:0;}
+  .client-head span{font-size:.72rem;}
+
+  /* Calmer alerts + compact graph-month row */
+  .alert{font-size:.82rem;padding:10px 12px;line-height:1.45;}
+  .graph-month-row{padding:2px 0 6px!important;gap:6px;}
 }
-/* ══ end Stage 1 shared shell ══ */
+/* ══ end Mobile Layout shared shell ══ */
 
 @media print{#nav,#sess-sticky,.tabs,.no-print,.view-only-banner,.no-session-banner,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}table{page-break-inside:auto;}tr{page-break-inside:avoid;}}
 
@@ -379,9 +410,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-P';
+const APP_VERSION='v2026-09-19-Q';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-Q',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 1 (calm shell). Tidied the whole mobile view so it reads at a glance and stays put. The blue top bar now fits on two neat rows (your name and Log out are no longer cut off). During a session the status bar is a single compact line pinned at the top — a green End & Save and a small red ✕ (Discard) stay in reach, with room to see the client and session type, and it no longer jumps or grows as you scroll. Even spacing between cards, the client name on its own line, and calmer colours. Presentation-only — nothing about entering or saving data changed.',fixed:''},
   {version:'v2026-09-19-P',date:'19 Sep 2026',added:'',improved:'Mobile Layout project — Stage 1 (shared shell). On phones and iPads the tabs are now scrolling “pill” buttons that are bigger and easier to tap and swipe (no “More” menu), and the tab you’re on is clearly highlighted. Form fields stack full-width so nothing is squeezed, and buttons and inputs have larger tap targets. This is a presentation-only change — nothing about how data is entered or saved has changed.',fixed:''},
   {version:'v2026-09-17-O',date:'17 Sep 2026',added:'',improved:'',fixed:'Fixed a data-loss bug: saving one part of a client (e.g. a 1:1 note) from a device holding an out-of-date copy could wipe another part (e.g. School Shadow setup, logs, and supervisor notes) that someone else had just added. Client saves now re-read the latest record and merge \u2014 only the sections this device actually changed are written; everything else keeps the server\u2019s latest.'},
   {version:'v2026-09-16-N',date:'17 Sep 2026',added:'',improved:'School Shadow tab is easier to read: the C / P / − / N/A legend now uses colour-matched chips that match the tap cells, with a plain-language note on how Daily % is worked out; “Recorded by” now shows as a small badge. The NET targets cards were tidied — clearer name header, the % result shown as a pill, and each trend graph is labelled with an 80% mastery note.',fixed:''},
@@ -2862,7 +2894,7 @@ function renderClientView(){
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
   const _lsSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));})[0];
   const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
-  return stickyBar+'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><button class="btn btn-outline btn-sm no-print" onclick="showView(\'clients\')">← Clients</button><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
