@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-W -->
+<!-- BUILD v2026-09-19-Y -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-W</title>
+<title>CARE Client Binder v2026-09-19-Y</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -434,9 +434,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-W';
+const APP_VERSION='v2026-09-19-Y';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-Y',date:'19 Sep 2026',added:'',improved:'The “M” ready-to-master mark is now consistent for every account type: in the supervisor’s Program Edit view the lesson header shows “M” (was ⚑) and the SD header now shows “M” too, matching the therapist recording view. Presentation-only.',fixed:''},
+  {version:'v2026-09-19-X',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 3 polish. Recording targets no longer show the “in progress” tag (the target name now has room). A target that has met its mastery criteria shows a compact amber “M” instead of the word “flagged”, and that “M” also appears on its SD header and lesson header, so a ready-to-master target is visible without expanding everything. Presentation-only.',fixed:''},
   {version:'v2026-09-19-W',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 3 (recording cards). On a percent target, Correct, Total trials and the % now sit on one row with bigger, centred number boxes (instead of two large stacked boxes), so it is quicker to enter and read. First-trial, tally, rating and task-analysis controls were already touch-sized. Presentation-only — the inputs, calculations and saving are unchanged.',fixed:''},
   {version:'v2026-09-19-V',date:'19 Sep 2026',added:'',improved:'The client header now fits on one line — name, diagnosis, and “last recorded” sit together instead of the name taking its own row. Presentation-only.',fixed:''},
   {version:'v2026-09-19-U',date:'19 Sep 2026',added:'',improved:'',fixed:'The “Edit Last” button on the Program Checklist is now tappable even when no session is started (it was greyed out with the rest of the locked tab). Editing a past session no longer needs a session running.'},
@@ -3290,6 +3292,7 @@ function renderLessonSessionBlock(lesson){
   const styleBadge='<span class="badge badge-gray">'+lesson.teachingStyle+'</span>';
   const phaseBadge='<span class="badge badge-'+(lesson.phase==='acquisition'?'blue':lesson.phase==='dt'?'purple':'green')+'">'+lesson.phase+'</span>';
   const _sbStar=_isStarred(lesson.id);
+  const lessonMMark=lesson.sds.some(function(sd){return sd.targets.some(function(t){return t.status==='flagged';});})?'<span class="badge badge-yellow" title="A target in this lesson is ready to master">M</span>':'';
   let body='';
   body+=_lessonDriveHtml(lesson);
   if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong><div style="margin-top:4px;white-space:normal">'+formatNoteText(supNote.text)+'</div></div>';
@@ -3301,7 +3304,8 @@ function renderLessonSessionBlock(lesson){
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
       if(!activeTargets.length&&!sessHasMastered&&!sessHasHeld)return;
       const sdTsBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
-      body+='<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdTsBadge+'</summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fdf8ee;border-left:3px solid #e8c14e;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#8a6410;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
+      const sdMMark=sd.targets.some(function(t){return t.status==='flagged';})?'<span class="badge badge-yellow" style="font-size:.72rem" title="A target here is ready to master">M</span>':'';
+      body+='<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdTsBadge+sdMMark+'</summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+(sd.notes&&sd.notes.length?sd.notes.slice().reverse().map(function(n){return'<div style="margin-bottom:6px;padding:6px 10px;background:#fdf8ee;border-left:3px solid #e8c14e;border-radius:0 6px 6px 0">'+'<div style="font-size:.7rem;color:#8a6410;font-weight:600;margin-bottom:3px">'+esc(n.date)+(n.authorName?' · '+esc(n.authorName.split(' ')[0]):'')+'</div>'+'<div style="font-size:.82rem;white-space:normal">'+formatNoteText(n.text)+'</div></div>';}).join(''):'');
       activeTargets.forEach(t=>{ body+=renderTargetSessionEntry(lesson,sd,t); });
       body+=renderHoldSection(lesson,sd,false);
       body+=renderMasteredSection(lesson,sd,si,false);
@@ -3313,7 +3317,7 @@ function renderLessonSessionBlock(lesson){
 
   // general note for lesson
   body+='<div style="margin-top:10px"><label>Lesson note (optional)</label><input type="text" id="lnote_'+lesson.id+'" placeholder="Overall note for this lesson..."></div>';
-  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+(_sbStar?'<span class="badge" style="background:#fff4d6;color:#b8860b;border:1px solid #f0d98f">⭐ Priority</span>':'')+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
+  return '<details class="lesson-card" style="margin-bottom:10px"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span style="font-size:1.1rem;margin-right:4px">▶</span><h3 style="flex:1;margin:0">'+esc(lesson.name)+'</h3>'+(_sbStar?'<span class="badge" style="background:#fff4d6;color:#b8860b;border:1px solid #f0d98f">⭐ Priority</span>':'')+lessonMMark+phaseBadge+'</summary><div class="lesson-body" style="padding:12px 14px">'+body+'</div></details>';
 }
 
 // ── Target session entry ──
@@ -3374,7 +3378,7 @@ function renderTargetSessionEntry(lesson,sd,target){
     const curStep=target.teachingSteps[target.dtStepIndex||0]||target.teachingSteps[0];
     html+='<span style="font-size:.75rem;background:#e2f0f7;color:#1a6f94;padding:2px 8px;border-radius:4px;white-space:normal;word-break:break-word" title="'+esc(curStep)+'">📋 '+esc(curStep)+'</span>';
   }
-  html+='<span class="target-status status-'+target.status+'">'+target.status.replace(/_/g,' ')+'</span>';
+  if(target.status==='flagged'){html+='<span class="target-status status-flagged" title="Ready to master">M</span>';}
   if(target.dataType!=='checklist'){html+='<button class="btn btn-xs btn-outline no-print" onclick="toggleSessionGraph(\''+graphId+'\',\''+lesson.id+'\',\''+sd.id+'\',\''+target.id+'\')">📊 Graph</button>';}
   html+='</div>';
   if(target.note)html+='<div style="background:#fdf6e3;border-left:3px solid #e6a71f;padding:5px 10px;font-size:.8rem;color:#8a6410;border-radius:0 4px 4px 0;margin-bottom:8px">📌 '+esc(target.note)+'</div>';
@@ -4336,6 +4340,7 @@ function renderLessonCard(lesson){
     const mastHtml=renderMasteredSection(lesson,sd,si,true);
     const holdHtml=renderHoldSection(lesson,sd,true);
     const sdStyleBadge=sd.teachingStyle?'<span class="badge badge-gray" style="font-size:.7rem">'+esc(sd.teachingStyle)+'</span>':'';
+    const _sdFlag=sd.targets.some(function(t){return t.status==='flagged';});
     const _isSup=['supervisor','director'].includes(currentUser.role);
     const _sdNotes=sd.notes||[];
     let sdNotesHtml='';
@@ -4357,7 +4362,7 @@ function renderLessonCard(lesson){
         +'</div>';
     }
     if(sdNotesHtml)sdNotesHtml='<div style="margin-bottom:10px">'+sdNotesHtml+'</div>';
-    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdStyleBadge+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();markSDChange(\''+lesson.id+'\',\''+sd.id+'\')" title="Mark a plan change on the graph">✎ Change</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbe0da;color:#a3392b;border:1px solid #e6b3aa" onclick="event.stopPropagation();deleteSD(\''+lesson.id+'\',\''+sd.id+'\')" title="Delete this SD">🗑</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
+    return '<details class="sd-block" data-sdid="'+sd.id+'"><summary class="sd-header"><span class="det-arrow" style="display:inline-block;transition:transform .15s;color:#234b63;font-size:.8rem;margin-right:2px">▶</span><h4>SD'+(si+1)+': '+esc(sd.sd)+'</h4>'+_sdTagHtml(sd)+sdStyleBadge+(_sdFlag?'<span class="badge badge-yellow" style="font-size:.72rem" title="A target here is ready to master">M</span>':'')+(_isSup?'<button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();editSD(\''+lesson.id+'\',\''+sd.id+'\')">✏ SD</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();markSDChange(\''+lesson.id+'\',\''+sd.id+'\')" title="Mark a plan change on the graph">✎ Change</button> <button class="btn btn-xs btn-outline no-print unlock-exempt" onclick="event.stopPropagation();addTarget(\''+lesson.id+'\',\''+sd.id+'\')">+ Target</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'on_hold\')" title="Put all targets on hold">\u23F8 Hold SD</button> <button class="btn btn-xs btn-green no-print unlock-exempt" onclick="event.stopPropagation();setSDStatus(\''+lesson.id+'\',\''+sd.id+'\',\'mastered\')" title="Mark all targets mastered">\u2713 Master SD</button> <button class="btn btn-xs no-print unlock-exempt" style="background:#fbe0da;color:#a3392b;border:1px solid #e6b3aa" onclick="event.stopPropagation();deleteSD(\''+lesson.id+'\',\''+sd.id+'\')" title="Delete this SD">🗑</button>':'')+' </summary><div class="sd-body"><p style="font-size:.82rem;color:#374151;margin-bottom:6px"><strong style="color:#234b63">R:</strong> '+esc(sd.response)+'</p>'+sdNotesHtml+tHtml+holdHtml+mastHtml+'</div></details>';
   }).join('');
 
   // Status buttons (supervisor only)
@@ -4376,7 +4381,7 @@ function renderLessonCard(lesson){
     ?'<button class="btn btn-sm no-print" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-weight:600" onclick="event.stopPropagation();showReintroduceModal(\''+lesson.id+'\')">&#x1F504; Reintroduce</button> '
     :'';
   const supBtns=['supervisor','director'].includes(currentUser.role)?_reintroBtn+'<button class="btn btn-outline btn-sm no-print" onclick="editLesson(\''+lesson.id+'\')">&#x270F; Edit</button> <button class="btn btn-outline btn-sm no-print" onclick="addLessonNote(\''+lesson.id+'\')">'+'+ Note</button> <button class="btn btn-outline btn-sm no-print" onclick="addNewSD(\''+lesson.id+'\')">'+'+ SD</button> <button class="btn btn-sm no-print" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" onclick="deleteLesson(\''+lesson.id+'\')" title="Delete lesson">🗑 Delete</button>':'';
-  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span>'+_starBtn+'<h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(_lflag?'<span class="badge badge-yellow" title="A target here met criteria — awaiting review">⚑</span>':'')+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+_lessonDriveHtml(lesson)+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
+  return '<details class="lesson-card" data-lid="'+lesson.id+'" style="margin-bottom:12px'+(isHold?';opacity:.6':'')+'"><summary style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;cursor:pointer;padding:10px 14px;list-style:none;user-select:none"><span class="det-arrow" style="display:inline-block;transition:transform .15s;font-size:.85rem">▶</span>'+_starBtn+'<h3 style="flex:1;min-width:140px">'+esc(lesson.name)+'</h3>'+(_lflag?'<span class="badge badge-yellow" title="A target here met criteria — awaiting review">M</span>':'')+(['supervisor','director'].includes(currentUser.role)?'':('<span class="badge badge-gray">'+lesson.teachingStyle+'</span>'))+statusBtns+supBtns+'</summary><div class="lesson-body" style="padding:12px 14px">'+phaseBannerHtml+(lesson.purpose?'<p style="font-size:.82rem;color:var(--muted);font-style:italic;margin-bottom:8px">'+esc(lesson.purpose)+'</p>':'')+_lessonDriveHtml(lesson)+'<div class="section-title">General Notes</div>'+supNotesHtml+'<hr>'+sdsHtml+'</div></details>';
 }
 
 function _lessonDriveHtml(lesson){
