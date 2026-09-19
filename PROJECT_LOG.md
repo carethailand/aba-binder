@@ -7,7 +7,7 @@
 ---
 
 ## Current version
-**v2026-09-16-M** — shipped, on trial (see below). Full history is in the CHANGELOG inside `index.html`.
+**v2026-09-16-N** — shipped, on trial (see below). Full history is in the CHANGELOG inside `index.html`.
 
 ---
 
@@ -50,14 +50,14 @@
 
 ## INBOX (unsorted — anything new lands here first)
 _Jot it and move on. Sort later._
-- When new supervisor account is added, if we move the case from one supervisor to this new account. in the client interface doesn't move along. they also doesn't create a section area for new supervisor in client page. Need to fix this
-- Mark on the calendar on what day we have sup update on program, this is to help the sup visually to generate report more precisely. this is improvement area we can do
+- 
 
 ---
 
 ## IN TRIAL (shipped, watching in real use)
 - **View past days in School Shadow daily log** (v-M) — date picker + "Recorded days..." list; past days are read-only.
 - **"Recorded by [name]"** in the School Shadow daily log and NET section (v-M).
+- **School Shadow readability** (v-N) — colour-matched C/P/−/N/A legend chips + plain-language Daily % note; tidier NET cards (% pill + labelled 80%-mastery trend graph); "Recorded by" badge. _(commit v-N to GitHub if not done.)_
 
 ---
 
@@ -74,6 +74,23 @@ Everything through **v2026-09-16-L** — full details in the in-app CHANGELOG. R
 
 ---
 
+## 📱 MOBILE LAYOUT PROJECT (iPad / iPhone) — multi-stage, IN PROGRESS
+**Goal:** every tab reads cleanly on iPhone + iPad so therapists can record *in-session* and stop the paper → retype double-entry.
+**Playbook:** follow `CaRe_mobile_layout_checklist.md` (safeguards + save-capture tests + staged plan).
+**Presentation-only** — do NOT change save/sync logic or input IDs / data-attrs / handler names. (Exception: the version-bump edits — BUILD comment, `<title>`, `APP_VERSION`, `CHANGELOG` — are metadata, not logic, and are expected each release.) Test every stage on the **demo client**.
+**Priority tabs:** Session (recording) and BIP — worst on mobile. **Tab style:** scrolling pill tabs (fewest taps to record).
+**Design approved in mockups:** nav + session card + pill tabs; session/lesson cards (TX + SUP); BIP tab (TX + SUP); + collapsible BIP sections for therapists.
+
+Stages — all worked in ONE build chat, in order. **Checkpoint after each stage before the next:** version bump → Songg verifies → test on the **demo client** (save → reload → confirm) → **GitHub commit**. Each commit is a rollback point.
+- [ ] Stage 0 — GitHub commit checkpoint of current version.
+- [ ] **Stage 1 — Shared shell (CSS-only): scrolling pill tabs, session/supervision card, segmented 1:1/Shadow toggle, roomier cards, stacked field rows, bigger tap targets.  ← START HERE**
+- [ ] Stage 2 — Session / supervision card polish.
+- [ ] Stage 3 — Lesson / session recording cards, per data type. ★ top priority.
+- [ ] Stage 4 — BIP tab + collapsible therapist sections. ★ priority.
+- [ ] Stage 5 — Remaining tabs (School Shadow polish, Case Info, ABC, notes, Report).
+
+---
+
 ## FUTURE / IDEAS (discussed, not built)
 - **Observation narrative box** — one free-form note on the School Shadow tab using `Label:` / `- bullet` / `Rec:` conventions (design already approved).
 - **Finish-supervision report** — reorganize what prints by supervision type.
@@ -85,4 +102,4 @@ Everything through **v2026-09-16-L** — full details in the in-app CHANGELOG. R
 
 ---
 
-_Last updated: 17 Sep 2026 (v2026-09-16-M shipped)._
+_Last updated: 18 Sep 2026 (v2026-09-16-N shipped; Mobile Layout project queued — Stage 1 next)._
