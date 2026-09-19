@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-Q -->
+<!-- BUILD v2026-09-19-R -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-Q</title>
+<title>CARE Client Binder v2026-09-19-R</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -46,6 +46,11 @@ textarea{resize:vertical;min-height:60px;}
 .btn-outline{background:#fff;color:var(--primary);border:1.5px solid var(--primary);}
 .btn-sm{padding:5px 14px;font-size:.82rem;}
 .btn-xs{padding:2px 8px;font-size:.75rem;}
+/* Segmented toggle (e.g. 1:1 Therapy / School Shadow) */
+.seg-toggle{display:inline-flex;border:1.5px solid var(--border);border-radius:9px;overflow:hidden;background:#fff;}
+.seg-btn{border:none;background:#fff;color:var(--muted);padding:8px 14px;font-size:.85rem;font-weight:700;cursor:pointer;font-family:inherit;line-height:1.1;}
+.seg-btn+.seg-btn{border-left:1.5px solid var(--border);}
+.seg-btn.seg-on{background:var(--primary);color:#fff;}
 .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.75rem;font-weight:600;}
 .badge-green{background:#e2f2df;color:#2f6b2c;}
 .badge-blue{background:#e2f0f7;color:#234b63;}
@@ -327,6 +332,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   /* SESSION / SUPERVISION BAR — IDLE: calm setup card, scrolls with the page (nothing floats) */
   #sess-sticky.ss-idle{position:static;flex-wrap:wrap;gap:8px;padding:12px;margin-bottom:12px;border-bottom:none;border:1px solid var(--border);border-radius:12px;}
   #sess-sticky.ss-idle input:not([type=checkbox]),#sess-sticky.ss-idle select{min-height:38px;}
+  .seg-toggle{display:flex;width:100%;}
+  .seg-btn{flex:1;min-height:44px;}
 
   /* CLIENT HEADER — name on its own line, nothing cut off */
   .client-head{flex-wrap:wrap;align-items:center;gap:6px 8px;}
@@ -410,9 +417,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-Q';
+const APP_VERSION='v2026-09-19-R';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-R',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2. The session Type control on the start bar is now a one-tap segmented toggle — 🧩 1:1 Therapy / 🏫 School Shadow — instead of a dropdown, so you pick the setting with a single tap. Presentation-only — it sets exactly the same value the old dropdown did, so starting a 1:1 or a School Shadow session works exactly as before.',fixed:''},
   {version:'v2026-09-19-Q',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 1 (calm shell). Tidied the whole mobile view so it reads at a glance and stays put. The blue top bar now fits on one line on phones (your name still shows on iPad and desktop), and the duplicate “← Clients” back button under the name was removed since the top-bar Clients already does that. During a session the status bar is a single compact line pinned at the top — a green End & Save and a small red ✕ (Discard) stay in reach, with room to see the client and session type, and it no longer jumps or grows as you scroll. Even spacing between cards, the client name on its own line, and calmer colours. Presentation-only — nothing about entering or saving data changed.',fixed:''},
   {version:'v2026-09-19-P',date:'19 Sep 2026',added:'',improved:'Mobile Layout project — Stage 1 (shared shell). On phones and iPads the tabs are now scrolling “pill” buttons that are bigger and easier to tap and swipe (no “More” menu), and the tab you’re on is clearly highlighted. Form fields stack full-width so nothing is squeezed, and buttons and inputs have larger tap targets. This is a presentation-only change — nothing about how data is entered or saved has changed.',fixed:''},
   {version:'v2026-09-17-O',date:'17 Sep 2026',added:'',improved:'',fixed:'Fixed a data-loss bug: saving one part of a client (e.g. a 1:1 note) from a device holding an out-of-date copy could wipe another part (e.g. School Shadow setup, logs, and supervisor notes) that someone else had just added. Client saves now re-read the latest record and merge \u2014 only the sections this device actually changed are written; everything else keeps the server\u2019s latest.'},
@@ -2831,7 +2839,12 @@ function renderClientView(){
         +'<span style="color:#eba99d;font-size:.78rem">|</span>'
         +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
         +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
-        +'<span class="ss-label">Type</span><select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="font-weight:600"><option value="therapy"'+(_ssSetting!=='shadow'?' selected':'')+'>🧩 1:1 Therapy</option><option value="shadow"'+(_ssSetting==='shadow'?' selected':'')+'>🏫 School Shadow</option></select>'
+        +'<span class="ss-label">Type</span>'
+        +'<div class="seg-toggle" role="group" aria-label="Session type">'
+          +'<button type="button" class="seg-btn'+(_ssSetting!=='shadow'?' seg-on':'')+'" onclick="updateSessState(\'setting\',\'therapy\');render()">🧩 1:1 Therapy</button>'
+          +'<button type="button" class="seg-btn'+(_ssSetting==='shadow'?' seg-on':'')+'" onclick="updateSessState(\'setting\',\'shadow\');render()">🏫 School Shadow</button>'
+        +'</div>'
+        +'<select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="display:none"><option value="therapy"'+(_ssSetting!=='shadow'?' selected':'')+'>🧩 1:1 Therapy</option><option value="shadow"'+(_ssSetting==='shadow'?' selected':'')+'>🏫 School Shadow</option></select>'
         +'<div style="flex:1"></div>'
         +_lastSessBtns
         +'<button style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="startSessionFromBar()">▶ Start Session</button>'
