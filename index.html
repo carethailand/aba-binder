@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-V -->
+<!-- BUILD v2026-09-19-W -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-V</title>
+<title>CARE Client Binder v2026-09-19-W</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -308,6 +308,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   /* Stacked field rows — full-width, one per line */
   .form-row{flex-direction:column;align-items:stretch;gap:10px;}
   .form-row .fg,.form-row .fg-sm,.form-row .fg-xs{flex:1 1 auto;min-width:0;width:100%;}
+  /* Stage 3 — recording cards: keep percent Correct / Total / % on one row (recording only) */
+  .target-block .form-row{flex-direction:row!important;flex-wrap:nowrap;align-items:flex-end;gap:12px;}
+  .target-block .form-row .fg-sm{width:auto!important;flex:0 0 auto;min-width:0;}
+  .target-block .form-row input[type=number]{width:88px!important;font-size:1.15rem;font-weight:600;text-align:center;}
 
   /* Bigger tap targets (16px inputs also stop iOS Safari zooming on focus) */
   input:not([type=checkbox]):not([type=radio]),select,textarea{min-height:44px;font-size:16px;}
@@ -430,9 +434,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-V';
+const APP_VERSION='v2026-09-19-W';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-W',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 3 (recording cards). On a percent target, Correct, Total trials and the % now sit on one row with bigger, centred number boxes (instead of two large stacked boxes), so it is quicker to enter and read. First-trial, tally, rating and task-analysis controls were already touch-sized. Presentation-only — the inputs, calculations and saving are unchanged.',fixed:''},
   {version:'v2026-09-19-V',date:'19 Sep 2026',added:'',improved:'The client header now fits on one line — name, diagnosis, and “last recorded” sit together instead of the name taking its own row. Presentation-only.',fixed:''},
   {version:'v2026-09-19-U',date:'19 Sep 2026',added:'',improved:'',fixed:'The “Edit Last” button on the Program Checklist is now tappable even when no session is started (it was greyed out with the rest of the locked tab). Editing a past session no longer needs a session running.'},
   {version:'v2026-09-19-T',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 tidy-ups. The 1:1 and School Shadow buttons on the start bar are now equal width. The Program Checklist header is a single line — the “Last N sessions” text was removed and the “🏫 = school” key shows when there’s room. Presentation-only.',fixed:''},
