@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-U -->
+<!-- BUILD v2026-09-19-V -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-U</title>
+<title>CARE Client Binder v2026-09-19-V</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -349,7 +349,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
   /* CLIENT HEADER — name on its own line, nothing cut off */
   .client-head{flex-wrap:wrap;align-items:center;gap:6px 8px;}
-  .client-head h2{flex:1 1 100%!important;order:-1;font-size:1.05rem!important;margin:0;}
+  .client-head h2{flex:0 1 auto!important;font-size:1.05rem!important;margin:0;min-width:0;}
   .client-head span{font-size:.72rem;}
 
   /* Calmer alerts + compact graph-month row */
@@ -430,9 +430,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-U';
+const APP_VERSION='v2026-09-19-V';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-V',date:'19 Sep 2026',added:'',improved:'The client header now fits on one line — name, diagnosis, and “last recorded” sit together instead of the name taking its own row. Presentation-only.',fixed:''},
   {version:'v2026-09-19-U',date:'19 Sep 2026',added:'',improved:'',fixed:'The “Edit Last” button on the Program Checklist is now tappable even when no session is started (it was greyed out with the rest of the locked tab). Editing a past session no longer needs a session running.'},
   {version:'v2026-09-19-T',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 tidy-ups. The 1:1 and School Shadow buttons on the start bar are now equal width. The Program Checklist header is a single line — the “Last N sessions” text was removed and the “🏫 = school” key shows when there’s room. Presentation-only.',fixed:''},
   {version:'v2026-09-19-S',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 polish. The start-of-session bar is now two tidy lines: line 1 is NOT STARTED · client · date; line 2 is the hours, a compact 1:1 / School Shadow toggle, and the Start Session button. “Edit Last” moved onto the Program Checklist card (replacing Print), so you can fix a recent session any time — even before starting a new one — and the Print button was removed from this page. Presentation-only — recording and saving are unchanged.',fixed:''},
