@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-T -->
+<!-- BUILD v2026-09-19-U -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-T</title>
+<title>CARE Client Binder v2026-09-19-U</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -430,9 +430,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-T';
+const APP_VERSION='v2026-09-19-U';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-U',date:'19 Sep 2026',added:'',improved:'',fixed:'The “Edit Last” button on the Program Checklist is now tappable even when no session is started (it was greyed out with the rest of the locked tab). Editing a past session no longer needs a session running.'},
   {version:'v2026-09-19-T',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 tidy-ups. The 1:1 and School Shadow buttons on the start bar are now equal width. The Program Checklist header is a single line — the “Last N sessions” text was removed and the “🏫 = school” key shows when there’s room. Presentation-only.',fixed:''},
   {version:'v2026-09-19-S',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 polish. The start-of-session bar is now two tidy lines: line 1 is NOT STARTED · client · date; line 2 is the hours, a compact 1:1 / School Shadow toggle, and the Start Session button. “Edit Last” moved onto the Program Checklist card (replacing Print), so you can fix a recent session any time — even before starting a new one — and the Print button was removed from this page. Presentation-only — recording and saving are unchanged.',fixed:''},
   {version:'v2026-09-19-R',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2. The session Type control on the start bar is now a one-tap segmented toggle — 🧩 1:1 Therapy / 🏫 School Shadow — instead of a dropdown, so you pick the setting with a single tap. Presentation-only — it sets exactly the same value the old dropdown did, so starting a 1:1 or a School Shadow session works exactly as before.',fixed:''},
@@ -5229,7 +5230,7 @@ function renderProgramChecklist(){
     ?'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+dateRow+spacer+lessonRows+'</table></div>'
     :'<div class="empty-state">No sessions recorded yet. Run a session first.</div>';
 
-  return '<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2><span class="chk-legend" style="background:#fbeecb;color:#8a6410;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">🏫 = school</span>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>'+tableHtml+'</div>';
+  return '<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2><span class="chk-legend" style="background:#fbeecb;color:#8a6410;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">🏫 = school</span>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>'+tableHtml+'</div>';
 }
 
 // ═══════════════════════════════════════════════════════
