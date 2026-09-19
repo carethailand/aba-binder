@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-S -->
+<!-- BUILD v2026-09-19-T -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-S</title>
+<title>CARE Client Binder v2026-09-19-T</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -340,8 +340,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   #sess-sticky.ss-idle #ss-date{margin-left:auto;width:auto;flex:0 0 auto;min-height:40px;}
   #sess-sticky.ss-idle #ss-time{width:52px;flex:0 0 auto;min-height:40px;}
   #sess-sticky.ss-idle .seg-toggle{flex:0 0 auto;width:auto;}
-  #sess-sticky.ss-idle .seg-btn{flex:0 0 auto;min-height:40px;padding:7px 8px;font-size:.78rem;}
-  #sess-sticky.ss-idle .ss-start-btn{flex:1 1 auto;min-height:40px;white-space:nowrap;font-size:.82rem;padding:8px 10px;}
+  #sess-sticky.ss-idle .seg-btn{flex:0 0 auto;width:74px;text-align:center;min-height:40px;padding:7px 4px;font-size:.8rem;}
+  #sess-sticky.ss-idle .ss-start-btn{flex:1 1 auto;min-width:0;min-height:40px;white-space:normal;line-height:1.15;font-size:.85rem;padding:8px 10px;}
+  /* Program Checklist header — one line */
+  .chk-head{flex-wrap:nowrap!important;}
+  .chk-head h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.96rem!important;}
+  .chk-head .chk-legend,.chk-head .btn{flex:0 0 auto;}
 
   /* CLIENT HEADER — name on its own line, nothing cut off */
   .client-head{flex-wrap:wrap;align-items:center;gap:6px 8px;}
@@ -352,6 +356,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .alert{font-size:.82rem;padding:10px 12px;line-height:1.45;}
   .graph-month-row{padding:2px 0 6px!important;gap:6px;}
 }
+@media (max-width:400px){ .chk-head .chk-legend{display:none;} }
 /* ══ end Mobile Layout shared shell ══ */
 
 @media print{#nav,#sess-sticky,.tabs,.no-print,.view-only-banner,.no-session-banner,button{display:none!important;}body{background:#fff;}.card{box-shadow:none;border:1px solid #ccc;page-break-inside:avoid;}table{page-break-inside:auto;}tr{page-break-inside:avoid;}}
@@ -425,9 +430,10 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-S';
+const APP_VERSION='v2026-09-19-T';
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-19-T',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 tidy-ups. The 1:1 and School Shadow buttons on the start bar are now equal width. The Program Checklist header is a single line — the “Last N sessions” text was removed and the “🏫 = school” key shows when there’s room. Presentation-only.',fixed:''},
   {version:'v2026-09-19-S',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2 polish. The start-of-session bar is now two tidy lines: line 1 is NOT STARTED · client · date; line 2 is the hours, a compact 1:1 / School Shadow toggle, and the Start Session button. “Edit Last” moved onto the Program Checklist card (replacing Print), so you can fix a recent session any time — even before starting a new one — and the Print button was removed from this page. Presentation-only — recording and saving are unchanged.',fixed:''},
   {version:'v2026-09-19-R',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 2. The session Type control on the start bar is now a one-tap segmented toggle — 🧩 1:1 Therapy / 🏫 School Shadow — instead of a dropdown, so you pick the setting with a single tap. Presentation-only — it sets exactly the same value the old dropdown did, so starting a 1:1 or a School Shadow session works exactly as before.',fixed:''},
   {version:'v2026-09-19-Q',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 1 (calm shell). Tidied the whole mobile view so it reads at a glance and stays put. The blue top bar now fits on one line on phones (your name still shows on iPad and desktop), and the duplicate “← Clients” back button under the name was removed since the top-bar Clients already does that. During a session the status bar is a single compact line pinned at the top — a green End & Save and a small red ✕ (Discard) stay in reach, with room to see the client and session type, and it no longer jumps or grows as you scroll. Even spacing between cards, the client name on its own line, and calmer colours. Presentation-only — nothing about entering or saving data changed.',fixed:''},
@@ -5223,7 +5229,7 @@ function renderProgramChecklist(){
     ?'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+dateRow+spacer+lessonRows+'</table></div>'
     :'<div class="empty-state">No sessions recorded yet. Run a session first.</div>';
 
-  return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1">☑ Program Checklist</h2><span style="font-size:.8rem;color:var(--muted)">Last '+sessions.length+' sessions <span style="background:#fbeecb;color:#8a6410;padding:1px 7px;border-radius:8px;font-size:.72rem;font-weight:600;margin-left:4px">🏫 = school</span></span>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>'+tableHtml+'</div>';
+  return '<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2><span class="chk-legend" style="background:#fbeecb;color:#8a6410;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">🏫 = school</span>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>'+tableHtml+'</div>';
 }
 
 // ═══════════════════════════════════════════════════════
