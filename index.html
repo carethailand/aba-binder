@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-19-Y -->
+<!-- BUILD v2026-09-22-AF -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-19-Y</title>
+<title>CARE Client Binder v2026-09-22-AF</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -423,6 +423,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <text x="74" y="32" font-family="Arial Black,sans-serif" font-size="32" font-weight="900" fill="#fff">e</text>
 </svg><span style="font-size:.8rem;font-weight:400;opacity:.8;letter-spacing:.06em">CLIENT BINDER</span></h1>
   <span id="nav-user"></span>
+  <button class="btn-nav" id="btn-update" style="display:none;background:#fff4d6;color:#8a6410;font-weight:700" onclick="_forceUpdate()">Update ready</button>
   <button class="btn-nav" id="btn-clients" onclick="showView('clients')">Clients</button>
   <button class="btn-nav" id="btn-admin" style="display:none" onclick="showView('admin')">⚙ Admin</button>
   <button class="btn-nav" id="btn-change-pw" style="display:none" onclick="showChangePasswordModal()">🔑 Password</button>
@@ -434,9 +435,17 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-19-Y';
+const APP_VERSION='v2026-09-22-AF';
+var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='19 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-22-AF',date:'22 Sep 2026',added:'School Shadow now has the same crash-safety as 1:1 recording: the grid marks and NET numbers you tap are auto-saved as a private draft on your device as you go, so a reload, closed tab, or update before you press Save no longer loses them - they come back when you return.',improved:'Update notifications tidied into one: the Update ready button in the top bar (no duplicate pop-up).',fixed:''},
+  {version:'v2026-09-22-AE',date:'22 Sep 2026',added:'',improved:'',fixed:'Closed the last edge in the save-merge safety: if the app cannot read the latest copy of a record (e.g. the connection drops at the moment of saving), it now retries and then stops with a clear \u201CSave failed - check connection and try again\u201D message instead of falling back to an overwrite. New clients still save normally.'},
+  {version:'v2026-09-22-AD',date:'22 Sep 2026',added:'Notes are now kept safe as you type: every free-text note (observation, team, behavior, session note areas) auto-saves a private draft on your device, so an unfinished note survives a reload, a sign-out, or a closed tab and reappears when you return. Drafts are local only and never write to the database.',improved:'Updates no longer reload your screen on their own - when a new version is live an Update ready button appears in the top bar, and you click it when you are at a good stopping point. The version check is also lighter (every 5 minutes).',fixed:''},
+  {version:'v2026-09-22-AC',date:'22 Sep 2026',added:'',improved:'Auto-update and daily sign-out now wait while you are typing (or typed in the last 90 seconds, or a field is focused), so unsaved notes are never interrupted. Auto-update also cannot reload more than once every 5 minutes, preventing any reload loop during a deploy.',fixed:''},
+  {version:'v2026-09-22-AB',date:'22 Sep 2026',added:'Daily auto sign-out for privacy: a login now lasts only for the day it is made. A device left open is signed out at the start of the next day, and reopening a tab the next day asks for a fresh login, so a device left unattended overnight is not sitting logged in. A device actively recording is not interrupted; it signs out once the session is finished.',improved:'',fixed:''},
+  {version:'v2026-09-22-AA',date:'22 Sep 2026',added:'Auto-update: any device that is not mid-session now quietly reloads to the newest version as soon as one is live, and re-checks right before saving \u2014 so an old, stale tab updates itself instead of overwriting current data. Devices actively recording are never interrupted; they keep the finish-and-update banner.',improved:'',fixed:''},
+  {version:'v2026-09-22-Z',date:'22 Sep 2026',added:'',improved:'',fixed:'Closed the remaining School Shadow data-loss gap: an empty or auto-created section can no longer overwrite real data on the server. Previously a device that had the app open before School Shadow was set up could save a blank shadow over it. Genuine edits and deletions still save normally. IMPORTANT: every device must refresh to this version — older cached versions still lack this protection.'},
   {version:'v2026-09-19-Y',date:'19 Sep 2026',added:'',improved:'The “M” ready-to-master mark is now consistent for every account type: in the supervisor’s Program Edit view the lesson header shows “M” (was ⚑) and the SD header now shows “M” too, matching the therapist recording view. Presentation-only.',fixed:''},
   {version:'v2026-09-19-X',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 3 polish. Recording targets no longer show the “in progress” tag (the target name now has room). A target that has met its mastery criteria shows a compact amber “M” instead of the word “flagged”, and that “M” also appears on its SD header and lesson header, so a ready-to-master target is visible without expanding everything. Presentation-only.',fixed:''},
   {version:'v2026-09-19-W',date:'19 Sep 2026',added:'',improved:'Mobile Layout — Stage 3 (recording cards). On a percent target, Correct, Total trials and the % now sit on one row with bigger, centred number boxes (instead of two large stacked boxes), so it is quicker to enter and read. First-trial, tally, rating and task-analysis controls were already touch-sized. Presentation-only — the inputs, calculations and saving are unchanged.',fixed:''},
@@ -497,17 +506,48 @@ async function checkForUpdate(showToast){
     var t=await r.text();
     var m=t.match(/BUILD (v[0-9A-Za-z-]+)/);
     var latest=m?m[1]:null;
+    if(latest)_latestVersion=latest;
     var el=document.getElementById('update-status');
     if(latest&&latest!==APP_VERSION){
       if(el)el.innerHTML='<div style="background:#fff4d6;border:1px solid #f0d98f;color:#8a6410;border-radius:8px;padding:8px 10px;font-size:.8rem">🔄 New version <b>'+latest+'</b> available. <button class="btn btn-xs btn-primary" style="margin-left:6px" onclick="_forceUpdate()">Update now</button></div>';
-      if(showToast)toast('🔄 A new version ('+latest+') is available — reload to update.','info',6000);
     }else{
       if(el)el.innerHTML='<div style="font-size:.72rem;color:#94a0ae">✓ You’re on the latest ('+APP_VERSION+')</div>';
     }
+    try{_updateNavBtn(latest&&latest!==APP_VERSION?latest:null);}catch(e){}
   }catch(e){}
 }
 function _forceUpdate(){location.href=location.pathname+'?v='+Date.now();}
+function _updateNavBtn(v){try{var b=document.getElementById('btn-update');if(!b)return;if(v){b.title='New version '+v+' available - click to update when ready';b.style.display='';}else{b.style.display='none';}}catch(e){}}
+var _lastInputTs=0;
+document.addEventListener('input',function(){_lastInputTs=Date.now();},true);
+document.addEventListener('keydown',function(){_lastInputTs=Date.now();},true);
+function _hasFocusedField(){try{var a=document.activeElement;if(!a)return false;var t=(a.tagName||'').toUpperCase();if(t==='TEXTAREA'||t==='SELECT')return true;if(t==='INPUT'){var ty=(a.type||'text').toLowerCase();return ['button','submit','checkbox','radio','file','reset'].indexOf(ty)<0;}return a.isContentEditable===true;}catch(e){return false;}}
+function _isBusy(){try{if(_hasFocusedField())return true;if(_lastInputTs&&Date.now()-_lastInputTs<90000)return true;var s=getSessState();var v=getSupState();return !!((s&&s.started)||(v&&v.started));}catch(e){return false;}}
+function _maybeAutoUpdate(){
+  if(_autoUpdating)return true;
+  if(!(_latestVersion&&_latestVersion!==APP_VERSION&&typeof currentUser!=='undefined'&&currentUser&&!_isBusy()))return false;
+  var _la=0;try{_la=parseInt(sessionStorage.getItem('care_autoupd_at')||'0',10);}catch(e){}
+  if(Date.now()-_la<300000)return false;
+  _autoUpdating=true;
+  try{sessionStorage.setItem('care_autoupd_at',String(Date.now()));}catch(e){}
+  try{toast('Updating to the latest version...','info',2500);}catch(e){}
+  setTimeout(_forceUpdate,1200);
+  return true;
+}
+function _todayLocal(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function _stampLoginDay(){try{localStorage.setItem('care_login_day',_todayLocal());}catch(e){}}
+function _checkDailyLogout(){try{if(typeof currentUser==='undefined'||!currentUser)return;var d=null;try{d=localStorage.getItem('care_login_day');}catch(e){}if(d&&d!==_todayLocal()&&!_isBusy()){try{localStorage.removeItem('care_login_day');}catch(e){}try{toast('Signed out for the day - please log in again for privacy.','info',5000);}catch(e){}doLogout();}}catch(e){}}
 window.addEventListener('load',initUpdatePanel);
+setInterval(function(){if(!document.hidden)checkForUpdate();},300000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)checkForUpdate();});
+setInterval(_checkDailyLogout,60000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)_checkDailyLogout();});
+// ---- Local field drafts: keep free-text notes safe across reload/logout. LOCAL ONLY - never writes to the database. ----
+function _fdSkip(el){try{if(!el||!el.id)return true;if((el.tagName||'').toUpperCase()!=='TEXTAREA')return true;if(el.id==='tx-sess-notes'||el.id==='ss-sess-notes'||el.id==='parent-note-input')return true;if(el.id.indexOf('sdnadd_')===0)return true;if(el.closest&&el.closest('#login-screen'))return true;return false;}catch(e){return true;}}
+function _fdKey(el){return 'care_fd:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+el.id;}
+function _restoreFieldDrafts(){try{document.querySelectorAll('textarea[id]').forEach(function(el){if(_fdSkip(el))return;var d=null;try{d=localStorage.getItem(_fdKey(el));}catch(e){}if(d!=null&&d!==''&&(''+(el.value||'')).trim()===''){el.value=d;}});}catch(e){}}
+function _clearFieldDraft(id){try{localStorage.removeItem('care_fd:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+id);}catch(e){}}
+document.addEventListener('input',function(ev){try{var el=ev.target;if(_fdSkip(el))return;var v=el.value;if(v&&(''+v).trim()!==''){try{localStorage.setItem(_fdKey(el),v);}catch(e){}}else{try{localStorage.removeItem(_fdKey(el));}catch(e){}}}catch(e){}},true);
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
 const _supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'care_auth'}});
@@ -731,40 +771,69 @@ function _captureBaselines(){
   (DB.bips||[]).forEach(function(b){_recBaseline['bips:'+b.id]=JSON.stringify(bipToRow(b));});
   (DB.abcData||[]).forEach(function(a){_recBaseline['abc_data:'+a.id]=JSON.stringify(abcToRow(a));});
 }
+function _ssIsEmptyish(v){
+  if(v===undefined||v===null)return true;
+  if(Array.isArray(v))return v.length===0;
+  if(typeof v==='object')return Object.keys(v).every(function(k){return _ssIsEmptyish(v[k]);});
+  if(typeof v==='string')return v.trim()==='';
+  return false;
+}
+function _mergeField(devV,srvV,baseV){
+  var _s=function(x){return JSON.stringify(x===undefined?null:x);};
+  if(_s(devV)===_s(baseV))return srvV!==undefined?srvV:devV;   // unchanged locally -> server's latest
+  // device changed this section vs its load baseline:
+  if(_ssIsEmptyish(devV)&&_ssIsEmptyish(baseV)&&!_ssIsEmptyish(srvV))return srvV; // phantom empty (auto-init on a stale copy) must NEVER wipe real server data
+  return devV;                                                  // genuine change (incl. deleting real data)
+}
 function _mergeClientRow(dev,srv,base){
-  // Section-level merge: keep the latest server value for any section this device did NOT change,
-  // and only overwrite sections this device actually changed vs its load baseline.
-  // Prevents a stale copy from clobbering another role's concurrent edits (e.g. School Shadow).
+  // Section-level merge with a phantom-empty guard.
+  //  - unchanged sections keep the server's latest (other people's concurrent edits);
+  //  - genuinely changed sections are written;
+  //  - an empty/auto-initialised section can NEVER overwrite real data on the server.
+  //    (That auto-init empty shadow on a stale copy is what wiped School Shadow.)
   if(!srv||!base)return dev;
-  var _sig=function(v){return JSON.stringify(v===undefined?null:v);};
   var out=Object.assign({},dev);
   ['name','dob','diagnosis','supervisor','notes','reinforcers'].forEach(function(k){
-    if(_sig(dev[k])===_sig(base[k]))out[k]=(srv[k]!==undefined?srv[k]:dev[k]);
+    out[k]=_mergeField(dev[k],srv[k],base[k]);
   });
   var dsn=dev.sup_notif||{},ssn=srv.sup_notif||{},bsn=base.sup_notif||{};
   var msn={},keys={};
   [dsn,ssn,bsn].forEach(function(o){Object.keys(o).forEach(function(k){keys[k]=1;});});
   Object.keys(keys).forEach(function(k){
-    if(_sig(dsn[k])!==_sig(bsn[k])){if(dsn[k]!==undefined)msn[k]=dsn[k];}
-    else{if(ssn[k]!==undefined)msn[k]=ssn[k];}
+    var v=_mergeField(dsn[k],ssn[k],bsn[k]);
+    if(v!==undefined&&v!==null)msn[k]=v;
   });
   out.sup_notif=Object.keys(msn).length?msn:null;
   return out;
 }
 async function sbSaveClient(cObj){
   var _dev=clientToRow(cObj);
-  var _row=_dev;
-  try{
-    var _res=await sbFetch('clients','GET',null,'select=*&id=eq.'+cObj.id);
-    if(_res&&_res.length){
-      var _base=null;try{_base=JSON.parse(_recBaseline['clients:'+cObj.id]||'null');}catch(e){}
-      if(_base)_row=_mergeClientRow(_dev,_res[0],_base);
-    }
-  }catch(e){/* server read failed -> fall back to device row (previous behaviour) */}
+  var _row=_dev,_readOk=false;
+  // Re-read the latest copy so we can merge. Retry up to 3x on flaky connections.
+  for(var _att=0;_att<3&&!_readOk;_att++){
+    if(_att>0){await new Promise(function(r){setTimeout(r,600*_att);});}
+    try{
+      var _res=await sbFetch('clients','GET',null,'select=*&id=eq.'+cObj.id);
+      if(_res!==null){            // success (array; empty means the row does not exist yet)
+        _readOk=true;
+        if(_res.length){
+          var _base=null;try{_base=JSON.parse(_recBaseline['clients:'+cObj.id]||'null');}catch(e){}
+          _row=_base?_mergeClientRow(_dev,_res[0],_base):_dev;
+        }else{_row=_dev;}         // brand-new client -> nothing to clobber, write as-is
+      }
+    }catch(e){}
+  }
+  if(!_readOk){
+    // Could not read the latest copy -> NEVER blind-overwrite. Abort safely and tell the user.
+    try{showSaveStatus('error','Save failed - check connection and try again');}catch(e){}
+    try{toast('\u26A0 Could not save - check your connection and try again.','error',6000);}catch(e){}
+    return false;
+  }
   await sbUpsert('clients',_row);
   try{var _mc=rowToClient(_row);var _c=DB.clients.find(function(x){return x.id===cObj.id;});if(_c)Object.assign(_c,_mc);}catch(e){}
   _recBaseline['clients:'+cObj.id]=JSON.stringify(_row);
   hideSyncStatus();
+  return true;
 }
 async function sbSaveLesson(lObj){
   var _row=lessonToRow(lObj);
@@ -1297,6 +1366,7 @@ function discardSession(){
   hideUnsavedBanner();
   const _ss=getSessState();
   if(_ss.clientId&&_ss.date)clearBIPDraft(_ss.clientId,_ss.date);
+  try{_ssClearShadowDraft();}catch(e){}
   clearSessState();clearSessionDraft();render();
 }
 
@@ -2510,6 +2580,9 @@ async function tryResumeSession(){
     if(!ok)return false;
     const user=DB.users.find(function(x){return x.authId===session.user.id;});
     if(!user||user.active===false){await _supa.auth.signOut();return false;}
+    var _ld=null;try{_ld=localStorage.getItem('care_login_day');}catch(e){}
+    if(_ld&&_ld!==_todayLocal()){try{localStorage.removeItem('care_login_day');}catch(e){}await _supa.auth.signOut();return false;}
+    if(!_ld)_stampLoginDay();
     enterApp(user,false);
     return true;
   }catch(e){return false;}
@@ -2556,7 +2629,7 @@ async function doLogin(){
     const user=DB.users.find(x=>x.authId===authData.user.id);
     if(!user){await _supa.auth.signOut();_loginErr('Account not linked — contact your administrator.');return;}
     if(user.active===false){await _supa.auth.signOut();_loginErr('Account deactivated. Contact your administrator.');return;}
-    _loginSuccess(user,false);
+    _stampLoginDay();_loginSuccess(user,false);
     return;
   }
   const ok=await loadFromSupabase();
@@ -2564,7 +2637,7 @@ async function doLogin(){
   const legacyUser=DB.users.find(x=>(x.username===emailVal||x.email===emailVal)&&x.password===pw&&!x.authId);
   if(!legacyUser){_loginErr('Invalid email or password.');return;}
   if(legacyUser.active===false){_loginErr('Account deactivated. Contact your administrator.');return;}
-  _loginSuccess(legacyUser,true);
+  _stampLoginDay();_loginSuccess(legacyUser,true);
 }
 async function doLogout(){
   await _supa.auth.signOut().catch(()=>{});
@@ -2735,6 +2808,8 @@ function render(){
     const bips=(DB.bips||[]).filter(b=>b.clientId===selectedClientId);
     requestAnimationFrame(()=>requestAnimationFrame(()=>bips.forEach(bip=>drawBIPChart(bip))));
   }
+  try{_restoreFieldDrafts();}catch(e){}
+  try{_ssRestoreShadowDraft();}catch(e){}
 
 }
 
@@ -3023,7 +3098,13 @@ function _ssCellHtml(tid,pid,v,active){
   var btns=_SS_CODES.map(function(cd){return '<button type="button" data-v="'+cd[0]+'" onclick="_ssPick(this)" style="flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(v===cd[0],cd[0])+'">'+cd[1]+'</button>';}).join('');
   return '<div class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" style="display:flex;gap:3px">'+btns+'</div>';
 }
-function _ssPick(btn){var cell=btn.parentNode;var nv=btn.dataset.v;if(cell.dataset.v===nv)nv='';cell.dataset.v=nv;Array.prototype.forEach.call(cell.children,function(b){b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===nv,b.dataset.v));});_ssRecalc();}
+function _ssDraftKey(){return 'care_ss_draft:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+_ssDate;}
+function _ssApplyCellValue(cell,v){try{cell.dataset.v=v||'';Array.prototype.forEach.call(cell.children,function(b){if(b.tagName==='BUTTON')b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===(v||''),b.dataset.v));});}catch(e){}}
+function _ssSaveShadowDraft(){try{if(!(typeof _ssCanRecord==='function'&&_ssCanRecord()))return;var grid=document.getElementById('ss-grid');var hasNet=document.querySelector('.ssn-c');if(!grid&&!hasNet)return;var d={cells:{},net:{}};if(grid){document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){d.cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v||'';});}if(hasNet){document.querySelectorAll('.ssn-c').forEach(function(cel){var id=cel.dataset.id;var t=document.querySelector('.ssn-t[data-id="'+id+'"]');d.net[id]={c:(cel.value||''),t:(t?(t.value||''):'')};});}try{localStorage.setItem(_ssDraftKey(),JSON.stringify(d));}catch(e){}}catch(e){}}
+function _ssClearShadowDraft(){try{localStorage.removeItem(_ssDraftKey());}catch(e){}}
+function _ssRestoreShadowDraft(){try{var grid=document.getElementById('ss-grid');var netc=document.querySelector('.ssn-c');var editable=(grid&&grid.querySelector('button'))||netc;if(!editable)return;var raw=null;try{raw=localStorage.getItem(_ssDraftKey());}catch(e){}if(!raw)return;var d=null;try{d=JSON.parse(raw);}catch(e){return;}if(!d)return;if(grid&&grid.querySelector('button')&&d.cells){document.querySelectorAll('#ss-grid .ss-cell').forEach(function(cell){var k=cell.dataset.t+'_'+cell.dataset.p;if(Object.prototype.hasOwnProperty.call(d.cells,k)&&d.cells[k]!==(cell.dataset.v||'')){_ssApplyCellValue(cell,d.cells[k]);}});try{_ssRecalc();}catch(e){}}if(netc&&d.net){Object.keys(d.net).forEach(function(id){var c=document.querySelector('.ssn-c[data-id="'+id+'"]');var t=document.querySelector('.ssn-t[data-id="'+id+'"]');var dv=d.net[id]||{};if(c&&dv.c!=null&&dv.c!==''&&(''+(c.value||''))===''){c.value=dv.c;}if(t&&dv.t!=null&&dv.t!==''&&(''+(t.value||''))===''){t.value=dv.t;}if(c&&typeof _ssNetCalc==='function'){try{_ssNetCalc(c);}catch(e){}}});}}catch(e){}}
+document.addEventListener('input',function(ev){try{var el=ev.target;if(el&&el.classList&&(el.classList.contains('ssn-c')||el.classList.contains('ssn-t')))_ssSaveShadowDraft();}catch(e){}},true);
+function _ssPick(btn){var cell=btn.parentNode;var nv=btn.dataset.v;if(cell.dataset.v===nv)nv='';cell.dataset.v=nv;Array.prototype.forEach.call(cell.children,function(b){b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===nv,b.dataset.v));});_ssRecalc();_ssSaveShadowDraft();}
 function _ssRecalc(){var byT={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
 function _ssPct(cells,tid,periods){var cn=0,op=0;periods.forEach(function(pp){var v=cells[tid+'_'+pp.id];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}});return op?Math.round(cn/op*100)+'%':'–';}
 function _ssSetDate(v){if(v){_ssDate=v;render();}}
@@ -3061,7 +3142,7 @@ function _ssSaveAll(){
   if(miss){toast('Saved. Add “Total” for the NET target to record its %.','error');return;}
   toast('Saved ✓');render();
 }
-function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();render();}
+function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});_ssSave();_clearFieldDraft('ssn-note-in');render();}
 function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
 function _ssSetMonth(v){if(v){_ssMonth=v;render();}}
 function _ssPctOf(o){return o&&o.op?Math.round(o.c/o.op*100):0;}
@@ -4416,7 +4497,7 @@ function addBehaviorNote(){
   var el=document.getElementById('beh-note-in');var txt=el?el.value.trim():'';if(!txt){toast('Type a note first');return;}
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.behaviorNotes)c.behaviorNotes=[];
   c.behaviorNotes.push({id:uid(),date:new Date().toISOString().slice(0,10),authorId:currentUser.id,authorName:currentUser.name,text:txt});
-  sbSaveClient(c);render();
+  sbSaveClient(c);_clearFieldDraft('beh-note-in');render();
 }
 function delBehaviorNote(nid){
   if(!['supervisor','director'].includes(currentUser.role))return;
@@ -5904,7 +5985,7 @@ function addCommNote(){
   var el=document.getElementById('comm-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.commNotes)c.commNotes=[];
   c.commNotes.push({id:uid(),date:new Date().toISOString().slice(0,10),author:currentUser.name,role:currentUser.role,text:t});
-  sbSaveClient(c);render();
+  sbSaveClient(c);_clearFieldDraft('comm-note-in');render();
 }
 function delCommNote(btn){
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});var n=(c.commNotes||[]).find(function(x){return x.id===btn.dataset.id;});
@@ -5996,7 +6077,7 @@ function deleteReinforcer(idx){if(!requireActiveSession())return;
   saveData();render();
 }
 
-function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:(getActiveState().date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);toast('Saved ✓');render();}
+function saveNote(){if(!requireActiveSession())return;const text=document.getElementById('note-t').value.trim();if(!text)return;const c=DB.clients.find(x=>x.id===selectedClientId);if(!c.notes)c.notes=[];c.notes.push({id:uid(),date:(getActiveState().date||new Date().toISOString().slice(0,10)),author:currentUser.id,authorName:currentUser.name,type:['supervisor','director'].includes(currentUser.role)?'supervisor':'therapist',text});sbSaveClient(c);_clearFieldDraft('note-t');toast('Saved ✓');render();}
 
 function renderReport(){
   const c=DB.clients.find(x=>x.id===selectedClientId);
