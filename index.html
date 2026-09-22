@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-22-AF -->
+<!-- BUILD v2026-09-23-AG -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-22-AF</title>
+<title>CARE Client Binder v2026-09-23-AG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -127,6 +127,14 @@ details.mastered-target-detail .chart-wrap{margin:8px 10px 10px;}
 .bip-tab-btn:hover{background:#eef1f4;color:var(--text);}
 .bip-tab-btn.active{color:#1f8ec4;border-bottom-color:#1f8ec4;background:#eef6fb;}
 .bip-tab-pane{padding-top:4px;}.bip-tab-pane.hidden{display:none!important;}
+/* Therapist BIP collapsible sections (Stage 4) */
+.bip-sec{border:1px solid var(--border);border-radius:8px;margin-bottom:10px;overflow:hidden;background:#fff;}
+.bip-sec>summary{list-style:none;cursor:pointer;padding:11px 12px;display:flex;align-items:center;gap:8px;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;background:#f8f9fb;min-height:44px;}
+.bip-sec>summary::-webkit-details-marker{display:none;}
+.bip-sec>summary .det-arrow{transition:transform .15s;font-size:.75rem;color:var(--muted);display:inline-block;}
+.bip-sec[open]>summary .det-arrow{transform:rotate(90deg);}
+.bip-sec[open]>summary{border-bottom:1px solid var(--border);}
+.bip-sec-body{padding:10px 12px;}
 details.card>summary .det-arrow{transition:transform .15s;}
 details.card[open]>summary .det-arrow{transform:rotate(90deg);}
 /* Lesson status buttons */
@@ -435,10 +443,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-22-AF';
+const APP_VERSION='v2026-09-23-AG';
 var _latestVersion=null,_autoUpdating=false;
-const APP_UPDATED='19 Sep 2026';
+const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-23-AG',date:'23 Sep 2026',added:'',improved:'Mobile Layout — Stage 4 (BIP tab). On the therapist view each behaviour-plan section (Overview, Prevention, Teaching, Response, Data) is now a tap-to-open collapsible: the Data log form is open and ready when you open a behaviour, and the plan text sits collapsed above it so it no longer buries the form on a phone. Presentation-only — the log form, its inputs, and saving are unchanged (a collapsed section still keeps its contents, so logging works whether open or closed).',fixed:''},
   {version:'v2026-09-22-AF',date:'22 Sep 2026',added:'School Shadow now has the same crash-safety as 1:1 recording: the grid marks and NET numbers you tap are auto-saved as a private draft on your device as you go, so a reload, closed tab, or update before you press Save no longer loses them - they come back when you return.',improved:'Update notifications tidied into one: the Update ready button in the top bar (no duplicate pop-up).',fixed:''},
   {version:'v2026-09-22-AE',date:'22 Sep 2026',added:'',improved:'',fixed:'Closed the last edge in the save-merge safety: if the app cannot read the latest copy of a record (e.g. the connection drops at the moment of saving), it now retries and then stops with a clear \u201CSave failed - check connection and try again\u201D message instead of falling back to an overwrite. New clients still save normally.'},
   {version:'v2026-09-22-AD',date:'22 Sep 2026',added:'Notes are now kept safe as you type: every free-text note (observation, team, behavior, session note areas) auto-saves a private draft on your device, so an unfinished note survives a reload, a sign-out, or a closed tab and reappears when you return. Drafts are local only and never write to the database.',improved:'Updates no longer reload your screen on their own - when a new version is live an Update ready button appears in the top bar, and you click it when you are at a good stopping point. The version check is also lighter (every 5 minutes).',fixed:''},
@@ -5532,31 +5541,27 @@ function renderBehaviorTab(){
         +'<div style="font-size:.72rem;font-weight:800;color:#1f8ec4;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em">'+label+'</div>'
         +bodyHtml+'</div>';
     };
-    const txBody=
-      // Overview row
-      '<div style="display:flex;flex-wrap:wrap;gap:16px;padding:10px 0;border-bottom:1px solid #eef1f4;margin-bottom:4px">'
+    // TX collapsible sections (Stage 4): Data open by default, plan sections collapsed
+    const _txSec=(label,icon,col,content,isOpen)=>{
+      if(!content||!content.trim())return'';
+      return '<details class="bip-sec"'+(isOpen?' open':'')+' style="border-left:3px solid '+col+'">'
+        +'<summary><span class="det-arrow">▶</span><span style="color:'+col+';font-weight:800">'+icon+' '+label+'</span></summary>'
+        +'<div class="bip-sec-body">'+content+'</div></details>';
+    };
+    const _txOverview='<div style="display:flex;flex-wrap:wrap;gap:16px">'
       +(bip.description?'<div style="flex:2;min-width:200px"><div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:3px">DEFINITION</div><p style="font-size:.84rem;line-height:1.55;margin:0">'+esc(bip.description)+'</p></div>':'')
       +'<div style="flex:1;min-width:160px">'
       +'<div style="font-size:.75rem;font-weight:700;color:var(--muted);margin-bottom:5px">FUNCTIONS</div>'
       +'<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px">'+fnBadges+'</div>'
       +(bip.goal?'<div style="font-size:.78rem"><strong>Goal:</strong> '+esc(bip.goal)+(bip.goalDeadline?' <span style="color:var(--muted)">by '+bip.goalDeadline+'</span>':'')+'</div>':'')
       +(bip.baseline?'<div style="font-size:.78rem;margin-top:2px"><strong>Baseline:</strong> '+esc(bip.baseline)+'</div>':'')
-      +'</div></div>'
-      // Prevention
-      +txSectionHdr('Prevention','🛡')
-      +txBlock('Environment Setup',bip.competing)
-      +txBlock('Antecedent Modification',bip.antecedent)
-      // Teaching
-      +txSectionHdr('Teaching','📚')
-      +txBlock('Replacement Behavior',bip.replacement)
-      // Response
-      +txSectionHdr('Response','⚡')
-      +txBlock('Consequence Manipulation',bip.consequence)
-      +txBlock('Safety Plan',bip.safety)
-      // Data log
-      +txSectionHdr('Data','📊')
-      +logForm
-      +(logs.length>=1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>');
+      +'</div></div>';
+    const txBody=
+      _txSec('Overview','📋','#234b63',_txOverview,false)
+      +_txSec('Prevention','🛡','#4fa14a',txBlock('Environment Setup',bip.competing)+txBlock('Antecedent Modification',bip.antecedent),false)
+      +_txSec('Teaching','📚','#7c3aed',txBlock('Replacement Behavior',bip.replacement),false)
+      +_txSec('Response','⚡','#d84a3a',txBlock('Consequence Manipulation',bip.consequence)+txBlock('Safety Plan',bip.safety),false)
+      +_txSec('Data','📊','#0369a1',logForm+(logs.length>=1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>'),true);
 
     const bodyContent=['supervisor','director'].includes(currentUser.role)
       ? tabNav+tab1+tab2+tab3+tab4+tab5
