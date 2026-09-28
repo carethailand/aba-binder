@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-09-23-AG -->
+<!-- BUILD v2026-09-28-AH -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-09-23-AG</title>
+<title>CARE Client Binder v2026-09-28-AH</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -443,10 +443,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-09-23-AG';
+const APP_VERSION='v2026-09-28-AH';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-09-28-AH',date:'28 Sep 2026',added:'',improved:'',fixed:'URGENT #3 root cause: the end-of-session background sync (flushSave) was writing whole client records directly, bypassing the safe merge - so a therapist with a stale/empty copy could wipe the School Shadow SETUP when ending a 1:1 session. flushSave now routes every changed client through the same read-and-merge as normal saves, so it can no longer blind-overwrite School Shadow (or any other section). IMPORTANT: every device must be updated to this version - a device on an older cached version still has the old unsafe flushSave.'},
   {version:'v2026-09-23-AG',date:'23 Sep 2026',added:'',improved:'Mobile Layout — Stage 4 (BIP tab). On the therapist view each behaviour-plan section (Overview, Prevention, Teaching, Response, Data) is now a tap-to-open collapsible: the Data log form is open and ready when you open a behaviour, and the plan text sits collapsed above it so it no longer buries the form on a phone. Presentation-only — the log form, its inputs, and saving are unchanged (a collapsed section still keeps its contents, so logging works whether open or closed).',fixed:''},
   {version:'v2026-09-22-AF',date:'22 Sep 2026',added:'School Shadow now has the same crash-safety as 1:1 recording: the grid marks and NET numbers you tap are auto-saved as a private draft on your device as you go, so a reload, closed tab, or update before you press Save no longer loses them - they come back when you return.',improved:'Update notifications tidied into one: the Update ready button in the top bar (no duplicate pop-up).',fixed:''},
   {version:'v2026-09-22-AE',date:'22 Sep 2026',added:'',improved:'',fixed:'Closed the last edge in the save-merge safety: if the app cannot read the latest copy of a record (e.g. the connection drops at the moment of saving), it now retries and then stops with a clear \u201CSave failed - check connection and try again\u201D message instead of falling back to an overwrite. New clients still save normally.'},
@@ -898,8 +899,9 @@ async function flushSave(){
     // Only push records THIS device actually changed since load (vs baseline).
     // Prevents a stale copy from re-uploading — and overwriting — records it never touched.
     const _push=function(table,row){var k=table+':'+row.id;var js=JSON.stringify(row);if(_recBaseline[k]===js)return null;return sbUpsert(table,row).then(function(r){if(r!==null)_recBaseline[k]=js;});};
-    // clients first (lessons/bips FK-depend on clients)
-    await Promise.all(DB.clients.map(c=>_push('clients',clientToRow(c))).filter(Boolean));
+    // clients: route each CHANGED client through sbSaveClient's read-merge so a stale copy can
+    // NEVER blind-overwrite another role's section (e.g. School Shadow setup). [URGENT #3 fix]
+    for(var _ci=0;_ci<DB.clients.length;_ci++){var _fc=DB.clients[_ci];if(_recBaseline['clients:'+_fc.id]!==JSON.stringify(clientToRow(_fc))){await sbSaveClient(_fc);}}
     await Promise.all([
       ...DB.lessons.map(l=>_push('lessons',lessonToRow(l))),
       ...(DB.bips||[]).map(b=>_push('bips',bipToRow(b))),
