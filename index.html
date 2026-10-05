@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-05-AJ -->
+<!-- BUILD v2026-10-05-AK -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-05-AJ</title>
+<title>CARE Client Binder v2026-10-05-AK</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -443,10 +443,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-05-AJ';
+const APP_VERSION='v2026-10-05-AK';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-05-AK',date:'5 Oct 2026',added:'',improved:'The Demo Client is now a shared sandbox any supervisor can fully use for testing - it is no longer view-only for supervisors who are not assigned to it. (Real clients are unchanged: supervisors still only edit their assigned cases.)',fixed:''},
   {version:'v2026-10-05-AJ',date:'5 Oct 2026',added:'Reassign a case to a different supervisor: directors/admins now see a \u201CSup:\u201D dropdown at the top of a client. Changing it moves the case to that supervisor (or Unassigned) and the Clients list re-groups accordingly. Previously there was no way to change a case\u2019s supervisor after it was created, so the grouping never updated.',improved:'',fixed:''},
   {version:'v2026-10-02-AI',date:'2 Oct 2026',added:'',improved:'Case Info is now easy to save: the Save button sits in a bar pinned to the bottom of the screen the whole time you are on the tab, so you can never scroll past it and miss it. The moment you edit a field it changes to a highlighted \u201CSave changes\u201D with an \u201CUnsaved changes\u201D note, so it is obvious when something still needs saving. (Saving itself is unchanged.)',fixed:''},
   {version:'v2026-09-28-AH',date:'28 Sep 2026',added:'',improved:'',fixed:'URGENT #3 root cause: the end-of-session background sync (flushSave) was writing whole client records directly, bypassing the safe merge - so a therapist with a stale/empty copy could wipe the School Shadow SETUP when ending a 1:1 session. flushSave now routes every changed client through the same read-and-merge as normal saves, so it can no longer blind-overwrite School Shadow (or any other section). IMPORTANT: every device must be updated to this version - a device on an older cached version still has the old unsafe flushSave.'},
@@ -3023,8 +3024,11 @@ function renderClientView(){
   const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
   return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
+function _isDemoClient(cid){try{var c=(DB.clients||[]).find(function(x){return x.id===cid;});return !!c&&(c.name||'').trim().toLowerCase()==='demo client';}catch(e){return false;}}
 function isViewOnly(){
   if(!currentUser||!selectedClientId)return false;
+  // Demo Client is a shared sandbox: usable by everyone (except admin, who stays view-only) for testing.
+  if(_isDemoClient(selectedClientId))return currentUser.role==='admin';
   if(currentUser.role==='admin')return true;
   if(currentUser.role==='qcd'){
     const ac=currentUser.assignedClients||[];
