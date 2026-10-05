@@ -4,7 +4,7 @@ Hi, and thank you for taking care with this. 💙 A quick note on *why* this fil
 
 **This app holds real clinical records for children in ABA therapy.** Lost data isn't an inconvenience here — it can mean a therapist's whole day of observations, or a supervisor's setup, gone. We have been through that several times, and it was painful. So the single most important thing in this project is: **never lose or overwrite data.** Features can wait; data safety cannot. Everything below exists to protect the people whose information lives in this app. When in doubt, choose the safer option and ask.
 
-**Current version:** `v2026-09-28-AH`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
+**Current version:** `v2026-10-05-AM`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
 
 ---
 
