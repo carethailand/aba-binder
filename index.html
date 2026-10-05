@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-05-AL -->
+<!-- BUILD v2026-10-05-AM -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-05-AL</title>
+<title>CARE Client Binder v2026-10-05-AM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -443,10 +443,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-05-AL';
+const APP_VERSION='v2026-10-05-AM';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-05-AM',date:'5 Oct 2026',added:'The Program Checklist is now grouped by lesson phase into three sections: In-progress (the 1:1 session grid), Maintenance (a probed/not grid over maintenance sessions), and Hold (the held lessons with a Resume button). Lessons move between sections automatically as their phase changes, so maintenance and held lessons no longer clutter the main grid as blank rows.',improved:'',fixed:''},
   {version:'v2026-10-05-AL',date:'5 Oct 2026',added:'',improved:'',fixed:'Maintenance tab: a lesson card now stays open after you record a mark, instead of collapsing and making you reopen it for every target. (The card kept closing because it was not tagged for the \u201Ckeep open\u201D logic the rest of the app uses.)'},
   {version:'v2026-10-05-AK',date:'5 Oct 2026',added:'',improved:'The Demo Client is now a shared sandbox any supervisor can fully use for testing - it is no longer view-only for supervisors who are not assigned to it. (Real clients are unchanged: supervisors still only edit their assigned cases.)',fixed:''},
   {version:'v2026-10-05-AJ',date:'5 Oct 2026',added:'Reassign a case to a different supervisor: directors/admins now see a \u201CSup:\u201D dropdown at the top of a client. Changing it moves the case to that supervisor (or Unassigned) and the Clients list re-groups accordingly. Previously there was no way to change a case\u2019s supervisor after it was created, so the grouping never updated.',improved:'',fixed:''},
@@ -5271,82 +5272,85 @@ function renderMaintenanceTab(){
 // PROGRAM CHECKLIST TAB
 // ════════════════════════════════════════════════
 function renderProgramChecklist(){
-  const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='archived').slice().sort((a,b)=>a.name.localeCompare(b.name));
-  // get all sessions sorted oldest→newest, limit last 30
-  // Determine current context setting — show therapy sessions on therapy checklist, school on school
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')!=='shadow')
-    .sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-
-  if(!lessons.length)return'<div class="empty-state">No lessons yet.</div>';
-
-  // build column headers: date + therapist initial
-  const colHeaders=sessions.map(s=>{
-    const d=fmtDateShort(s.date);
-    const init=(s.txName||'').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-    return {date:d,init,sessId:s.id,txId:s.txId||'',txName:s.txName,fullDate:s.date,setting:s.setting||'therapy'};
-  });
-
-  // build set of lessonIds run per session
-  // sessionLessons: map of sessId -> Map of lessonId -> 'ran'|'na'|undefined
-  const sessionLessons={};
-  sessions.forEach(s=>{
-    const map={};
-    (s.lessonData||[]).forEach(ld=>{
-      const nonMaint=(ld.targets||[]).filter(t=>t.dataType!=='maintenance');
-      if(ld.dtData){map[ld.lessonId]='ran';}
-      else if(nonMaint.length>0){
-        const allNA=nonMaint.every(t=>t.na);
-        const hasRealData=nonMaint.some(t=>!t.na&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null));
-        map[ld.lessonId]=allNA?'na':(hasRealData?'ran':'na');
-      }
-    });
-    sessionLessons[s.id]=map;
-  });
-
-  // single header row: dd.mm.yy + first name at 45 degrees
-  let initRow='<tr><td style="background:#e2f0f7;font-weight:700;min-width:150px;padding:7px 10px;position:sticky;left:0;z-index:3">Session</td>';
+  const allLessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='archived').slice().sort((a,b)=>a.name.localeCompare(b.name));
+  if(!allLessons.length)return '<div class="empty-state">No lessons yet.</div>';
+  const inProg=allLessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold');
+  const maintL=allLessons.filter(l=>l.phase==='maintenance');
+  const holdL=allLessons.filter(l=>l.phase==='hold');
   const _ckRole=currentUser&&currentUser.role;
   const _ckSupAll=['supervisor','director'].includes(_ckRole)&&!isViewOnly();
-  colHeaders.forEach(h=>{
-    const d=h.fullDate.slice(2).replace(/-/g,'.');// yy.mm.dd -> need dd.mm.yy
-    const parts=h.fullDate.split('-');
-    const ddmmyy=parts[2]+'.'+parts[1]+'.'+parts[0].slice(2);
-    const firstName=h.txName?h.txName.split(' ')[0]:'';
-    const _ckOwn=['junior','senior'].includes(_ckRole)&&(h.txId||'')===((currentUser&&currentUser.id)||'');
-    const _ckAct=_ckSupAll||_ckOwn;
-    const _icons=_ckAct?'<div class="no-print" style="white-space:nowrap;margin-top:2px"><span onclick="_editSessById(\''+h.sessId+'\')" title="Edit session" style="cursor:pointer;font-size:.74rem;color:#1f8ec4;padding:0 3px">\u270f</span><span onclick="_delSessById(\''+h.sessId+'\')" title="Delete session" style="cursor:pointer;font-size:.74rem;color:#a3392b;padding:0 3px">\ud83d\uddd1</span></div>':'';
-    initRow+='<td style="text-align:center;background:#e2f0f7;padding:4px 6px;min-width:52px;vertical-align:middle">'
-      +'<div style="white-space:nowrap;font-size:.72rem;font-weight:600;line-height:1.5">'+esc(ddmmyy)+'<br>'+esc(firstName)+'</div>'+_icons+'</td>';
-  });
-  initRow+='</tr>';
-  let dateRow='';
 
-  // empty spacer
-  let spacer='<tr><td style="height:10px;background:#eef1f4" colspan="'+(colHeaders.length+1)+'"></td></tr>';
-
-  // lesson rows
-  const lessonRows=lessons.map((l,i)=>{
-    const rowBg=i%2===0?'#f0faed':'#ffffff';
-    let row='<tr><td style="padding:7px 10px;font-size:.87rem;background:'+rowBg+';border-right:2px solid #b8dcef;position:sticky;left:0;z-index:2;min-width:150px">'+esc(l.name)+'</td>';
-    colHeaders.forEach(h=>{
-      const cellVal=sessionLessons[h.sessId]&&sessionLessons[h.sessId][l.id];
-      if(cellVal==='ran'){
-        row+='<td title="'+esc(h.txName)+' — '+esc(h.fullDate)+'" style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;background:#4fa14a;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#fff;font-size:.8rem">✓</div></td>';
-      } else if(cellVal==='na'){
-        row+='<td title="No opportunity — '+esc(h.fullDate)+'" style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;background:#e6e9ee;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#6b7280;font-size:.72rem;font-weight:700">N/A</div></td>';
-      } else {
-        row+='<td style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;border:2px solid #d5dae1;border-radius:4px;margin:0 auto"></div></td>';
-      }
+  function _grid(lessonSet, sessList, opts){
+    opts=opts||{};
+    let initRow='<tr><td style="background:#e2f0f7;font-weight:700;min-width:150px;padding:7px 10px;position:sticky;left:0;z-index:3">Session</td>';
+    sessList.forEach(function(s){
+      const parts=s.date.split('-');
+      const ddmmyy=parts[2]+'.'+parts[1]+'.'+parts[0].slice(2);
+      const firstName=s.txName?s.txName.split(' ')[0]:'';
+      const _ckOwn=['junior','senior'].includes(_ckRole)&&((s.txId||'')===((currentUser&&currentUser.id)||''));
+      const _ckAct=opts.allowEdit&&(_ckSupAll||_ckOwn);
+      const _icons=_ckAct?'<div class="no-print" style="white-space:nowrap;margin-top:2px"><span onclick="_editSessById(\''+s.id+'\')" title="Edit session" style="cursor:pointer;font-size:.74rem;color:#1f8ec4;padding:0 3px">✏</span><span onclick="_delSessById(\''+s.id+'\')" title="Delete session" style="cursor:pointer;font-size:.74rem;color:#a3392b;padding:0 3px">🗑</span></div>':'';
+      initRow+='<td style="text-align:center;background:#e2f0f7;padding:4px 6px;min-width:52px;vertical-align:middle"><div style="white-space:nowrap;font-size:.72rem;font-weight:600;line-height:1.5">'+esc(ddmmyy)+'<br>'+esc(firstName)+'</div>'+_icons+'</td>';
     });
-    row+='</tr>';
-    return row;
-  }).join('');
+    initRow+='</tr>';
+    const spacer='<tr><td style="height:10px;background:#eef1f4" colspan="'+(sessList.length+1)+'"></td></tr>';
+    const sMap={};
+    sessList.forEach(function(s){
+      const map={};
+      (s.lessonData||[]).forEach(function(ld){
+        if(opts.maint){
+          if((ld.targets||[]).some(function(t){return t.dataType==='maintenance'&&t.result!=null;}))map[ld.lessonId]='ran';
+        } else {
+          const nonMaint=(ld.targets||[]).filter(function(t){return t.dataType!=='maintenance';});
+          if(ld.dtData){map[ld.lessonId]='ran';}
+          else if(nonMaint.length>0){
+            const allNA=nonMaint.every(function(t){return t.na;});
+            const hasRealData=nonMaint.some(function(t){return !t.na&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null);});
+            map[ld.lessonId]=allNA?'na':(hasRealData?'ran':'na');
+          }
+        }
+      });
+      sMap[s.id]=map;
+    });
+    const rows=lessonSet.map(function(l,i){
+      const rowBg=i%2===0?'#f0faed':'#ffffff';
+      let row='<tr><td style="padding:7px 10px;font-size:.87rem;background:'+rowBg+';border-right:2px solid #b8dcef;position:sticky;left:0;z-index:2;min-width:150px">'+esc(l.name)+'</td>';
+      sessList.forEach(function(s){
+        const cv=sMap[s.id]&&sMap[s.id][l.id];
+        if(cv==='ran'){row+='<td style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;background:#4fa14a;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#fff;font-size:.8rem">✓</div></td>';}
+        else if(cv==='na'){row+='<td style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;background:#e6e9ee;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#6b7280;font-size:.72rem;font-weight:700">N/A</div></td>';}
+        else{row+='<td style="text-align:center;background:'+rowBg+';padding:6px"><div style="width:22px;height:22px;border:2px solid #d5dae1;border-radius:4px;margin:0 auto"></div></td>';}
+      });
+      row+='</tr>';
+      return row;
+    }).join('');
+    return '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+spacer+rows+'</table></div>';
+  }
 
-  const tableHtml=sessions.length
-    ?'<div style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+dateRow+spacer+lessonRows+'</table></div>'
-    :'<div class="empty-state">No sessions recorded yet. Run a session first.</div>';
+  const inSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')!=='shadow').sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
+  const mSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType==='maintenance'&&(s.setting||'therapy')!=='shadow').sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
+  const _secHead=function(txt,color){return '<div style="font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:'+color+';margin:18px 0 8px;border-top:1px solid var(--border);padding-top:14px">'+txt+'</div>';};
 
-  return '<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2><span class="chk-legend" style="background:#fbeecb;color:#8a6410;padding:2px 8px;border-radius:8px;font-size:.72rem;font-weight:600">🏫 = school</span>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>'+tableHtml+'</div>';
+  let out='<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>';
+
+  out+='<div style="font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#2f6b2c;margin:2px 0 8px">▶ In-progress lessons ('+inProg.length+')</div>';
+  out+= inProg.length ? (inSess.length?_grid(inProg,inSess,{allowEdit:true}):'<p style="color:var(--muted);font-size:.85rem">No 1:1 sessions recorded yet.</p>') : '<p style="color:var(--muted);font-size:.85rem">No in-progress lessons.</p>';
+
+  out+=_secHead('🔁 Maintenance lessons ('+maintL.length+')','#1a6f94');
+  if(maintL.length){
+    out+= mSess.length ? _grid(maintL,mSess,{maint:true}) : '<p style="color:var(--muted);font-size:.85rem">No maintenance probes yet — record them on the Maintenance tab (then a ✓ shows here per probe day).</p>';
+  } else { out+='<p style="color:var(--muted);font-size:.85rem">No maintenance lessons.</p>'; }
+
+  out+=_secHead('⏸ Hold lessons ('+holdL.length+')','#8a6410');
+  if(holdL.length){
+    out+=holdL.map(function(l){
+      var resumeBtn=(['supervisor','director'].includes(_ckRole)&&!isViewOnly())?' <button class="btn btn-xs btn-outline no-print unlock-exempt" style="font-size:.72rem" onclick="setLessonStatus(\''+l.id+'\',\'active\')" title="Resume this lesson">▶ Resume</button>':'';
+      return '<div class="cl-row" style="align-items:center"><span style="flex:1">'+esc(l.name)+' <span class="badge" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-size:.68rem">ON HOLD</span></span>'+resumeBtn+'</div>';
+    }).join('');
+  } else { out+='<p style="color:var(--muted);font-size:.85rem">No lessons on hold.</p>'; }
+
+  out+='</div>';
+  return out;
 }
 
 // ═══════════════════════════════════════════════════════
