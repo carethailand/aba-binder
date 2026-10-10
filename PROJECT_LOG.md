@@ -110,4 +110,4 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 
 ---
 
-_Last updated: 5 Oct 2026 — current app v2026-10-05-AM. Shipped today: AI (Case Info sticky save), AJ (supervisor reassignment), AK (demo access), AL (maintenance cards stay open), AM (checklist sections). Next in mobile project: Stage 5 (School Shadow polish, Case Info, ABC, notes, Report). Still open in Inbox: print overlap/clinic notes by day. Remember to commit index.html + docs to GitHub (tasks-on-this-computer retires Oct 6 — after that continue in Claude Code)._
+_Last updated: 10 Oct 2026 — current app v2026-10-10-AO. Security: AN (app sends each user's login with every request) + database locked to active staff only (verified: a stranger sees 0 rows on every table). Code now lives in the GitHub clone `Desktop/CARE/aba-binder`; Songg pushes with `git push` (token in Keychain, expires ~6 Jan 2027). Mobile Stage 5 started: AO = phone login screen._

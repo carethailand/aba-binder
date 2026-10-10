@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-08-AN -->
+<!-- BUILD v2026-10-10-AO -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-08-AN</title>
+<title>CARE Client Binder v2026-10-10-AO</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -164,6 +164,14 @@ tr:hover td{background:var(--bg);}
 #login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1f8ec4 0%,#1a6f94 100%);}
 .login-box{background:#fff;padding:40px;border-radius:16px;width:360px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
 .login-err{color:var(--danger);font-size:.82rem;margin-top:8px;display:none;}
+/* Login on phones: stack the login box above a shorter, scrolling Latest-update card (no sideways scroll) */
+@media (max-width:760px){
+  #login-screen{align-items:flex-start;}
+  #login-screen>div{flex-direction:column;align-items:stretch!important;overflow-x:visible!important;padding:28px 16px!important;max-width:420px;margin:0 auto;}
+  #login-screen .login-box{width:auto!important;flex:none!important;padding:28px 22px;}
+  #update-card{height:auto!important;max-height:260px!important;padding:18px 20px!important;}
+  #login-screen input{font-size:16px;padding:11px 12px;}
+}
 /* Misc */
 .section-title{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
 .empty-state{text-align:center;padding:30px;color:var(--muted);}
@@ -443,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-08-AN';
+const APP_VERSION='v2026-10-10-AO';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-10-AO',date:'10 Oct 2026',added:'',improved:'Login screen on phones: the login box now sits on top with the Latest update card underneath, instead of side by side and cut off. Bigger email/password boxes, and iPhone no longer zooms in when you tap them.',fixed:''},
   {version:'v2026-10-08-AN',date:'8 Oct 2026',added:'',improved:'Security groundwork: the app now tells the database who is logged in with every load and save, so the database can be locked to active staff only. Adding a new staff login no longer switches the admin\u2019s own session to the new account. The old-style username/password login (unused) has been retired.',fixed:''},
   {version:'v2026-10-05-AM',date:'5 Oct 2026',added:'The Program Checklist is now grouped by lesson phase into three sections: In-progress (the 1:1 session grid), Maintenance (a probed/not grid over maintenance sessions), and Hold (the held lessons with a Resume button). Lessons move between sections automatically as their phase changes, so maintenance and held lessons no longer clutter the main grid as blank rows.',improved:'',fixed:''},
   {version:'v2026-10-05-AL',date:'5 Oct 2026',added:'',improved:'',fixed:'Maintenance tab: a lesson card now stays open after you record a mark, instead of collapsing and making you reopen it for every target. (The card kept closing because it was not tagged for the \u201Ckeep open\u201D logic the rest of the app uses.)'},
