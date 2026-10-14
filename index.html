@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-15-AQ -->
+<!-- BUILD v2026-10-15-AR -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-15-AQ</title>
+<title>CARE Client Binder v2026-10-15-AR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-15-AQ';
+const APP_VERSION='v2026-10-15-AR';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-15-AR',date:'15 Oct 2026',added:'Day report now also lists targets put on hold or resumed that day (from today on \u2014 earlier holds were not dated). New tick box \u201cInclude lesson data & graphs\u201d (ticked automatically for Clinic) adds that day\u2019s scores and 4-week lesson graphs.',improved:'Day report is shorter: lessons show only supervisor updates by default, and supervisor names are no longer repeated. Print BIP prints a behavior\u2019s plan once, then its 1:1 graphs followed by its School Shadow graphs.',fixed:''},
   {version:'v2026-10-15-AQ',date:'15 Oct 2026',added:'Day report: Report \u2192 Day report prints everything for one client on one date \u2014 supervisor notes, behavior (that day\u2019s notes + 4-week graphs, labelled 1:1 / School Shadow), and lessons (that day\u2019s updates and data + 4-week graphs), with an optional reinforcer list. Print BIP: a new button on the Behavior tab prints the full plan with graphs for a date range you choose.',improved:'Report tab: behavior graphs are now labelled 1:1 or School Shadow, and each shows its own data (previously the School graph appeared blank).',fixed:''},
   {version:'v2026-10-14-AP',date:'14 Oct 2026',added:'',improved:'Program Checklist and First Trial now open showing the most recent sessions on the right, so you no longer have to scroll across to find today. Older sessions are still there \u2014 just scroll left.',fixed:''},
   {version:'v2026-10-10-AO',date:'10 Oct 2026',added:'',improved:'Login screen on phones: the login box now sits on top with the Latest update card underneath, instead of side by side and cut off. Bigger email/password boxes, and iPhone no longer zooms in when you tap them.',fixed:''},
@@ -2496,13 +2497,14 @@ function openReportBuilder(){
   const today=_todayLocal();
   modal('<div style="max-width:480px">'
    +'<h3 style="margin-bottom:6px">🖨 Day report — '+esc(c.name)+'</h3>'
-   +'<p style="font-size:.8rem;color:#6b7280;margin-bottom:14px;line-height:1.5">Prints everything recorded for this client on the chosen date: supervisor notes, behavior (notes + 4-week graphs), and lessons (updates + 4-week graphs).</p>'
+   +'<p style="font-size:.8rem;color:#6b7280;margin-bottom:14px;line-height:1.5">Prints what was updated for this client on the chosen date: supervisor notes, behavior (notes + 4-week graphs), and lesson updates (notes, new / mastered / on-hold targets, step changes).</p>'
    +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
      +'<label style="color:#6b7280">Date</label><input id="rb-date" type="date" value="'+today+'">'
      +'<label style="color:#6b7280">Time</label><input id="rb-time" type="text" placeholder="e.g. 13:30-15:30">'
      +'<label style="color:#6b7280">Therapist</label><input id="rb-tx" type="text" placeholder="(optional)">'
-     +'<label style="color:#6b7280">Type</label><select id="rb-type"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option></select>'
+     +'<label style="color:#6b7280">Type</label><select id="rb-type" onchange="var g=document.getElementById(\'rb-lgraph\');if(g)g.checked=this.value===\'clinic\';"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option></select>'
    +'</div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lgraph"> Include lesson data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day\u2019s scores + 4 weeks \u2014 e.g. for parents)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Add reinforcer list <span style="font-size:.72rem;color:#94a0ae">(whole list)</span></label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
@@ -2525,11 +2527,11 @@ function buildAndPrintReport(){
   let body='';
   // 1. Supervisor notes written for this day
   const notes=(c.notes||[]).filter(function(n){return n.type==='supervisor'&&n.date===D;});
-  body+='<div class="sec-title">Notes</div>'+(notes.length?notes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||_drUserName(n.author)||'')+'</div></div>';}).join(''):none('No supervisor notes on this day.'));
+  body+='<div class="sec-title">Notes</div>'+(notes.length?notes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join(''):none('No supervisor notes on this day.'));
   // 2. Behavior: that day's behavior notes + each BIP/setting with data that day (4-week graphs, labelled 1:1 / School Shadow)
   let bh='';
   const bNotes=(c.behaviorNotes||[]).filter(function(n){return n.date===D;});
-  if(bNotes.length)bh+='<div class="lesson-title">Behavior notes</div>'+bNotes.map(function(n){return '<div style="margin-bottom:6px">'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||'')+'</div></div>';}).join('');
+  if(bNotes.length)bh+='<div class="lesson-title">Behavior notes</div>'+bNotes.map(function(n){return '<div style="margin-bottom:6px">'+_drParas(n.text)+'</div>';}).join('');
   (DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;}).forEach(function(b){
     const allB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;});
     const mods=(b.modHistory||[]).filter(function(m){return m.date===D;});
@@ -2539,30 +2541,34 @@ function buildAndPrintReport(){
       const dayLogs=inCx.filter(function(x){return x.date===D;});
       if(!dayLogs.length)return;
       bh+='<div class="lesson-title">'+esc(b.name)+' · '+_drCtxLabel(cx)+'</div>';
-      if(!shown&&mods.length)bh+=mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
+      if(!shown&&mods.length)bh+=mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+'</p>';}).join('');
       shown=true;
       bh+='<p><strong>Today:</strong> '+dayLogs.map(function(x){return esc(_drBehVal(x))+(x.function&&(b.functions||[]).length>1?' ('+esc(bipFnLabel(x.function))+')':'')+(x.txName?' — '+esc(x.txName):'');}).join(', ')+'</p>';
       const win=inCx.filter(function(x){return x.date>=from&&x.date<=D;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
       bh+=_drBipCharts(b,win);
     });
-    if(!shown&&mods.length)bh+='<div class="lesson-title">'+esc(b.name)+'</div>'+mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
+    if(!shown&&mods.length)bh+='<div class="lesson-title">'+esc(b.name)+'</div>'+mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+'</p>';}).join('');
   });
   body+='<div class="sec-title">Behavior</div>'+(bh||none('No behavior notes or data on this day.'));
   // 3. Lessons: anything dated this day + that day's session data (4-week graphs)
   const cs=DB.sessions.filter(function(s){return s.clientId===selectedClientId;});
   const sessD=cs.filter(function(s){return s.date===D;});
   const sessWin=cs.filter(function(s){return s.date>=from&&s.date<=D;});
+  const withData=gc('rb-lgraph');
   let lh='';
   DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
     let inner='';
-    (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(_drUserName(n.author))+'</div></div>';});
+    (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
     (l.sds||[]).forEach(function(sd){
-      (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>SD note'+(sd.sd?' ('+esc(sd.sd)+')':'')+':</strong>'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||'')+'</div></div>';});
-      (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){inner+='<p><strong>Modification:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';});
+      (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>SD note'+(sd.sd?' ('+esc(sd.sd)+')':'')+':</strong>'+_drParas(n.text)+'</div>';});
+      (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){inner+='<p><strong>Modification:</strong> '+esc(m.label||'')+'</p>';});
       (sd.targets||[]).forEach(function(t){
         if(t.introducedDate===D)inner+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
         if(t.masteredDate===D)inner+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
-        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){inner+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+_drWho(ch.byName)+'</p>';});
+        if(t.heldDate===D)inner+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
+        if(t.resumedDate===D)inner+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
+        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){inner+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
+        if(!withData)return;
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
         if(!dayVals.length)return;
@@ -2593,40 +2599,55 @@ function openPrintBIP(){
   modal('<div style="max-width:440px">'
    +'<h3 style="margin-bottom:14px">🖨 Print BIP — '+esc(c.name)+'</h3>'
    +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
-     +'<label style="color:#6b7280">BIP</label><select id="pb-bip"><option value="">All BIPs</option>'+bips.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.name)+' ('+_bipCtxList(b).map(_drCtxLabel).join(' + ')+')</option>';}).join('')+'</select>'
+     +'<label style="color:#6b7280">BIP</label><select id="pb-bip"><option value="">All BIPs</option>'+_pbGroups(bips).map(function(g){return '<option value="'+esc(g.name.trim().toLowerCase())+'">'+esc(g.name)+'</option>';}).join('')+'</select>'
      +'<label style="color:#6b7280">Data from</label><input id="pb-from" type="date" value="'+_drDaysBefore(today,90)+'">'
      +'<label style="color:#6b7280">to</label><input id="pb-to" type="date" value="'+today+'">'
    +'</div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-primary" onclick="printBIP()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
 }
+function _pbGroups(bips){
+  // Group BIPs that share a name (e.g. a 1:1 'Tantrum' and a School 'Tantrum') so the plan prints once
+  var groups=[],byKey={};
+  bips.forEach(function(b){var k=(b.name||'').trim().toLowerCase();if(!byKey[k]){byKey[k]={name:b.name,bips:[]};groups.push(byKey[k]);}byKey[k].bips.push(b);});
+  groups.forEach(function(g){g.bips.sort(function(x,y){return (_bipCtxList(x)[0]==='shadow'?1:0)-(_bipCtxList(y)[0]==='shadow'?1:0);});});
+  return groups;
+}
 function printBIP(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
   const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
   const only=gv('pb-bip'),F=gv('pb-from'),T=gv('pb-to')||_todayLocal();
-  const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId&&(!only||b.id===only);});
+  const all=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
+  const groups=_pbGroups(all).filter(function(g){return !only||g.name.trim().toLowerCase()===only;});
   const blk=function(label,txt){return txt&&String(txt).trim()?'<p style="margin:6px 0 1px"><strong>'+label+'</strong></p>'+_drParas(txt):'';};
   let body='';
-  bips.forEach(function(b){
-    body+='<div class="sec-title">'+esc(b.name)+' <span style="font-weight:400;font-size:.85em">('+_bipCtxList(b).map(_drCtxLabel).join(' + ')+')</span></div>';
-    const fns=(b.functions||[]).map(function(f){return bipFnLabel(f);}).join(', ');
-    let ov=blk('Definition',b.description)+(fns?'<p style="margin:6px 0 1px"><strong>Functions:</strong> '+esc(fns)+'</p>':'')
-      +(b.goal?'<p style="margin:6px 0 1px"><strong>Goal:</strong> '+esc(b.goal)+(b.goalDeadline?' (by '+esc(b.goalDeadline)+')':'')+'</p>':'')
-      +(b.baseline?'<p style="margin:6px 0 1px"><strong>Baseline:</strong> '+esc(b.baseline)+'</p>':'');
-    const prev=blk('Environment Setup',b.competing)+blk('Antecedent Modification',b.antecedent);
-    const teach=blk('Replacement Behavior',b.replacement)+blk('Teaching Strategy',b.teachingStrategy);
-    const resp=blk('Consequence Manipulation',b.consequence)+blk('Extinction',b.extinction)+blk('Safety Plan',b.safety);
+  groups.forEach(function(g){
+    // Plan text: first non-empty value, 1:1 version first
+    const pick=function(f){for(var i=0;i<g.bips.length;i++){var v=g.bips[i][f];if(Array.isArray(v)?v.length:(v&&String(v).trim()))return v;}return '';};
+    const ctxs=[];g.bips.forEach(function(b){_bipCtxList(b).forEach(function(cx){if(ctxs.indexOf(cx)<0)ctxs.push(cx);});});
+    ctxs.sort(function(x,y){return (x==='shadow'?1:0)-(y==='shadow'?1:0);});
+    body+='<div class="sec-title">'+esc(g.name)+' <span style="font-weight:400;font-size:.85em">('+ctxs.map(_drCtxLabel).join(' + ')+')</span></div>';
+    const fns=(pick('functions')||[]).map(function(f){return bipFnLabel(f);}).join(', ');
+    const goal=pick('goal'),gd=pick('goalDeadline'),base=pick('baseline');
+    let ov=blk('Definition',pick('description'))+(fns?'<p style="margin:6px 0 1px"><strong>Functions:</strong> '+esc(fns)+'</p>':'')
+      +(goal?'<p style="margin:6px 0 1px"><strong>Goal:</strong> '+esc(goal)+(gd?' (by '+esc(gd)+')':'')+'</p>':'')
+      +(base?'<p style="margin:6px 0 1px"><strong>Baseline:</strong> '+esc(base)+'</p>':'');
+    const prev=blk('Environment Setup',pick('competing'))+blk('Antecedent Modification',pick('antecedent'));
+    const teach=blk('Replacement Behavior',pick('replacement'))+blk('Teaching Strategy',pick('teachingStrategy'));
+    const resp=blk('Consequence Manipulation',pick('consequence'))+blk('Extinction',pick('extinction'))+blk('Safety Plan',pick('safety'));
     if(ov)body+='<div class="lesson-title">Overview</div>'+ov;
     if(prev)body+='<div class="lesson-title">Prevention</div>'+prev;
     if(teach)body+='<div class="lesson-title">Teaching</div>'+teach;
     if(resp)body+='<div class="lesson-title">Response</div>'+resp;
-    const mods=(b.modHistory||[]).filter(function(m){return m.date&&(!F||m.date>=F)&&m.date<=T;});
-    if(mods.length)body+='<div class="lesson-title">Plan changes</div>'+mods.map(function(m){return '<p>'+_drFmtD(m.date)+' — '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
-    const allB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;});
-    _bipCtxList(b).forEach(function(cx){
-      const logs=allB.filter(function(x){return _ctx(x.setting)===cx&&(!F||x.date>=F)&&x.date<=T;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      body+='<div class="lesson-title">Data · '+_drCtxLabel(cx)+'</div>'
-        +(logs.length?'<p style="font-size:.8rem;color:#6b7280">'+logs.length+' record'+(logs.length===1?'':'s')+' from '+_drFmtD(logs[0].date)+' to '+_drFmtD(logs[logs.length-1].date)+'</p>'+_drBipCharts(b,logs):'<p style="color:#94a0ae;font-style:italic">No data in this range.</p>');
+    const mods=[];g.bips.forEach(function(b){(b.modHistory||[]).forEach(function(m){if(m.date&&(!F||m.date>=F)&&m.date<=T)mods.push(m);});});
+    mods.sort(function(x,y){return x.date.localeCompare(y.date);});
+    if(mods.length)body+='<div class="lesson-title">Plan changes</div>'+mods.map(function(m){return '<p>'+_drFmtD(m.date)+' — '+esc(m.label||'')+'</p>';}).join('');
+    ctxs.forEach(function(cx){
+      g.bips.filter(function(b){return _bipCtxList(b).indexOf(cx)>=0;}).forEach(function(b){
+        const logs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id&&_ctx(x.setting)===cx&&(!F||x.date>=F)&&x.date<=T;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
+        body+='<div class="lesson-title">Data · '+_drCtxLabel(cx)+'</div>'
+          +(logs.length?'<p style="font-size:.8rem;color:#6b7280">'+logs.length+' record'+(logs.length===1?'':'s')+' from '+_drFmtD(logs[0].date)+' to '+_drFmtD(logs[logs.length-1].date)+'</p>'+_drBipCharts(b,logs):'<p style="color:#94a0ae;font-style:italic">No data in this range.</p>');
+      });
     });
   });
   const meta='<tr><td>Client:</td><td>'+esc(c.name)+'</td></tr>'
@@ -4727,9 +4748,10 @@ function setTargetStatus(lId,sId,tId,status){if(!requireActiveSession())return;
     t.status='mastered';t.masteredDate=today;
     toast('✓ Target mastered: '+t.name);
   } else if(status==='on_hold'){
-    t._prevStatus=t.status;t.status='on_hold';
+    t._prevStatus=t.status;t.status='on_hold';t.heldDate=_todayLocal();
     toast('⏸ Target on hold: '+t.name);
   } else if(status==='in_progress'){
+    if(t.status==='on_hold')t.resumedDate=_todayLocal();
     t.status='in_progress';
     toast('▶ Target resumed: '+t.name);
   }
@@ -4760,7 +4782,7 @@ function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
     const aff=targets.filter(function(t){return t.status!=='on_hold'&&t.status!=='mastered';});
     if(!aff.length){toast('No active targets to hold in this SD');return;}
     if(!confirm('Put all '+aff.length+' active target(s) in this SD on hold?'))return;
-    aff.forEach(function(t){t._prevStatus=t.status;t.status='on_hold';});
+    aff.forEach(function(t){t._prevStatus=t.status;t.status='on_hold';t.heldDate=_todayLocal();});
     toast('\u23F8 '+aff.length+' target(s) put on hold');
   } else if(status==='mastered'){
     const aff=targets.filter(function(t){return t.status!=='mastered';});
@@ -4770,7 +4792,7 @@ function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
     toast('\u2713 '+aff.length+' target(s) mastered');
   } else if(status==='in_progress'){
     const aff=targets.filter(function(t){return t.status==='on_hold';});
-    aff.forEach(function(t){t.status='in_progress';});
+    aff.forEach(function(t){t.status='in_progress';t.resumedDate=_todayLocal();});
     toast('\u25B6 '+aff.length+' target(s) resumed');
   }
   saveData();render();
