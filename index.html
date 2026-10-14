@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-15-AU -->
+<!-- BUILD v2026-10-15-AV -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-15-AU</title>
+<title>CARE Client Binder v2026-10-15-AV</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-15-AU';
+const APP_VERSION='v2026-10-15-AV';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-15-AV',date:'15 Oct 2026',added:'',improved:'Day report: when a lesson has more than one SD, each SD\u2019s notes, new / mastered / on-hold targets and step changes are grouped under an \u201cSD1:\u201d, \u201cSD2:\u201d heading so it is clear which SD they belong to.',fixed:''},
   {version:'v2026-10-15-AU',date:'15 Oct 2026',added:'',improved:'Finish & Preview now shows and prints the Day report for that date (same format as Report \u2192 Day report), with the same lesson-data and reinforcer tick boxes. Details under each lesson, behavior and BIP section are indented so each one stands apart.',fixed:''},
   {version:'v2026-10-15-AT',date:'15 Oct 2026',added:'',improved:'Printouts (supervision report, Day report, Print BIP) now use one even text size; section headlines are 2pt bigger. Labels such as SD: and R: stay bold with regular text after them.',fixed:''},
   {version:'v2026-10-15-AS',date:'15 Oct 2026',added:'Day report now also shows lesson-level changes made that day: lesson put on hold, resumed, moved to DT or maintenance, archived, or reintroduced (recorded from this version on).',improved:'',fixed:''},
@@ -2408,15 +2409,17 @@ function _dayReportHtml(o){
     let inner='';
     (l.phaseLog||[]).filter(function(e){return e.date===D;}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
-    (l.sds||[]).forEach(function(sd){
-      (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>SD note'+(sd.sd?' ('+esc(sd.sd)+')':'')+':</strong>'+_drParas(n.text)+'</div>';});
-      (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){inner+='<p><strong>Modification:</strong> '+esc(m.label||'')+'</p>';});
+    const multiSD=(l.sds||[]).length>1;
+    (l.sds||[]).forEach(function(sd,si){
+      let sdi='';
+      (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){sdi+='<div style="margin:4px 0"><strong>'+(multiSD?'Note':'SD note'+(sd.sd?' ('+esc(sd.sd)+')':''))+':</strong>'+_drParas(n.text)+'</div>';});
+      (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){sdi+='<p><strong>Modification:</strong> '+esc(m.label||'')+'</p>';});
       (sd.targets||[]).forEach(function(t){
-        if(t.introducedDate===D)inner+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
-        if(t.masteredDate===D)inner+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
-        if(t.heldDate===D)inner+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
-        if(t.resumedDate===D)inner+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
-        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){inner+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
+        if(t.introducedDate===D)sdi+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
+        if(t.masteredDate===D)sdi+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
+        if(t.heldDate===D)sdi+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
+        if(t.resumedDate===D)sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
+        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
         if(!withData)return;
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
@@ -2424,8 +2427,10 @@ function _dayReportHtml(o){
         const entries=[];
         sessWin.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
         entries.sort(function(a,b){return a.date.localeCompare(b.date);});
-        inner+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
+        sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
       });
+      // 2+ SDs: group this SD's updates under an 'SD#:' heading so notes are not mixed up between SDs
+      if(sdi)inner+=multiSD?'<div style="margin:8px 0 2px"><strong>SD'+(si+1)+':</strong> '+esc(sd.sd||'')+'</div><div class="ldet">'+sdi+'</div>':sdi;
     });
     if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><div class="ldet">'+inner+'</div>';
   });
