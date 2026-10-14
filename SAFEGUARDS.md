@@ -4,7 +4,7 @@ Hi, and thank you for taking care with this. 💙 A quick note on *why* this fil
 
 **This app holds real clinical records for children in ABA therapy.** Lost data isn't an inconvenience here — it can mean a therapist's whole day of observations, or a supervisor's setup, gone. We have been through that several times, and it was painful. So the single most important thing in this project is: **never lose or overwrite data.** Features can wait; data safety cannot. Everything below exists to protect the people whose information lives in this app. When in doubt, choose the safer option and ask.
 
-**Current version:** `v2026-10-15-AR`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
+**Current version:** `v2026-10-15-AS`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
 
 ---
 
@@ -33,6 +33,7 @@ All of a client's data — School Shadow setup AND records, school info, notes, 
 - **Creating a login for someone else uses `_signUpNoSwitch`**, never `_supa.auth.signUp`, so the admin's own session is not swapped to the new account.
 - **The database is locked to active staff (since 10 Oct 2026).** Every table has one policy, `staff only` (ALL to `authenticated`, checked by the `public.is_active_staff()` function: logged-in user whose `users.auth_id` matches and `active` is not false). Never re-add `allow all ... to public` policies. Any NEW table must get the same `staff only` policy, or it is either open to the world or invisible to the app. Songg has the undo saved in Supabase as `(keep) UNDO – Step 3 lock`.
 - **Every SQL given to Songg starts with a name line** — `-- (keep) Name` or `-- (test) Name` — so saved queries in the Supabase SQL Editor can be labelled and cleaned up safely.
+- **`lessons.phase_log` column (added for v-AS).** `lessonToRow` only sends `phase_log` when a lesson has entries. The column must exist in Supabase BEFORE any version that writes it goes live, or lesson saves with phase changes fail.
 - **The GitHub project is public.** Never commit client data, SQL with client details, or secret keys. Only the public `anon` key belongs in the code.
 - **`_isBusy()`** is typing-aware (focused field, or typed in the last 90s, or an active session). Both auto-update and daily-logout rely on it. Keep it that way.
 

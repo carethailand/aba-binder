@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-15-AR -->
+<!-- BUILD v2026-10-15-AS -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-15-AR</title>
+<title>CARE Client Binder v2026-10-15-AS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-15-AR';
+const APP_VERSION='v2026-10-15-AS';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-15-AS',date:'15 Oct 2026',added:'Day report now also shows lesson-level changes made that day: lesson put on hold, resumed, moved to DT or maintenance, archived, or reintroduced (recorded from this version on).',improved:'',fixed:''},
   {version:'v2026-10-15-AR',date:'15 Oct 2026',added:'Day report now also lists targets put on hold or resumed that day (from today on \u2014 earlier holds were not dated). New tick box \u201cInclude lesson data & graphs\u201d (ticked automatically for Clinic) adds that day\u2019s scores and 4-week lesson graphs.',improved:'Day report is shorter: lessons show only supervisor updates by default, and supervisor names are no longer repeated. Print BIP prints a behavior\u2019s plan once, then its 1:1 graphs followed by its School Shadow graphs.',fixed:''},
   {version:'v2026-10-15-AQ',date:'15 Oct 2026',added:'Day report: Report \u2192 Day report prints everything for one client on one date \u2014 supervisor notes, behavior (that day\u2019s notes + 4-week graphs, labelled 1:1 / School Shadow), and lessons (that day\u2019s updates and data + 4-week graphs), with an optional reinforcer list. Print BIP: a new button on the Behavior tab prints the full plan with graphs for a date range you choose.',improved:'Report tab: behavior graphs are now labelled 1:1 or School Shadow, and each shows its own data (previously the School graph appeared blank).',fixed:''},
   {version:'v2026-10-14-AP',date:'14 Oct 2026',added:'',improved:'Program Checklist and First Trial now open showing the most recent sessions on the right, so you no longer have to scroll across to find today. Older sessions are still there \u2014 just scroll left.',fixed:''},
@@ -669,8 +670,8 @@ const DT_SIMULTANEOUS=[
 function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;if(c.behaviorNotes&&c.behaviorNotes.length)o._behaviorNotes=c.behaviorNotes;if(c.driveLinks&&Object.keys(c.driveLinks).length)o._driveLinks=c.driveLinks;if(c.starred&&Object.keys(c.starred).length)o._starred=c.starred;if(c.commNotes&&c.commNotes.length)o._commNotes=c.commNotes;return Object.keys(o).length?o:null;})()};}
 function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _bn=_sn&&_sn._behaviorNotes?_sn._behaviorNotes:[];const _dl=_sn&&_sn._driveLinks?_sn._driveLinks:{};const _st=_sn&&_sn._starred?_sn._starred:{};const _cn=_sn&&_sn._commNotes?_sn._commNotes:[];const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh,behaviorNotes:_bn,driveLinks:_dl,starred:_st,commNotes:_cn};}
 
-function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[]};}
-function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[]};}
+function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[],...(Array.isArray(l.phaseLog)&&l.phaseLog.length?{phase_log:l.phaseLog}:{})};}
+function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[],phaseLog:Array.isArray(r.phase_log)?r.phase_log:[]};}
 
 function bipToRow(b){return{id:b.id,client_id:b.clientId,name:b.name,measurement:b.measurement||null,measurements:b.measurements||[],functions:b.functions||[],description:b.description||null,antecedent:b.antecedent||null,competing:b.competing||null,replacement:b.replacement||null,teaching_strategy:b.teachingStrategy||null,consequence:b.consequence||null,extinction:b.extinction||null,safety:b.safety||null,goal:b.goal||null,baseline:b.baseline||null,sup_note:JSON.stringify({text:b.supNote||'',setting:b.setting||'therapy',modHistory:Array.isArray(b.modHistory)?b.modHistory:[],breaks:Array.isArray(b.breaks)?b.breaks:[],appearsIn:Array.isArray(b.appearsIn)?b.appearsIn:null}),created_date:b.createdDate||null};}
 function rowToBIP(r){const fns=Array.isArray(r.functions)?r.functions:(typeof r.functions==='string'&&r.functions?r.functions.replace(/[{}]/g,'').split(',').map(s=>s.trim()).filter(Boolean):[]);const meas=Array.isArray(r.measurements)&&r.measurements.length?r.measurements:(r.measurement?[r.measurement]:['frequency']);let _supNote='',_bipSett='therapy',_modHist=[],_breaks=[],_appearsIn=null;try{if(r.sup_note){const _sn=typeof r.sup_note==='string'?JSON.parse(r.sup_note):r.sup_note;if(_sn&&typeof _sn==='object'&&'setting' in _sn){_supNote=_sn.text||'';_bipSett=_sn.setting||'therapy';_modHist=Array.isArray(_sn.modHistory)?_sn.modHistory:[];_breaks=Array.isArray(_sn.breaks)?_sn.breaks:[];_appearsIn=Array.isArray(_sn.appearsIn)?_sn.appearsIn:null;}else{_supNote=r.sup_note||'';}}}catch(e){_supNote=r.sup_note||'';}return{id:r.id,clientId:r.client_id,name:r.name,measurement:r.measurement||'frequency',measurements:meas,functions:fns,description:r.description||'',antecedent:r.antecedent||'',competing:r.competing||'',replacement:r.replacement||'',teachingStrategy:r.teaching_strategy||'',consequence:r.consequence||'',extinction:r.extinction||'',safety:r.safety||'',goal:r.goal||'',baseline:r.baseline||'',supNote:_supNote,createdDate:r.created_date||'',setting:_bipSett,modHistory:_modHist,breaks:_breaks,appearsIn:_appearsIn};}
@@ -2491,6 +2492,9 @@ function _drBipCharts(b,logs){
   });
   return out;
 }
+function _drPhaseLabel(e){var nm={acquisition:'Acquisition',dt:'DT',maintenance:'Maintenance',hold:'Hold',archived:'Archived'};
+  if(e.to==='hold')return 'Lesson put on hold';if(e.from==='hold')return 'Lesson resumed \u2192 '+(nm[e.to]||e.to);if(e.to==='archived')return 'Lesson archived';
+  if(e.to==='acquisition'&&(e.from==='maintenance'||e.from==='archived'))return 'Lesson reintroduced \u2192 Acquisition';return 'Phase: '+(nm[e.from]||e.from)+' \u2192 '+(nm[e.to]||e.to);}
 function _drBehVal(x){return x.count!=null?x.count+'':x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+' min':'';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
@@ -2558,6 +2562,7 @@ function buildAndPrintReport(){
   let lh='';
   DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
     let inner='';
+    (l.phaseLog||[]).filter(function(e){return e.date===D;}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
     (l.sds||[]).forEach(function(sd){
       (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>SD note'+(sd.sd?' ('+esc(sd.sd)+')':'')+':</strong>'+_drParas(n.text)+'</div>';});
@@ -4367,7 +4372,7 @@ function checkDTStepAdvance(lesson,date,ftResult,pct){
           lesson.dtStepIndex=stepIdx+1;
           toast('🎉 DT step advanced to: '+dtSteps[stepIdx+1],4000);
         } else {
-          lesson.phase='maintenance';
+          _logPhase(lesson,lesson.phase,'maintenance');lesson.phase='maintenance';
           lesson.maintenanceSchedule='once a week';
           toast('🎉 All DT steps complete! Moved to Maintenance.',4000);
         }
@@ -4891,7 +4896,7 @@ function saveReintroduce(){if(!requireActiveSession())return;
     });
   });
   if(!anySelected){toast('Select at least one target to reintroduce.','error');return;}
-  lesson.phase='acquisition';
+  _logPhase(lesson,lesson.phase,'acquisition');lesson.phase='acquisition';
   saveData();
   closeModal();
   render();
@@ -4899,6 +4904,8 @@ function saveReintroduce(){if(!requireActiveSession())return;
 }
 
 
+// Dated record of lesson phase changes (hold, maintenance, archive, reintroduce…) for the Day report. Saved in lessons.phase_log.
+function _logPhase(l,from,to){if(!l||from===to)return;if(!Array.isArray(l.phaseLog))l.phaseLog=[];l.phaseLog.push({date:_todayLocal(),from:from||'',to:to||'',byName:(currentUser&&currentUser.name)||''});}
 function setLessonStatus(lId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   if(status==='maintenance'&&l.phase!=='maintenance'){
@@ -4906,6 +4913,7 @@ function setLessonStatus(lId,status){if(!requireActiveSession())return;
     if(sched===null)return; // cancelled
     l.maintenanceSchedule=sched;
   }
+  const _fromPhase=l.phase;
   if(status==='active'&&(l.phase==='hold'||l.phase==='archived')){
     // coming off hold/archived — restore previous phase
     l.phase=l._prevPhase||'acquisition';
@@ -4916,6 +4924,7 @@ function setLessonStatus(lId,status){if(!requireActiveSession())return;
   } else {
     l.phase=status==='active'?'acquisition':status;
   }
+  _logPhase(l,_fromPhase,l.phase);
   saveData();
   const labels={active:'Introduced ✓',maintenance:'On Maintenance ✓',hold:'On Hold ✓',archived:'Archived ✓'};
   toast(labels[status]||'Updated');
@@ -4926,7 +4935,7 @@ function advancePhase(lId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);
   const next=l.phase==='acquisition'?(l.teachingStyle==='NET'?'maintenance':'dt'):l.phase==='dt'?'maintenance':'acquisition';
   if(next==='maintenance'){const s=prompt('Maintenance schedule:','twice a week');if(!s)return;l.maintenanceSchedule=s;}
-  l.phase=next;saveData();toast('Phase → '+next.toUpperCase());render();
+  _logPhase(l,l.phase,next);l.phase=next;saveData();toast('Phase → '+next.toUpperCase());render();
 }
 
 // ── Skip DT step (supervisor only) ──
