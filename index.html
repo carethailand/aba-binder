@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-15-AS -->
+<!-- BUILD v2026-10-15-AT -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-15-AS</title>
+<title>CARE Client Binder v2026-10-15-AT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-15-AS';
+const APP_VERSION='v2026-10-15-AT';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-15-AT',date:'15 Oct 2026',added:'',improved:'Printouts (supervision report, Day report, Print BIP) now use one even text size; section headlines are 2pt bigger. Labels such as SD: and R: stay bold with regular text after them.',fixed:''},
   {version:'v2026-10-15-AS',date:'15 Oct 2026',added:'Day report now also shows lesson-level changes made that day: lesson put on hold, resumed, moved to DT or maintenance, archived, or reintroduced (recorded from this version on).',improved:'',fixed:''},
   {version:'v2026-10-15-AR',date:'15 Oct 2026',added:'Day report now also lists targets put on hold or resumed that day (from today on \u2014 earlier holds were not dated). New tick box \u201cInclude lesson data & graphs\u201d (ticked automatically for Clinic) adds that day\u2019s scores and 4-week lesson graphs.',improved:'Day report is shorter: lessons show only supervisor updates by default, and supervisor names are no longer repeated. Print BIP prints a behavior\u2019s plan once, then its 1:1 graphs followed by its School Shadow graphs.',fixed:''},
   {version:'v2026-10-15-AQ',date:'15 Oct 2026',added:'Day report: Report \u2192 Day report prints everything for one client on one date \u2014 supervisor notes, behavior (that day\u2019s notes + 4-week graphs, labelled 1:1 / School Shadow), and lessons (that day\u2019s updates and data + 4-week graphs), with an optional reinforcer list. Print BIP: a new button on the Behavior tab prints the full plan with graphs for a date range you choose.',improved:'Report tab: behavior graphs are now labelled 1:1 or School Shadow, and each shows its own data (previously the School graph appeared blank).',fixed:''},
@@ -2289,7 +2290,7 @@ async function printSupPDF(){
       // Clean up the body — remove redundant "Lesson:" prefix lines
       const lines=bodyText.split(/\n+/).filter(s=>s.trim()).filter(s=>!s.match(/^Lesson:/));
       const bodyHtml=lines.map(l=>{
-        const _lbM=l.match(/^([A-Za-z][^:]{1,40}?):\s+(.+)$/);
+        const _lbM=l.match(/^([A-Za-z][^:]{0,40}?):\s+(.+)$/);
         if(_lbM)return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px"><strong>'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</div>';
         return'<div style="font-size:.87rem;line-height:1.6;margin-bottom:2px">'+esc(l)+'</div>';
       }).join('');
@@ -2341,6 +2342,7 @@ async function printSupPDF(){
     +'.lesson-title{font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#1f8ec4;border-bottom:1.5px solid #b8dcef;padding-bottom:4px;margin:18px 0 10px}'
     +'.footer{margin-top:36px;border-top:1px solid #e6e9ee;padding-top:12px;text-align:center;font-size:.7rem;color:#6b7280;line-height:1.7}'
     +'@media print{.page{padding:20px 28px}}'
+    +_RPT_TYPE_CSS
     +'</style></head><body>'
     +'<div class="page">'
     // Letterhead
@@ -2357,7 +2359,7 @@ async function printSupPDF(){
     +'<tr><td>Type:</td><td>'+esc(sv.supType||'overlap')+'</td></tr>'
     +'</table>'
     // General
-    +'<div class="sec-title">General</div>'
+    +'<div class="rbody"><div class="sec-title">General</div>'
     +generalHtml
     // Behaviors
     +'<div class="sec-title">Behaviors</div>'
@@ -2366,6 +2368,7 @@ async function printSupPDF(){
     +(lessonSections?'<div class="sec-title">Lesson Updates</div>'+lessonSections:'')
     // BIP updates
     +(bipSections?'<div class="sec-title">BIP Updates</div>'+bipSections:'')
+    +'</div>'
     // Footer
     +'<div class="footer">'
     +'โรงเรียน เสริมทักษะ แคร์ เลิร์นนิ่ง เซ็นเตอร์, 296/1-3 พระราม 3 ซอย 14, ถนน พระราม 3, บางโคล่, บางคอแหลม กรุงเทพฯ 10120<br>'
@@ -2434,12 +2437,14 @@ function _printHtml(html,pdfName){
   const _old=document.title;document.title=pdfName;
   setTimeout(function(){_pf.contentWindow.focus();_pf.contentWindow.print();setTimeout(function(){document.title=_old;},1500);},400);
 }
+// Printouts: one text size (11pt) for everything in the body; section headlines 2pt bigger. Graph labels keep their own size.
+const _RPT_TYPE_CSS='.rbody *:not(svg):not(svg *){font-size:11pt!important}.rbody .sec-title{font-size:13pt!important}.rbody strong,.rbody b{font-weight:700}';
 function _reportShell(pdfTitle,subtitle,metaRowsHtml,bodyHtml){
   return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>'+pdfTitle+'</title>'
     +'<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">'
-    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Sarabun",system-ui,sans-serif;color:#1f2733;background:#fff}.page{padding:36px 48px;max-width:760px;margin:0 auto}.letterhead{text-align:center;padding-bottom:14px;margin-bottom:18px;border-bottom:2px solid #1f8ec4}.letterhead h1{font-size:1.15rem;font-weight:700;color:#1f8ec4;letter-spacing:.03em}.letterhead h2{font-size:.95rem;font-weight:600;margin-top:4px;color:#374151}.meta{width:100%;border-collapse:collapse;margin-bottom:20px}.meta td{font-size:.9rem;padding:3px 0}.meta td:first-child{font-weight:700;width:140px;color:#374151}.sec-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;border-bottom:1.5px solid #e6e9ee;padding-bottom:5px;margin:20px 0 10px}.lesson-title{font-size:.82rem;font-weight:800;color:#1f8ec4;border-bottom:1.5px solid #b8dcef;padding-bottom:4px;margin:16px 0 8px}ul{margin:0 0 8px 20px}li{font-size:.86rem;line-height:1.55;margin-bottom:3px}p{font-size:.86rem;line-height:1.55;margin-bottom:5px}.footer{margin-top:36px;border-top:1px solid #e6e9ee;padding-top:12px;text-align:center;font-size:.7rem;color:#6b7280;line-height:1.7}@media print{.page{padding:20px 28px}}</style></head><body>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"Sarabun",system-ui,sans-serif;color:#1f2733;background:#fff}.page{padding:36px 48px;max-width:760px;margin:0 auto}.letterhead{text-align:center;padding-bottom:14px;margin-bottom:18px;border-bottom:2px solid #1f8ec4}.letterhead h1{font-size:1.15rem;font-weight:700;color:#1f8ec4;letter-spacing:.03em}.letterhead h2{font-size:.95rem;font-weight:600;margin-top:4px;color:#374151}.meta{width:100%;border-collapse:collapse;margin-bottom:20px}.meta td{font-size:.9rem;padding:3px 0}.meta td:first-child{font-weight:700;width:140px;color:#374151}.sec-title{font-size:.75rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#6b7280;border-bottom:1.5px solid #e6e9ee;padding-bottom:5px;margin:20px 0 10px}.lesson-title{font-size:.82rem;font-weight:800;color:#1f8ec4;border-bottom:1.5px solid #b8dcef;padding-bottom:4px;margin:16px 0 8px}ul{margin:0 0 8px 20px}li{font-size:.86rem;line-height:1.55;margin-bottom:3px}p{font-size:.86rem;line-height:1.55;margin-bottom:5px}.footer{margin-top:36px;border-top:1px solid #e6e9ee;padding-top:12px;text-align:center;font-size:.7rem;color:#6b7280;line-height:1.7}@media print{.page{padding:20px 28px}}'+_RPT_TYPE_CSS+'</style></head><body>'
     +'<div class="page"><div class="letterhead"><img src="'+CARE_LOGO_URL+'" alt="CARE" style="height:58px;display:block;margin:0 auto 6px"><h1>CARE Learning Center Skills Enhancement School</h1><h2>'+esc(subtitle)+'</h2></div>'
-    +'<table class="meta">'+metaRowsHtml+'</table>'+bodyHtml
+    +'<table class="meta">'+metaRowsHtml+'</table>'+'<div class="rbody">'+bodyHtml+'</div>'
     +'<div class="footer">โรงเรียน เสริมทักษะ แคร์ เลิร์นนิ่ง เซ็นเตอร์, 296/1-3 พระราม 3 ซอย 14, ถนน พระราม 3, บางโคล่, บางคอแหลม กรุงเทพฯ 10120<br>CARE Learning Center Skills Enhancement School, 296/1-3 Rama3 Soi 14, Rama 3 Road, Bangkhlo, Bangkholaem, Bangkok 10120, Thailand<br>+66 (0) 2 689 1818, (0) 81 924 2238 | contact.info@carethailand.co.th | facebook.com/CAREThailandSchool | www.carethailand.co.th</div>'
     +'</div></body></html>';
 }
