@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-10-AO -->
+<!-- BUILD v2026-10-14-AP -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-10-AO</title>
+<title>CARE Client Binder v2026-10-14-AP</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-10-AO';
+const APP_VERSION='v2026-10-14-AP';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-14-AP',date:'14 Oct 2026',added:'',improved:'Program Checklist and First Trial now open showing the most recent sessions on the right, so you no longer have to scroll across to find today. Older sessions are still there \u2014 just scroll left.',fixed:''},
   {version:'v2026-10-10-AO',date:'10 Oct 2026',added:'',improved:'Login screen on phones: the login box now sits on top with the Latest update card underneath, instead of side by side and cut off. Bigger email/password boxes, and iPhone no longer zooms in when you tap them.',fixed:''},
   {version:'v2026-10-08-AN',date:'8 Oct 2026',added:'',improved:'Security groundwork: the app now tells the database who is logged in with every load and save, so the database can be locked to active staff only. Adding a new staff login no longer switches the admin\u2019s own session to the new account. The old-style username/password login (unused) has been retired.',fixed:''},
   {version:'v2026-10-05-AM',date:'5 Oct 2026',added:'The Program Checklist is now grouped by lesson phase into three sections: In-progress (the 1:1 session grid), Maintenance (a probed/not grid over maintenance sessions), and Hold (the held lessons with a Resume button). Lessons move between sections automatically as their phase changes, so maintenance and held lessons no longer clutter the main grid as blank rows.',improved:'',fixed:''},
@@ -573,6 +574,14 @@ function _fdKey(el){return 'care_fd:'+(typeof selectedClientId!=='undefined'&&se
 function _restoreFieldDrafts(){try{document.querySelectorAll('textarea[id]').forEach(function(el){if(_fdSkip(el))return;var d=null;try{d=localStorage.getItem(_fdKey(el));}catch(e){}if(d!=null&&d!==''&&(''+(el.value||'')).trim()===''){el.value=d;}});}catch(e){}}
 function _clearFieldDraft(id){try{localStorage.removeItem('care_fd:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+id);}catch(e){}}
 document.addEventListener('input',function(ev){try{var el=ev.target;if(_fdSkip(el))return;var v=el.value;if(v&&(''+v).trim()!==''){try{localStorage.setItem(_fdKey(el),v);}catch(e){}}else{try{localStorage.removeItem(_fdKey(el));}catch(e){}}}catch(e){}},true);
+// ---- Wide date grids (Program Checklist, First Trial strips) open at the NEWEST (right-hand) end; scroll left for older. DISPLAY ONLY. ----
+(function(){
+  var ro=window.ResizeObserver?new ResizeObserver(function(es){es.forEach(function(e){_snGo(e.target);});}):null;
+  function _snGo(el){if(el._snDone)return;if(el.clientWidth>0){el.scrollLeft=el.scrollWidth;el._snDone=true;if(ro)ro.unobserve(el);}}
+  function _snScan(){try{document.querySelectorAll('.scroll-newest').forEach(function(el){if(el._snSeen)return;el._snSeen=true;_snGo(el);if(!el._snDone&&ro)ro.observe(el);});}catch(e){}}
+  try{new MutationObserver(_snScan).observe(document.documentElement,{childList:true,subtree:true});}catch(e){}
+  _snScan();
+})();
 const SUPABASE_URL='https://uhilfrgfzluvowvffask.supabase.co';
 const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVoaWxmcmdmemx1dm93dmZmYXNrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4NzgxODYsImV4cCI6MjA5NjQ1NDE4Nn0.cGFT0rHjLHRE9iXewjY8HZ1pVzI6nNq33lv6G0YoQ20';
 const _supa=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'care_auth'}});
@@ -3470,7 +3479,7 @@ function _ftStrip(lesson,target,points,label,sd){
     cells+=_ftDotCell(ft);
   });
   return '<div style="font-size:.72rem;color:var(--muted);margin:6px 0 3px">'+label+'</div>'
-    +'<div style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>';
+    +'<div class="scroll-newest" style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>';
 }
 function renderTargetSessionEntry(lesson,sd,target){
   // On-hold targets: no data input — the yellow renderHoldSection shows them below
@@ -5335,7 +5344,7 @@ function renderProgramChecklist(){
       row+='</tr>';
       return row;
     }).join('');
-    return '<div style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+spacer+rows+'</table></div>';
+    return '<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+spacer+rows+'</table></div>';
   }
 
   const inSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')!=='shadow').sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
