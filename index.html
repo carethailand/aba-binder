@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-14-AP -->
+<!-- BUILD v2026-10-15-AQ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-14-AP</title>
+<title>CARE Client Binder v2026-10-15-AQ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -451,10 +451,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-14-AP';
+const APP_VERSION='v2026-10-15-AQ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-15-AQ',date:'15 Oct 2026',added:'Day report: Report \u2192 Day report prints everything for one client on one date \u2014 supervisor notes, behavior (that day\u2019s notes + 4-week graphs, labelled 1:1 / School Shadow), and lessons (that day\u2019s updates and data + 4-week graphs), with an optional reinforcer list. Print BIP: a new button on the Behavior tab prints the full plan with graphs for a date range you choose.',improved:'Report tab: behavior graphs are now labelled 1:1 or School Shadow, and each shows its own data (previously the School graph appeared blank).',fixed:''},
   {version:'v2026-10-14-AP',date:'14 Oct 2026',added:'',improved:'Program Checklist and First Trial now open showing the most recent sessions on the right, so you no longer have to scroll across to find today. Older sessions are still there \u2014 just scroll left.',fixed:''},
   {version:'v2026-10-10-AO',date:'10 Oct 2026',added:'',improved:'Login screen on phones: the login box now sits on top with the Latest update card underneath, instead of side by side and cut off. Bigger email/password boxes, and iPhone no longer zooms in when you tap them.',fixed:''},
   {version:'v2026-10-08-AN',date:'8 Oct 2026',added:'',improved:'Security groundwork: the app now tells the database who is logged in with every load and save, so the database can be locked to active staff only. Adding a new staff login no longer switches the admin\u2019s own session to the new account. The old-style username/password login (unused) has been retired.',fixed:''},
@@ -2440,38 +2441,69 @@ function _reportShell(pdfTitle,subtitle,metaRowsHtml,bodyHtml){
     +'<div class="footer">โรงเรียน เสริมทักษะ แคร์ เลิร์นนิ่ง เซ็นเตอร์, 296/1-3 พระราม 3 ซอย 14, ถนน พระราม 3, บางโคล่, บางคอแหลม กรุงเทพฯ 10120<br>CARE Learning Center Skills Enhancement School, 296/1-3 Rama3 Soi 14, Rama 3 Road, Bangkhlo, Bangkholaem, Bangkok 10120, Thailand<br>+66 (0) 2 689 1818, (0) 81 924 2238 | contact.info@carethailand.co.th | facebook.com/CAREThailandSchool | www.carethailand.co.th</div>'
     +'</div></body></html>';
 }
-function _lessonUpdatedSince(l,since){
-  if(!since)return true;
-  const chk=[];
-  (l.supNotes||[]).forEach(function(n){chk.push(n.date);});
-  (l.sds||[]).forEach(function(sd){(sd.notes||[]).forEach(function(n){chk.push(n.date);});(sd.targets||[]).forEach(function(t){if(t.introducedDate)chk.push(t.introducedDate);if(t.masteredDate)chk.push(t.masteredDate);(t.dtStepChanges||[]).forEach(function(c){if(c.date)chk.push(c.date);});});});
-  DB.sessions.filter(function(s){return s.clientId===selectedClientId&&s.date>=since;}).forEach(function(s){if((s.lessonData||[]).some(function(ld){return ld.lessonId===l.id;}))chk.push(s.date);});
-  return chk.some(function(d){return d&&d>=since;});
+// ── Day report + Print BIP (v-AQ). READ-ONLY: these functions only read DB and print — they never save anything. ──
+function _drDaysBefore(d,n){var t=new Date(d+'T00:00');t.setDate(t.getDate()-n);return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);}
+function _drParas(txt){return String(txt||'').split(/\n+/).filter(function(x){return x.trim();}).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');}
+function _drWho(n){return n?' <span style="color:#6b7280;font-size:.85em">— '+esc(n)+'</span>':'';}
+function _drUserName(id){var u=(DB.users||[]).find(function(x){return x.id===id;});return u?u.name:'';}
+function _drFmtD(d){if(!d)return'';var p=d.split('-');return parseInt(p[2])+'.'+parseInt(p[1])+'.'+p[0].slice(2);}
+function _drTdVal(t,td){if(td.pct!=null)return Math.round(td.pct)+'%';if(td.rating!=null)return 'rating '+td.rating+'/'+((t.ratingScale&&t.ratingScale.max)||5);if(td.firstTrial)return normFT(td.firstTrial);if(td.count!=null)return td.count+'';return '';}
+function _drCtxLabel(cx){return cx==='shadow'?'School Shadow':'1:1';}
+// One target's graph from session entries [{date,sessTime,td}] (already limited to the date window)
+function _drTargetChart(l,t,entries){
+  if(t.dataType==='percent'||t.dataType==='ta'){
+    var pp=[];entries.forEach(function(e){if(e.td.pct!=null)pp.push({date:e.date,y:Math.round(e.td.pct)});});
+    return pp.length?_svgChart(pp,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:(l.masteryRule&&l.masteryRule.pct)||80,color:'#1f8ec4'}):'';
+  }
+  if(t.dataType==='rating'){
+    var rmax=(t.ratingScale&&t.ratingScale.max)||5;var rp=[];entries.forEach(function(e){if(e.td.rating!=null)rp.push({date:e.date,y:e.td.rating});});
+    var rt=[];for(var r=1;r<=rmax;r++)rt.push(r);
+    return rp.length?_svgChart(rp,{min:1,max:rmax,ticks:rt,color:'#8b5cf6',mastery:rmax}):'';
+  }
+  if(t.dataType==='tally'){
+    var tp=[];entries.forEach(function(e){if(e.td.count!=null)tp.push({date:e.date,y:+(e.td.count/(e.sessTime||1)).toFixed(1)});});
+    if(!tp.length)return '';
+    var mx=Math.max.apply(null,tp.map(function(p){return p.y;}));mx=(mx>0?mx*1.2:5);
+    return _svgChart(tp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:'/hr',color:'#e6a71f'});
+  }
+  if(t.dataType==='checklist'){
+    var fp=[];entries.forEach(function(e){var nf=normFT(e.td.firstTrial);if(nf==='C')fp.push({date:e.date,y:2,color:'#4fa14a'});else if(nf==='P')fp.push({date:e.date,y:1,color:'#c98a12'});else if(nf==='I')fp.push({date:e.date,y:0,color:'#d84a3a'});});
+    return fp.length?_svgChart(fp,{min:0,max:2,ticks:[0,1,2],tickLabel:function(v){return v===2?'C':v===1?'P':'I';},color:'#1f8ec4'}):'';
+  }
+  return '';
 }
-function _rbToggleSince(sel){var r=document.getElementById('rb-since-row');if(r)r.style.display=sel.value==='updated'?'flex':'none';}
-function _rbToggleGraph(cb){var r=document.getElementById('rb-graph-row');if(r)r.style.display=cb.checked?'flex':'none';}
+// One graph per measurement for a BIP in one setting (logs already limited to the window and setting)
+function _drBipCharts(b,logs){
+  var names={frequency:'Frequency (count)',duration:'Duration (min)',rate:'Rate (per hr)'};
+  var colors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
+  var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;
+  var out='';
+  bipMeasList(b).forEach(function(meas){
+    var byDate={},order=[];
+    logs.forEach(function(x){var v=bipValForMeas(x,meas);if(v==null)return;if(!byDate[x.date]){byDate[x.date]=[];order.push(x.date);}byDate[x.date].push(v);});
+    if(!order.length)return;
+    var gp=order.map(function(d){var a=byDate[d];var s=a.reduce(function(p,q){return p+q;},0);return {date:d,y:+(meas==='frequency'?s:s/a.length).toFixed(2)};});
+    var mx=Math.max.apply(null,gp.map(function(p){return p.y;}));if(goal!=null&&goal>mx)mx=goal;mx=(mx>0?mx*1.2:5);
+    var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';
+    out+='<p style="margin:6px 0 0;font-size:.8rem;font-weight:600;color:'+colors[meas]+'">'+names[meas]+'</p>'
+      +_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:colors[meas],mastery:(goal!=null&&!isNaN(goal))?goal:null});
+  });
+  return out;
+}
+function _drBehVal(x){return x.count!=null?x.count+'':x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+' min':'';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
-  const today=new Date().toISOString().slice(0,10);
-  const since=new Date(Date.now()-7*864e5).toISOString().slice(0,10);
-  const gfrom=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
+  const today=_todayLocal();
   modal('<div style="max-width:480px">'
-   +'<h3 style="margin-bottom:14px">🖨 Build report — '+esc(c.name)+'</h3>'
-   +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:16px">'
+   +'<h3 style="margin-bottom:6px">🖨 Day report — '+esc(c.name)+'</h3>'
+   +'<p style="font-size:.8rem;color:#6b7280;margin-bottom:14px;line-height:1.5">Prints everything recorded for this client on the chosen date: supervisor notes, behavior (notes + 4-week graphs), and lessons (updates + 4-week graphs).</p>'
+   +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
      +'<label style="color:#6b7280">Date</label><input id="rb-date" type="date" value="'+today+'">'
      +'<label style="color:#6b7280">Time</label><input id="rb-time" type="text" placeholder="e.g. 13:30-15:30">'
      +'<label style="color:#6b7280">Therapist</label><input id="rb-tx" type="text" placeholder="(optional)">'
      +'<label style="color:#6b7280">Type</label><select id="rb-type"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option></select>'
    +'</div>'
-   +'<div style="font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:2px">Include in report</div>'
-   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-notes" checked> General notes</label><select id="rb-notes-mode" style="font-size:.82rem;width:110px"><option value="latest">Latest</option><option value="all">All notes</option></select></div>'
-   +'<div style="display:flex;align-items:center;gap:8px;padding:9px 0 4px;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lessons" checked> Lessons</label><select id="rb-lessons-scope" style="font-size:.82rem;width:96px" onchange="_rbToggleSince(this)"><option value="updated">Updated</option><option value="all">All</option></select><select id="rb-lessons-depth" style="font-size:.82rem;width:96px"><option value="summary">Summary</option><option value="full">Full</option></select></div>'
-   +'<div style="display:flex;align-items:center;gap:8px;padding:0 0 8px 26px;font-size:.8rem;color:#6b7280" id="rb-since-row">Updated since <input id="rb-since" type="date" value="'+since+'" style="font-size:.8rem"></div>'
-   +'<div style="display:flex;align-items:center;gap:8px;padding:9px 0 4px;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-graphs" checked onchange="_rbToggleGraph(this)"> Include graphs <span style="font-size:.72rem;color:#94a0ae">(% / rating / behavior)</span></label></div>'
-   +'<div style="display:flex;align-items:center;gap:8px;padding:0 0 8px 26px;font-size:.8rem;color:#6b7280" id="rb-graph-row">Graph from <input id="rb-gfrom" type="date" value="'+gfrom+'" style="font-size:.8rem"> to <input id="rb-gto" type="date" value="'+today+'" style="font-size:.8rem"></div>'
-   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-bip" checked> BIP <span style="font-size:.72rem;color:#94a0ae">(protocol + last 5 data)</span></label></div>'
-   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-school" checked> School Shadow <span style="font-size:.72rem;color:#94a0ae">(targets by subject + NET)</span></label></div>'
-   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Reinforcer list</label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Add reinforcer list <span style="font-size:.72rem;color:#94a0ae">(whole list)</span></label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
 }
@@ -2479,108 +2511,132 @@ function buildAndPrintReport(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
   const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
   const gc=function(id){const e=document.getElementById(id);return e?e.checked:false;};
-  const _date=gv('rb-date')||new Date().toISOString().slice(0,10);
+  const D=gv('rb-date')||_todayLocal();
+  const from=_drDaysBefore(D,27); // graphs: the 4 weeks up to and including the report day
   const _time=gv('rb-time'),_tx=gv('rb-tx'),_type=gv('rb-type')||'overlap';
-  const _fmtD=function(d){if(!d)return'';const p=d.split('-');return parseInt(p[2])+'.'+parseInt(p[1])+'.'+p[0].slice(2);};
   const subtitle=_type==='school'?'School Observation Notes':_type==='clinic'?'Clinic Notes':'Overlap Notes';
   let meta='<tr><td>Client:</td><td>'+esc(c.name)+'</td></tr>'
-    +'<tr><td>Date:</td><td>'+_fmtD(_date)+'</td></tr>'
+    +'<tr><td>Date:</td><td>'+_drFmtD(D)+'</td></tr>'
     +'<tr><td>Time:</td><td>'+esc(_time)+'</td></tr>'
     +(_tx?'<tr><td>Therapist:</td><td>'+esc(_tx)+'</td></tr>':'')
     +'<tr><td>'+(_type==='overlap'?'Overlapped by':'By')+':</td><td>'+esc(currentUser.name)+'</td></tr>'
     +'<tr><td>Type:</td><td>'+esc(_type)+'</td></tr>';
+  const none=function(t){return '<p style="color:#94a0ae;font-style:italic">'+t+'</p>';};
   let body='';
-  if(gc('rb-notes')){
-    let notes=(c.notes||[]).filter(function(n){return n.type==='supervisor';}).sort(function(a,b){return b.date.localeCompare(a.date);});
-    if(gv('rb-notes-mode')==='latest')notes=notes.slice(0,1);
-    const nh=notes.length?notes.map(function(n){return '<div style="margin-bottom:8px"><div style="font-size:.74rem;color:#6b7280;font-weight:600">'+esc(n.date)+'</div>'+n.text.split(/\n+/).filter(function(x){return x.trim();}).map(function(pp){return '<p>'+esc(pp)+'</p>';}).join('')+'</div>';}).join(''):'<p style="color:#94a0ae;font-style:italic">No general notes.</p>';
-    body+='<div class="sec-title">General Notes</div>'+nh;
-  }
-  if(gc('rb-lessons')){
-    const scope=gv('rb-lessons-scope'),depth=gv('rb-lessons-depth'),since=gv('rb-since');
-    const gOn=gc('rb-graphs'),gFrom=gv('rb-gfrom'),gTo=gv('rb-gto');
-    let lessons=DB.lessons.filter(function(l){return l.clientId===selectedClientId&&l.phase!=='archived';});
-    if(scope==='updated')lessons=lessons.filter(function(l){return _lessonUpdatedSince(l,since);});
-    let lh='';
-    lessons.forEach(function(l){
-      let inner='';
-      (l.sds||[]).forEach(function(sd){
-        var _act=sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';});
-        if(!_act.length)return;
-        if(depth==='full'&&(sd.sd||sd.response)){inner+='<p style="margin:8px 0 1px;color:#374151"><strong>SD:</strong> '+esc(sd.sd||'')+'</p>';if(sd.response)inner+='<p style="margin:0 0 3px;color:#374151"><strong>R:</strong> '+esc(sd.response)+'</p>';}
-        _act.forEach(function(t){
-          const entries=[];
-          DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
-          entries.sort(function(a,b){return a.date.localeCompare(b.date);});
-          let latest='';for(var _i=entries.length-1;_i>=0;_i--){var _td=entries[_i].td;if(_td.pct!=null){latest=Math.round(_td.pct)+'%';break;}if(_td.rating!=null){latest='rating '+_td.rating+'/'+((t.ratingScale&&t.ratingScale.max)||5);break;}if(_td.firstTrial){latest=normFT(_td.firstTrial);break;}if(_td.count!=null){latest=_td.count+'';break;}}
-          inner+='<p style="margin:6px 0 2px"><strong>Current target:</strong> '+esc(t.name)+(latest?' \u2014 '+esc(latest):'')+'</p>';
-          if(t.dataType==='ta'&&t.taSteps&&t.taSteps.length){var _md=0;for(var _si=0;_si<t.taSteps.length;_si++){if(isStepMastered(t,_si))_md++;}inner+='<p style="margin:1px 0 3px;font-size:.8rem;color:#6b7280">Steps mastered: '+_md+' / '+t.taSteps.length+'</p>';}
-          if(gOn){
-            var inR=entries.filter(function(e){return (!gFrom||e.date>=gFrom)&&(!gTo||e.date<=gTo);});
-            var chart='';
-            if(t.dataType==='percent'||t.dataType==='ta'){
-              var pp=[];inR.forEach(function(e){if(e.td.pct!=null)pp.push({date:e.date,y:Math.round(e.td.pct)});});
-              if(pp.length)chart=_svgChart(pp,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:(l.masteryRule&&l.masteryRule.pct)||80,color:'#1f8ec4'});
-            }else if(t.dataType==='rating'){
-              var rmax=(t.ratingScale&&t.ratingScale.max)||5;var rp=[];inR.forEach(function(e){if(e.td.rating!=null)rp.push({date:e.date,y:e.td.rating});});
-              var rt=[];for(var _r=1;_r<=rmax;_r++)rt.push(_r);
-              if(rp.length)chart=_svgChart(rp,{min:1,max:rmax,ticks:rt,color:'#8b5cf6',mastery:rmax});
-            }else if(t.dataType==='tally'){
-              var tp=[];inR.forEach(function(e){if(e.td.count!=null)tp.push({date:e.date,y:+(e.td.count/(e.sessTime||1)).toFixed(1)});});
-              if(tp.length){var mx=Math.max.apply(null,tp.map(function(p){return p.y;}));mx=(mx>0?mx*1.2:5);chart=_svgChart(tp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:'/hr',color:'#e6a71f'});}
-            }else if(t.dataType==='checklist'){
-              var fp=[];inR.forEach(function(e){var nf=normFT(e.td.firstTrial);if(nf==='C')fp.push({date:e.date,y:2,color:'#4fa14a'});else if(nf==='P')fp.push({date:e.date,y:1,color:'#c98a12'});else if(nf==='I')fp.push({date:e.date,y:0,color:'#d84a3a'});});
-              if(fp.length)chart=_svgChart(fp,{min:0,max:2,ticks:[0,1,2],tickLabel:function(v){return v===2?'C':v===1?'P':'I';},color:'#1f8ec4'});
-            }
-            if(chart)inner+='<div style="margin:0 0 8px">'+chart+'</div>';
-          }
-        });
-      });
-      const sn=l.supNotes&&l.supNotes.length?l.supNotes[l.supNotes.length-1]:null;
-      if(sn)inner+='<p style="margin:3px 0"><strong>Note:</strong> '+esc(sn.text)+'</p>';
-      if(depth==='full'){const mast=l.sds.flatMap(function(sd){return sd.targets;}).filter(function(t){return t.status==='mastered';});if(mast.length)inner+='<p style="margin:3px 0;color:#2f6b2c"><strong>Mastered ('+mast.length+'):</strong> '+mast.map(function(t){return esc(t.name);}).join(', ')+'</p>';}
-      if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div>'+inner;
+  // 1. Supervisor notes written for this day
+  const notes=(c.notes||[]).filter(function(n){return n.type==='supervisor'&&n.date===D;});
+  body+='<div class="sec-title">Notes</div>'+(notes.length?notes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||_drUserName(n.author)||'')+'</div></div>';}).join(''):none('No supervisor notes on this day.'));
+  // 2. Behavior: that day's behavior notes + each BIP/setting with data that day (4-week graphs, labelled 1:1 / School Shadow)
+  let bh='';
+  const bNotes=(c.behaviorNotes||[]).filter(function(n){return n.date===D;});
+  if(bNotes.length)bh+='<div class="lesson-title">Behavior notes</div>'+bNotes.map(function(n){return '<div style="margin-bottom:6px">'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||'')+'</div></div>';}).join('');
+  (DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;}).forEach(function(b){
+    const allB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;});
+    const mods=(b.modHistory||[]).filter(function(m){return m.date===D;});
+    let shown=false;
+    _bipCtxList(b).forEach(function(cx){
+      const inCx=allB.filter(function(x){return _ctx(x.setting)===cx;});
+      const dayLogs=inCx.filter(function(x){return x.date===D;});
+      if(!dayLogs.length)return;
+      bh+='<div class="lesson-title">'+esc(b.name)+' · '+_drCtxLabel(cx)+'</div>';
+      if(!shown&&mods.length)bh+=mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
+      shown=true;
+      bh+='<p><strong>Today:</strong> '+dayLogs.map(function(x){return esc(_drBehVal(x))+(x.function&&(b.functions||[]).length>1?' ('+esc(bipFnLabel(x.function))+')':'')+(x.txName?' — '+esc(x.txName):'');}).join(', ')+'</p>';
+      const win=inCx.filter(function(x){return x.date>=from&&x.date<=D;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
+      bh+=_drBipCharts(b,win);
     });
-    body+='<div class="sec-title">Lesson Updates</div>'+(lh||'<p style="color:#94a0ae;font-style:italic">No lessons match.</p>');
-  }
-  if(gc('rb-bip')){
-    const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
-    let bh='';
-    const _bgOn=gc('rb-graphs'),_bgF=gv('rb-gfrom'),_bgT=gv('rb-gto');
-    bips.forEach(function(b){
-      bh+='<div class="lesson-title">'+esc(b.name)+'</div>';
-      if(b.description)bh+='<p><strong>Definition:</strong> '+esc(b.description)+'</p>';
-      if(b.replacement)bh+='<p><strong>Replacement:</strong> '+esc(b.replacement)+'</p>';
-      var _allLogsB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      var _ctxs=_bipCtxList(b);
-      _ctxs.forEach(function(cx){
-        var cxLabel=cx==='shadow'?'School Shadow':'1:1';
-        var allLogs=_allLogsB.filter(function(x){return _ctx(x.setting)===cx;});
-        if(!allLogs.length&&_ctxs.length>1)return;
-        var logs=allLogs.filter(function(x){return (!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT);});
-        bh+='<p style="margin:8px 0 2px;font-weight:700;color:#234b63">'+cxLabel+'</p>';
-        if(logs.length)bh+='<p><strong>Data:</strong> '+logs.map(function(x){return _mmmD(x.date)+' '+(x.count!=null?x.count:x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+'min':'');}).join(', ')+'</p>';
-        else bh+='<p style="color:#6b7280">No data in range.</p>';
-        if(_bgOn){
-          var meas=(bipMeasList(b)[0])||'frequency';
-          var gp=[];allLogs.forEach(function(x){if((!_bgF||x.date>=_bgF)&&(!_bgT||x.date<=_bgT)){var v=bipValForMeas(x,meas);if(v!=null)gp.push({date:x.date,y:v});}});
-          if(gp.length){var mx=Math.max.apply(null,gp.map(function(pp){return pp.y;}));mx=(mx>0?mx*1.2:5);var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;bh+='<div style="margin:2px 0 10px">'+_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:'#d84a3a',mastery:(goal!=null&&!isNaN(goal)?goal:null)})+'</div>';}
-        }
+    if(!shown&&mods.length)bh+='<div class="lesson-title">'+esc(b.name)+'</div>'+mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
+  });
+  body+='<div class="sec-title">Behavior</div>'+(bh||none('No behavior notes or data on this day.'));
+  // 3. Lessons: anything dated this day + that day's session data (4-week graphs)
+  const cs=DB.sessions.filter(function(s){return s.clientId===selectedClientId;});
+  const sessD=cs.filter(function(s){return s.date===D;});
+  const sessWin=cs.filter(function(s){return s.date>=from&&s.date<=D;});
+  let lh='';
+  DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
+    let inner='';
+    (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(_drUserName(n.author))+'</div></div>';});
+    (l.sds||[]).forEach(function(sd){
+      (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>SD note'+(sd.sd?' ('+esc(sd.sd)+')':'')+':</strong>'+_drParas(n.text)+'<div style="font-size:.74rem;color:#6b7280">'+esc(n.authorName||'')+'</div></div>';});
+      (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){inner+='<p><strong>Modification:</strong> '+esc(m.label||'')+_drWho(m.byName)+'</p>';});
+      (sd.targets||[]).forEach(function(t){
+        if(t.introducedDate===D)inner+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
+        if(t.masteredDate===D)inner+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
+        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){inner+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+_drWho(ch.byName)+'</p>';});
+        const dayVals=[];
+        sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
+        if(!dayVals.length)return;
+        const entries=[];
+        sessWin.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
+        entries.sort(function(a,b){return a.date.localeCompare(b.date);});
+        inner+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
       });
     });
-    if(bh)body+='<div class="sec-title">Behavior (BIP)</div>'+bh;
-  }
-  if(gc('rb-school')){
-    const _ssHtml=_ssReportSummary(c.schoolShadow,gv('rb-gfrom'),gv('rb-gto'),gc('rb-graphs'));
-    if(_ssHtml)body+='<div class="sec-title">School Shadow</div>'+_ssHtml;
-  }
+    if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div>'+inner;
+  });
+  body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
+  // 4. Reinforcer list (optional, whole list)
   if(gc('rb-reinf')&&(c.reinforcers||[]).length){
     body+='<div class="sec-title">Reinforcers</div><ul>'+c.reinforcers.map(function(r){return '<li>'+esc(r.name)+(r.type?' ('+esc(r.type)+')':'')+'</li>';}).join('')+'</ul>';
   }
   const _safe=(c.name||'Client').replace(/[^\w฀-๿ ]+/g,' ').replace(/\s+/g,' ').trim()||'Client';
-  const pdfName='CARE '+_safe+' report '+_date;
+  const pdfName='CARE '+_safe+' day report '+D;
   closeModal();
   _printHtml(_reportShell(pdfName,subtitle,meta,body),pdfName);
+}
+// ── Print full BIP (plan + graphs) for a chosen date range ──
+function openPrintBIP(){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
+  const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
+  if(!bips.length){toast('No BIPs to print');return;}
+  const today=_todayLocal();
+  modal('<div style="max-width:440px">'
+   +'<h3 style="margin-bottom:14px">🖨 Print BIP — '+esc(c.name)+'</h3>'
+   +'<div style="display:grid;grid-template-columns:88px 1fr;gap:9px 10px;align-items:center;font-size:.85rem;margin-bottom:14px">'
+     +'<label style="color:#6b7280">BIP</label><select id="pb-bip"><option value="">All BIPs</option>'+bips.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.name)+' ('+_bipCtxList(b).map(_drCtxLabel).join(' + ')+')</option>';}).join('')+'</select>'
+     +'<label style="color:#6b7280">Data from</label><input id="pb-from" type="date" value="'+_drDaysBefore(today,90)+'">'
+     +'<label style="color:#6b7280">to</label><input id="pb-to" type="date" value="'+today+'">'
+   +'</div>'
+   +'<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-primary" onclick="printBIP()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
+   +'</div>');
+}
+function printBIP(){
+  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
+  const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
+  const only=gv('pb-bip'),F=gv('pb-from'),T=gv('pb-to')||_todayLocal();
+  const bips=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId&&(!only||b.id===only);});
+  const blk=function(label,txt){return txt&&String(txt).trim()?'<p style="margin:6px 0 1px"><strong>'+label+'</strong></p>'+_drParas(txt):'';};
+  let body='';
+  bips.forEach(function(b){
+    body+='<div class="sec-title">'+esc(b.name)+' <span style="font-weight:400;font-size:.85em">('+_bipCtxList(b).map(_drCtxLabel).join(' + ')+')</span></div>';
+    const fns=(b.functions||[]).map(function(f){return bipFnLabel(f);}).join(', ');
+    let ov=blk('Definition',b.description)+(fns?'<p style="margin:6px 0 1px"><strong>Functions:</strong> '+esc(fns)+'</p>':'')
+      +(b.goal?'<p style="margin:6px 0 1px"><strong>Goal:</strong> '+esc(b.goal)+(b.goalDeadline?' (by '+esc(b.goalDeadline)+')':'')+'</p>':'')
+      +(b.baseline?'<p style="margin:6px 0 1px"><strong>Baseline:</strong> '+esc(b.baseline)+'</p>':'');
+    const prev=blk('Environment Setup',b.competing)+blk('Antecedent Modification',b.antecedent);
+    const teach=blk('Replacement Behavior',b.replacement)+blk('Teaching Strategy',b.teachingStrategy);
+    const resp=blk('Consequence Manipulation',b.consequence)+blk('Extinction',b.extinction)+blk('Safety Plan',b.safety);
+    if(ov)body+='<div class="lesson-title">Overview</div>'+ov;
+    if(prev)body+='<div class="lesson-title">Prevention</div>'+prev;
+    if(teach)body+='<div class="lesson-title">Teaching</div>'+teach;
+    if(resp)body+='<div class="lesson-title">Response</div>'+resp;
+    const mods=(b.modHistory||[]).filter(function(m){return m.date&&(!F||m.date>=F)&&m.date<=T;});
+    if(mods.length)body+='<div class="lesson-title">Plan changes</div>'+mods.map(function(m){return '<p>'+_drFmtD(m.date)+' — '+esc(m.label||'')+_drWho(m.byName)+'</p>';}).join('');
+    const allB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;});
+    _bipCtxList(b).forEach(function(cx){
+      const logs=allB.filter(function(x){return _ctx(x.setting)===cx&&(!F||x.date>=F)&&x.date<=T;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
+      body+='<div class="lesson-title">Data · '+_drCtxLabel(cx)+'</div>'
+        +(logs.length?'<p style="font-size:.8rem;color:#6b7280">'+logs.length+' record'+(logs.length===1?'':'s')+' from '+_drFmtD(logs[0].date)+' to '+_drFmtD(logs[logs.length-1].date)+'</p>'+_drBipCharts(b,logs):'<p style="color:#94a0ae;font-style:italic">No data in this range.</p>');
+    });
+  });
+  const meta='<tr><td>Client:</td><td>'+esc(c.name)+'</td></tr>'
+    +'<tr><td>Data range:</td><td>'+(F?_drFmtD(F):'start')+' – '+_drFmtD(T)+'</td></tr>'
+    +'<tr><td>Printed by:</td><td>'+esc(currentUser.name)+'</td></tr>'
+    +'<tr><td>Printed on:</td><td>'+_drFmtD(_todayLocal())+'</td></tr>';
+  const _safe=(c.name||'Client').replace(/[^\w฀-๿ ]+/g,' ').replace(/\s+/g,' ').trim()||'Client';
+  const pdfName='CARE '+_safe+' BIP '+T;
+  closeModal();
+  _printHtml(_reportShell(pdfName,'Behavior Intervention Plan',meta,body),pdfName);
 }
 
 // ── AUTH ──
@@ -2842,7 +2898,7 @@ function render(){
   // Draw BIP charts after innerHTML is set
   if(currentView==='client'&&(selectedTab==='behavior'||selectedTab==='report')){
     const bips=(DB.bips||[]).filter(b=>b.clientId===selectedClientId);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>bips.forEach(bip=>drawBIPChart(bip))));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>bips.forEach(bip=>{if(selectedTab==='report'){_bipCtxList(bip).forEach(function(cx){drawBIPChart(bip,cx,'_'+(cx==='shadow'?'s':'o'));});}else drawBIPChart(bip);})));
   }
   try{_restoreFieldDrafts();}catch(e){}
   try{_ssRestoreShadowDraft();}catch(e){}
@@ -5446,7 +5502,7 @@ function renderBehaviorTab(){
     +'<button class="btn btn-xs no-print" style="border:none;border-radius:0;'+(behCtx==='shadow'?'background:#c98a12;color:#fff':'background:#fff;color:#8a6410')+'" onclick="_setBehCtx(\'shadow\')">🏫 School Shadow</button></div>';
   const bips=DB.bips.filter(b=>b.clientId===selectedClientId&&bipAppears(b,behCtx));
   const today=new Date().toISOString().slice(0,10);
-  const addBipBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'';
+  const addBipBtn='<button class="btn btn-outline btn-sm no-print" onclick="openPrintBIP()">🖨 Print BIP</button>'+(['supervisor','director'].includes(currentUser.role)?' <button class="btn btn-green btn-sm no-print" onclick="showAddBIP()">+ Add BIP</button>':'');
   const measLabels={frequency:'Frequency (count)',duration:'Avg Duration (min)',rate:'Rate (per hr)'};
   const measColors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
@@ -5768,10 +5824,10 @@ function _makeBreakPlugin(pid,breaks){
     });
   }};
 }
-function drawBIPChart(bip){
+function drawBIPChart(bip,_cxOv,_idSfx){
   const allMeas=bipMeasList(bip);
   const allFns=Array.isArray(bip.functions)&&bip.functions.length?bip.functions:['unknown'];
-  const _chartCtx=_currentBehCtx();
+  const _chartCtx=_cxOv||_currentBehCtx();
   const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&_ctx(b.setting)===_chartCtx&&(!graphMonth||b.date.slice(0,7)===graphMonth)).sort((a,b)=>a.date.localeCompare(b.date)||_bLogTs(a)-_bLogTs(b));
   if(logs.length<1)return;
   // group logs into unique sessions (date + therapist) so each function aligns on the same x
@@ -5805,7 +5861,7 @@ function drawBIPChart(bip){
   const measYLabels={frequency:'Count',duration:'Avg Duration (min)',rate:'Rate/hr'};
 
   allMeas.forEach(meas=>{
-    const canvas=document.getElementById('bxch_'+bip.id+'_'+meas);
+    const canvas=document.getElementById('bxch_'+bip.id+'_'+meas+(_idSfx||''));
     if(!canvas)return;
     const wrap=canvas.parentElement;
     let _bw=0;let _bel=wrap;while(_bel&&_bw<10){_bw=_bel.offsetWidth;_bel=_bel.parentElement;}
@@ -6147,12 +6203,15 @@ function renderReport(){
     const allMeas=bipMeasList(bip);
     const measColors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
     const measYLabels={frequency:'Frequency (count)',duration:'Duration (min)',rate:'Rate (per hr)'};
-    const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id);
-    const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>=1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">No data yet.</p>')+'</div>').join('');
-    return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+'</h4>'+graphs+'</div>';
+    return _bipCtxList(bip).map(function(cx){
+      const logs=DB.behaviors.filter(b=>b.clientId===selectedClientId&&b.bipId===bip.id&&_ctx(b.setting)===cx&&(!graphMonth||b.date.slice(0,7)===graphMonth));
+      const sfx='_'+(cx==='shadow'?'s':'o');
+      const graphs=allMeas.map(m=>'<div style="margin-bottom:8px"><div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+'">'+measYLabels[m]+'</div>'+(logs.length>=1?'<div style="height:130px"><canvas id="bxch_'+bip.id+'_'+m+sfx+'"></canvas></div>':'<p style="font-size:.76rem;color:var(--muted)">No data yet.</p>')+'</div>').join('');
+      return '<div style="margin-bottom:18px"><h4 style="font-size:.9rem;margin-bottom:8px">'+esc(bip.name)+' <span style="font-weight:600;font-size:.78rem;color:'+(cx==='shadow'?'#8a6410':'#1a6f94')+'">\u00b7 '+(cx==='shadow'?'🏫 School Shadow':'🧩 1:1')+'</span></h4>'+graphs+'</div>';
+    }).join('');
   }).join('')||'<p style="color:var(--muted);font-size:.85rem">No BIPs defined.</p>';
   const sNotes=(c.notes||[]).filter(n=>n.type==='supervisor').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5).map(n=>'<div class="note-entry sup-note"><div class="note-meta">'+n.date+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('');
-  return '<div class="flex-end no-print" style="margin-bottom:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-primary btn-sm" onclick="openReportBuilder()">📄 Build &amp; Print Report</button><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Quick print</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">General Notes</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
+  return '<div class="flex-end no-print" style="margin-bottom:12px;display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-primary btn-sm" onclick="openReportBuilder()">📄 Day report</button><button class="btn btn-outline btn-sm" onclick="window.print()">🖨 Quick print</button></div><div style="max-width:780px;margin:0 auto"><div class="card" style="border:2px solid var(--primary)"><div style="text-align:center;margin-bottom:18px"><h1 style="font-size:1.4rem;color:var(--primary)">Progress Report</h1><p style="color:var(--muted)">Client: <strong>'+esc(c.name)+'</strong> &nbsp;|&nbsp; '+today+'</p><p style="font-size:.85rem;color:var(--muted)">By: '+esc(currentUser.name)+'</p></div><h3 style="margin-bottom:10px">Lessons</h3><table><thead><tr><th>Lesson</th><th>Phase</th><th>Mastered Targets</th><th>Active</th><th>Latest</th><th>Sup Note</th></tr></thead><tbody>'+lRows+'</tbody></table><hr><h3 style="margin:14px 0 10px">Behavior (BIP Graphs)</h3>'+bipGraphHtml+(sNotes?'<hr><h3 style="margin:14px 0 10px">General Notes</h3>'+sNotes:'')+'<hr><p style="font-size:.76rem;color:var(--muted);text-align:center">For questions contact your therapy team.</p></div></div>';
 }
 
 // ════════════════════════════════════════════════
