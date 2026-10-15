@@ -36,9 +36,7 @@
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
-- [16 Oct 2026] **Sup Notes tab → "Notes Feed" mixes in therapist (TX) session notes** — the feed in `renderNotesTab` merges supervisor general notes with every session's TX note (`// ── Notes feed — merge sup notes + session TX notes ──`). Since TX notes already have their own place (Team Notes / session notes), this feed should show **supervisor notes only**. Change: drop the session-TX-notes part of the merge (display only — no data is deleted; TX notes stay in their sessions). Check nothing else (e.g. print / Day report) relies on this feed. Own small chat.
 
-- [15 Oct 2026] **Dates recorded in world time (UTC), 7 h behind Thailand** — most date stamps use `new Date().toISOString().slice(0,10)` (mastered date, step changes, program/SD notes, etc.), so anything done between 00:00 and 07:00 Thai time is saved with YESTERDAY's date and lands on the wrong day in the Day report / graphs. Rare during clinic hours. Fix (own chat): switch those stamps to the local-date helper `_todayLocal()` (already used for the new hold/resume dates in v-AR). Low risk, but touches many save points — test carefully.
 
 - [17 Sep 2026] **URGENT — School Shadow data wiped by concurrent save.** Director added School Shadow content; a therapist with an older copy of the client loaded then saved during a 1:1, and her stale whole-record write overwrote the School Shadow section (incl. supervisor observation notes). 1:1 data unaffected (separate tables). ROOT CAUSE: entire client stored as one record; `sbSaveClient` blindly overwrites the whole record from in-memory state (no merge, no re-read). FIX: make client save re-read latest row and merge only changed sections. STATUS: FIX BUILT + 2-device test PASSED (v2026-09-17-O, section-level merge in sbSaveClient). Wiped JAA data will NOT be restored in-app — team re-enters YTD + today into Google Sheet and starts fresh in the app tomorrow. TODO before rollout: deploy v-O to GitHub. NET targets (Listening Comprehension, Transition) SQL ready if wanted.
 
@@ -46,6 +44,9 @@ _Format: [date] area — what you did → what happened → who/role, which clie
 
 ## RESOLVED
 _Move fixed bugs here with the version that fixed them._
+
+- [15 Oct 2026] **Dates recorded in world time (UTC), 7 h behind Thailand** — most date stamps use `new Date().toISOString().slice(0,10)` (mastered date, step changes, program/SD notes, etc.), so anything done between 00:00 and 07:00 Thai time is saved with YESTERDAY's date and lands on the wrong day in the Day report / graphs. Rare during clinic hours. Fix (own chat): switch those stamps to the local-date helper `_todayLocal()` (already used for the new hold/resume dates in v-AR). Low risk, but touches many save points — test carefully. **FIXED in v2026-10-16-AX.**
+- [16 Oct 2026] **Sup Notes tab → "Notes Feed" mixes in therapist (TX) session notes** — the feed in `renderNotesTab` merges supervisor general notes with every session's TX note (`// ── Notes feed — merge sup notes + session TX notes ──`). Since TX notes already have their own place (Team Notes / session notes), this feed should show **supervisor notes only**. Change: drop the session-TX-notes part of the merge (display only — no data is deleted; TX notes stay in their sessions). Check nothing else (e.g. print / Day report) relies on this feed. Own small chat. **FIXED in v2026-10-16-AX.**
 
 - 
 
