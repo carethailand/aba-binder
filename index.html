@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-16-AX -->
+<!-- BUILD v2026-10-16-AY -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-16-AX</title>
+<title>CARE Client Binder v2026-10-16-AY</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -24,6 +24,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(
 .tabs{display:flex;gap:4px;border-bottom:2px solid var(--border);margin-bottom:20px;flex-wrap:wrap;}
 .tab{padding:8px 18px;border:none;background:none;cursor:pointer;font-size:.9rem;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-2px;}
 .tab.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600;}
+/* Computer: all tabs on one line (narrow laptops get a more compact size; scrolls only as a last resort) */
+@media (min-width:1025px){.tabs{flex-wrap:nowrap;overflow-x:auto;gap:0;}.tab{flex:0 0 auto;white-space:nowrap;padding:8px 7px;font-size:.76rem;}}
+@media (min-width:1200px){.tab{padding:8px 8px;font-size:.82rem;}}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
 .card h2{font-size:1rem;font-weight:600;margin-bottom:14px;}
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
@@ -451,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-16-AX';
+const APP_VERSION='v2026-10-16-AY';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-16-AY',date:'16 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
   {version:'v2026-10-16-AX',date:'16 Oct 2026',added:'',improved:'Sup Notes tab: the Notes Feed now shows supervisor notes only (therapist session notes are still saved with their sessions).',fixed:'Dates now use Thailand time. Before, anything saved between midnight and 7am (notes, mastered targets, step changes, sessions, behavior logs\u2026) was dated the previous day.'},
   {version:'v2026-10-16-AW',date:'16 Oct 2026',added:'Finish & Preview has a Therapist box next to Time. It fills in automatically with the therapist(s) who recorded that day, and you can type or change it.',improved:'Day report: the Therapist box also fills in automatically for the chosen date.',fixed:''},
   {version:'v2026-10-15-AV',date:'15 Oct 2026',added:'',improved:'Day report: when a lesson has more than one SD, each SD\u2019s notes, new / mastered / on-hold targets and step changes are grouped under an \u201cSD1:\u201d, \u201cSD2:\u201d heading so it is clear which SD they belong to.',fixed:''},
@@ -1415,6 +1419,7 @@ function discardSession(){
   const _ss=getSessState();
   if(_ss.clientId&&_ss.date)clearBIPDraft(_ss.clientId,_ss.date);
   try{_ssClearShadowDraft();}catch(e){}
+  if(_ss.clientId)_stimDraftClear(_ss.clientId);
   clearSessState();clearSessionDraft();render();
 }
 
@@ -2427,6 +2432,8 @@ function _dayReportHtml(o){
         if(t.resumedDate===D)sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
         (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
         if(!withData)return;
+        const stimDay=[];sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});const m=ld&&ld.stim&&ld.stim[t.id];if(m)Object.keys(m).forEach(function(k){if(m[k])stimDay.push(esc(k)+' '+esc(m[k]));});});
+        if(stimDay.length)sdi+='<p style="margin:6px 0 2px"><strong>'+esc(t.name)+' \u2014 stimuli:</strong> '+stimDay.join(', ')+'</p>';
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
         if(!dayVals.length)return;
@@ -2898,6 +2905,8 @@ function renderClientView(){
   if(['junior','senior','qcd'].includes(currentUser.role)&&_actSess.started&&_actSess.clientId===selectedClientId&&_actSess.setting==='shadow'){tabs=tabs.filter(function(t){return t.id!=='session';});if(selectedTab==='session')selectedTab='schoolshadow';}
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
   if((!isSup||_supSessMode)&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
+  if(_stimHasAny()){var _stI=tabs.findIndex(function(t){return t.id==='session';});if(_stI<0)_stI=tabs.findIndex(function(t){return t.id==='behavior';});tabs=tabs.slice(0,_stI+1).concat([{id:'stimuli',l:'🏷 Stimuli Checklist'}],tabs.slice(_stI+1));}
+  else if(selectedTab==='stimuli')selectedTab='checklist';
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
   let stickyBar='';
@@ -3033,8 +3042,143 @@ function requireActiveSession(){
     return true;
   }
 }
+// ════════════════════════════════════════════════
+// STIMULI CHECKLIST (v-AY)
+// Supervisor turns on "Use stimulus list" for a target (t.stimOn, starting list t.stimuli, hidden t.stimHidden).
+// During a 1:1 session, taps are kept in a LOCAL draft (care_stim:<clientId>) and written into the session
+// record at End & Save (lessonData[].stim = {targetId:{stimulus:'+'|'−'|'P'|''}}). Therapists never edit the
+// lesson itself — new stimuli live in session records, so the shared list = supervisor list + every stimulus used.
+// ════════════════════════════════════════════════
+var _stimOpen={};
+const _STIM_CYCLE=['','+','−','P'];
+function _stimKey(){return 'care_stim:'+(selectedClientId||'');}
+function _stimDraftGet(){try{var d=JSON.parse(localStorage.getItem(_stimKey())||'null');return d&&typeof d==='object'?d:null;}catch(e){return null;}}
+function _stimDraftSet(d){try{localStorage.setItem(_stimKey(),JSON.stringify(d));}catch(e){}}
+function _stimDraftClear(cid){try{localStorage.removeItem('care_stim:'+(cid||selectedClientId||''));}catch(e){}}
+function _stimSessActive(){var s=getSessState();return !!(s&&s.started&&s.clientId===selectedClientId&&(s.setting||'therapy')!=='shadow');}
+// Draft marks for the current session (ignored if they belong to a different session date)
+function _stimDraftMarks(){var s=getSessState();var d=_stimDraftGet();if(!d||!d.lessons)return {};if(s&&s.date&&d.date&&d.date!==s.date)return {};return d.lessons;}
+// Called by saveSession: this lesson's marks, or null
+function _stimForLesson(lessonId,dateA,dateB){
+  var d=_stimDraftGet();if(!d||!d.lessons||!d.lessons[lessonId])return null;
+  if(d.date&&d.date!==dateA&&d.date!==dateB)return null;
+  var out={},any=false;
+  Object.keys(d.lessons[lessonId]).forEach(function(tid){var m=d.lessons[lessonId][tid];if(m&&Object.keys(m).length){out[tid]=JSON.parse(JSON.stringify(m));any=true;}});
+  return any?out:null;
+}
+function _stimHasMarks(stim){return !!stim&&Object.keys(stim).some(function(t){var m=stim[t]||{};return Object.keys(m).some(function(k){return !!m[k];});});}
+function _stimTargets(){
+  var out=[];
+  DB.lessons.filter(function(l){return l.clientId===selectedClientId&&l.phase!=='archived';}).forEach(function(l){
+    (l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){if(t.stimOn)out.push({l:l,sd:sd,t:t});});});
+  });
+  return out;
+}
+function _stimHasAny(){return _stimTargets().length>0;}
+// Shared list: supervisor's list first, then every stimulus ever used in a session (oldest first), then today's draft
+function _stimNames(l,t,todayMarks){
+  var names=[],seen={};
+  var add=function(n){n=String(n||'').trim();if(!n)return;var k=n.toLowerCase();if(seen[k])return;seen[k]=1;names.push(n);};
+  (t.stimuli||[]).forEach(add);
+  DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(s){
+    var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.stim&&ld.stim[t.id])Object.keys(ld.stim[t.id]).forEach(add);
+  });
+  Object.keys(todayMarks||{}).forEach(add);
+  return names;
+}
+function _stimCls(v){return v==='+'?'background:#e2f2df;color:#2f6b2c;border-color:#9fd08f':v==='−'?'background:#fbe4e1;color:#a3392b;border-color:#eba99d':v==='P'?'background:#fbeecb;color:#8a6410;border-color:#e8c14e':'background:#fff;color:#374151;border-color:#d5dae1';}
+function renderStimuliTab(){
+  var items=_stimTargets();
+  if(!items.length)return '<div class="card"><div class="empty-state">No stimulus lists yet.<br><small>A supervisor can turn on “Use stimulus list” for a target in Program Edit → Edit target.</small></div></div>';
+  var active=_stimSessActive();
+  var isSup=['supervisor','director'].includes(currentUser.role);
+  var marksAll=_stimDraftMarks();
+  var html=active?'':'<div class="alert alert-warn no-print" style="margin-bottom:12px">Start a 1:1 session to mark stimuli. History is shown below.</div>';
+  items.forEach(function(it){
+    var l=it.l,t=it.t,key=l.id+'_'+t.id;
+    var today=(marksAll[l.id]&&marksAll[l.id][t.id])||{};
+    var hidden=(t.stimHidden||[]).map(function(x){return String(x).toLowerCase();});
+    var names=_stimNames(l,t,today);
+    var shown=names.filter(function(n){return hidden.indexOf(n.toLowerCase())<0;});
+    var used=shown.filter(function(n){return !!today[n];}).length;
+    var open=!!_stimOpen[key];
+    html+='<div class="card" style="padding:0;margin-bottom:10px;overflow:hidden">'
+      +'<div onclick="_stimToggle(\''+key+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer">'
+      +'<span style="color:var(--muted);width:14px">'+(open?'▾':'▸')+'</span>'
+      +'<div style="flex:1"><div style="font-weight:600">'+esc(l.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(t.name)+'</div></div>'
+      +'<span style="font-size:.78rem;background:#eef1f4;color:#374151;border-radius:6px;padding:2px 8px">'+used+' / '+shown.length+' today</span></div>';
+    if(open){
+      html+='<div style="border-top:1px solid var(--border);padding:12px 16px">';
+      // today: tap chips
+      html+='<div style="display:flex;flex-wrap:wrap;gap:6px">'+shown.map(function(n){
+        var i=names.indexOf(n),v=today[n]||'';
+        return '<button type="button" class="no-print" '+(active?'onclick="_stimTap(\''+l.id+'\',\''+t.id+'\','+i+')"':'disabled')+' style="border:1.5px solid;border-radius:8px;padding:7px 12px;font-size:.88rem;cursor:'+(active?'pointer':'default')+';'+_stimCls(v)+'">'+esc(n)+' <b>'+(v||'·')+'</b></button>';
+      }).join('')+(shown.length?'':'<span style="font-size:.84rem;color:var(--muted)">No stimuli yet — add the first one below.</span>')+'</div>';
+      if(active)html+='<div class="no-print" style="display:flex;gap:8px;margin-top:10px;max-width:420px"><input type="text" id="stim-add-'+key+'" placeholder="New stimulus" onkeydown="if(event.key===\'Enter\')_stimAdd(\''+l.id+'\',\''+t.id+'\')"><button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="_stimAdd(\''+l.id+'\',\''+t.id+'\')">+ Add stimulus</button></div>'
+        +'<div style="font-size:.74rem;color:var(--muted);margin-top:6px">Tap: blank → + → − → P → blank. Saved with the session when you press End &amp; Save.</div>';
+      // history grid
+      var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-12);
+      var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:_drFmtD(s.date)+'<br>'+esc((s.txName||'').split(' ')[0]),m:ld.stim[t.id]||{}};});
+      if(active)cols.push({h:'Today',m:today});
+      if(cols.length&&names.length){
+        html+='<div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px">History</div>'
+          +'<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%"><tr><td style="position:sticky;left:0;background:#e2f0f7;font-weight:700;padding:6px 10px;min-width:120px">Stimulus</td>'
+          +cols.map(function(c){return '<td style="background:#e2f0f7;text-align:center;font-size:.72rem;font-weight:600;padding:4px 6px;min-width:48px;white-space:nowrap">'+c.h+'</td>';}).join('')+'</tr>'
+          +names.map(function(n,ri){var isH=hidden.indexOf(n.toLowerCase())>=0;var bg=ri%2?'#fff':'#f7f9fb';
+            return '<tr><td style="position:sticky;left:0;background:'+bg+';padding:6px 10px;font-size:.86rem;'+(isH?'color:#94a0ae':'')+'">'+esc(n)
+              +(isSup?' <button class="no-print" title="'+(isH?'Show again':'Hide from tap list')+'" onclick="_stimHide(\''+l.id+'\',\''+t.id+'\','+names.indexOf(n)+')" style="border:none;background:none;color:#94a0ae;cursor:pointer;font-size:.75rem">'+(isH?'show':'hide')+'</button>':'')+'</td>'
+              +cols.map(function(c){var v=c.m[n]||'';return '<td style="text-align:center;background:'+bg+';padding:4px"><span style="display:inline-block;min-width:22px;border:1px solid;border-radius:4px;padding:1px 4px;font-size:.8rem;'+(v?_stimCls(v):'border-color:transparent')+'">'+(v||'')+'</span></td>';}).join('')+'</tr>';}).join('')
+          +'</table></div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+  return '<div class="card" style="background:none;border:none;padding:0"><h2 style="margin-bottom:12px">Stimuli Checklist</h2>'+html+'</div>';
+}
+function _stimToggle(key){_stimOpen[key]=!_stimOpen[key];render();}
+function _stimEnsure(lId,tId){var s=getSessState();var d=_stimDraftGet()||{};if(!d.lessons||(d.date&&s.date&&d.date!==s.date))d={date:s.date||_todayLocal(),lessons:{}};if(!d.date)d.date=s.date||_todayLocal();if(!d.lessons[lId])d.lessons[lId]={};if(!d.lessons[lId][tId])d.lessons[lId][tId]={};return d;}
+function _stimTap(lId,tId,idx){
+  if(!_stimSessActive()){toast('Start a 1:1 session first','error');return;}
+  var l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
+  var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});if(!t)return;
+  var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];
+  var n=_stimNames(l,t,m)[idx];if(!n)return;
+  var v=m[n]||'';m[n]=_STIM_CYCLE[(_STIM_CYCLE.indexOf(v)+1)%_STIM_CYCLE.length];
+  _stimDraftSet(d);render();
+}
+function _stimAdd(lId,tId){
+  if(!_stimSessActive()){toast('Start a 1:1 session first','error');return;}
+  var el=document.getElementById('stim-add-'+lId+'_'+tId);var n=((el&&el.value)||'').trim();
+  if(!n){toast('Type a stimulus name first','error');return;}
+  var l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
+  var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});if(!t)return;
+  var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];
+  if(_stimNames(l,t,m).some(function(x){return x.toLowerCase()===n.toLowerCase();})){toast('That stimulus is already on the list','error');return;}
+  m[n]='';_stimDraftSet(d);_stimOpen[lId+'_'+tId]=true;render();
+}
+function _stimHide(lId,tId,idx){
+  if(!['supervisor','director'].includes(currentUser.role))return;
+  if(!requireActiveSession())return;
+  var l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
+  var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});if(!t)return;
+  var n=_stimNames(l,t,{})[idx];if(!n)return;
+  if(!Array.isArray(t.stimHidden))t.stimHidden=[];
+  var k=n.toLowerCase(),i=t.stimHidden.map(function(x){return String(x).toLowerCase();}).indexOf(k);
+  if(i>=0)t.stimHidden.splice(i,1);else t.stimHidden.push(n);
+  sbSaveLesson(l);render();
+}
+// Supervisor setup block inside Edit Target
+function _stimEditBlock(t){
+  if(!['supervisor','director'].includes(currentUser.role))return '';
+  return '<div style="background:#f0faed;border:1px solid #c6e6bf;border-radius:8px;padding:12px;margin-top:10px">'
+    +'<label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;cursor:pointer"><input type="checkbox" id="et-stim-on" style="width:auto"'+(t.stimOn?' checked':'')+'> Use stimulus list <span style="font-weight:400;color:var(--muted)">(shows in the Stimuli Checklist tab)</span></label>'
+    +'<label style="font-weight:600;font-size:.85rem;display:block;margin-top:8px;margin-bottom:4px">Starting stimuli <span style="font-weight:400;color:var(--muted)">(one per line, optional — therapists can add more)</span></label>'
+    +'<textarea id="et-stim-list" rows="4" placeholder="Cat\nDog\nBird">'+esc((t.stimuli||[]).join('\n'))+'</textarea></div>';
+}
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
+  if(selectedTab==='stimuli')return renderStimuliTab();
   if(selectedTab==='schoolinfo')return renderSchoolInfoTab();
   if(selectedTab==='schoolshadow')return renderSchoolShadowTab();
   if(selectedTab==='checklist')return renderProgramChecklist();
@@ -4026,7 +4170,10 @@ async function saveSession(){
       }
     }
 
-    if(ld.targets.length||ld.dtData)lessonData.push(ld);
+    // Stimuli Checklist marks (kept in a local draft while on the Stimuli tab) go into this session record
+    const _stm=_stimForLesson(lesson.id,date,ss3.date);
+    if(_stm)ld.stim=_stm;
+    if(ld.targets.length||ld.dtData||ld.stim)lessonData.push(ld);
   });
 
   const txNotes=((document.getElementById('tx-sess-notes')||document.getElementById('ss-sess-notes')||{}).value)||(getSessState()._ssNote||'')||'';
@@ -4038,6 +4185,7 @@ async function saveSession(){
   // Systemic empty-save guard: never silently save a session with no real data (catches wrong-tab/lost-draft/accidental ends and rating ghosts)
   var _hasRealData=lessonData.some(function(ld){
     if(ld.dtData)return true;
+    if(_stimHasMarks(ld.stim))return true;
     return (ld.targets||[]).some(function(t){return (t.dataType!=='maintenance'&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null))||(t.dataType==='maintenance'&&t.result!=null);});
   });
   if(!_hasRealData&&(ss_save.setting||'therapy')!=='shadow'){
@@ -4091,6 +4239,7 @@ async function saveSession(){
     });
     clearSessState();
     clearSessionDraft();
+    _stimDraftClear(newSess.clientId);
     _stopSessAutoSave();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
     await flushSave();
@@ -5102,7 +5251,7 @@ function editTarget(lId,sId,tId){if(!requireActiveSession())return;
   +(['supervisor','director'].includes(currentUser.role)?'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="et-dtype" onchange="(function(){var v=this.value;})()"><option value="percent"'+(t.dataType==="percent"?' selected':'')+'>% Correct</option><option value="ta"'+(t.dataType==="ta"?' selected':'')+'>Task Analysis (Chaining)</option><option value="rating"'+(t.dataType==="rating"?' selected':'')+'>Rating Scale</option><option value="tally"'+(t.dataType==="tally"?' selected':'')+'>Tally (raw count)</option><option value="checklist"'+(t.dataType==="checklist"?' selected':'')+'>First Trial</option></select></label></div></div>':'')+(t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
     :'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
-  supSection+
+  supSection+_stimEditBlock(t)+
   '<div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="saveEditTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-outline unlock-exempt" style="margin-left:auto;color:#d84a3a;border-color:#d84a3a" onclick="confirmDeleteTarget(\''+lId+'\',\''+sId+'\',\''+tId+'\')">🗑 Delete</button>':'')+'</div>');
 }
 function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
@@ -5138,6 +5287,8 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
       // if steps changed, reset dtStepIndex if out of range
       if(t.dtStepIndex>=newSteps.length)t.dtStepIndex=0;
     }
+    const soEl=document.getElementById('et-stim-on');
+    if(soEl){t.stimOn=soEl.checked;const slEl=document.getElementById('et-stim-list');if(slEl)t.stimuli=slEl.value.split('\n').map(s=>s.trim()).filter(Boolean);}
     const dsEl=document.getElementById('et-dtstep');
     if(dsEl){
       const newIdx=parseInt(dsEl.value)||0;
@@ -5277,6 +5428,7 @@ function renderProgramChecklist(){
             const hasRealData=nonMaint.some(function(t){return !t.na&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null);});
             map[ld.lessonId]=allNA?'na':(hasRealData?'ran':'na');
           }
+          if(map[ld.lessonId]!=='ran'&&_stimHasMarks(ld.stim))map[ld.lessonId]='ran';
         }
       });
       sMap[s.id]=map;

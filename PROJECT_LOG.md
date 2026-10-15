@@ -100,7 +100,7 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 ---
 
 ## FUTURE / IDEAS (discussed, not built)
-- **Stimulus list (simple version)** — *requested 16 Oct 2026; mock-up shown, awaiting OK.* Supervisor switches on "Stimulus list" for a target. In session, the therapist taps each stimulus used: blank → + → − → P. Anyone can add a new stimulus; the list is shared and reused by the whole team. Shown as a small grid on the lesson card (stimuli × sessions, newest on the right); optional one line per target in the Day report. No graphs / mastery rules for now. Changes how session data is saved → test on the demo client first.
+- ~~Stimulus list (simple version)~~ — **built in v2026-10-16-AY** as the Stimuli Checklist tab (see CHANGELOG).
 - **Download report as Word (editable)** — *on hold: Songg checking with the supervisor team (16 Oct 2026).* Add a "Download Word" button next to PDF in Day report + Finish & Preview. Options assessed: (A) HTML→.doc, small effort, editable text but graphs don't show; (B) A + graphs converted to pictures first — **recommended**, medium effort, test in Word for iPad; (C) true .docx built piece by piece — larger, every report change made twice. Read-only export (no data risk). Open questions: where they edit (Word desktop / Word iPad / Google Docs), whether graphs are needed in the editable copy, keep PDF button too (suggested yes).
 - **Observation narrative box** — one free-form note on School Shadow (`Label:` / `- bullet` / `Rec:`).
 - **Finish-supervision report** — reorganize what prints by supervision type.
