@@ -36,7 +36,6 @@
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
-- [17 Oct 2026] **App only loads the latest 500 sessions across ALL clients** (also 1,000 behaviors, 500 ABC) in `loadFromSupabase`. With ~20 cases that is only ~5–6 weeks of history: older sessions are safe in the database but missing from long graphs, Print BIP ranges, stimulus history, etc. Grows worse with more data. Fix (own chat, before year-end): load each client's full history when the client is opened (per-client fetch), keep the global load small. Read-only change to loading; test carefully that saves/merges still use complete data.
 
 
 
@@ -46,6 +45,8 @@ _Format: [date] area — what you did → what happened → who/role, which clie
 
 ## RESOLVED
 _Move fixed bugs here with the version that fixed them._
+
+- [17 Oct 2026] **App only loads the latest 500 sessions across ALL clients** (also 1,000 behaviors, 500 ABC) in `loadFromSupabase`. With ~20 cases that is only ~5–6 weeks of history: older sessions are safe in the database but missing from long graphs, Print BIP ranges, stimulus history, etc. Grows worse with more data. Fix (own chat, before year-end): load each client's full history when the client is opened (per-client fetch), keep the global load small. Read-only change to loading; test carefully that saves/merges still use complete data. **FIXED in v2026-10-17-BD (per-client loading).**
 
 - [15 Oct 2026] **Dates recorded in world time (UTC), 7 h behind Thailand** — most date stamps use `new Date().toISOString().slice(0,10)` (mastered date, step changes, program/SD notes, etc.), so anything done between 00:00 and 07:00 Thai time is saved with YESTERDAY's date and lands on the wrong day in the Day report / graphs. Rare during clinic hours. Fix (own chat): switch those stamps to the local-date helper `_todayLocal()` (already used for the new hold/resume dates in v-AR). Low risk, but touches many save points — test carefully. **FIXED in v2026-10-16-AX.**
 - [16 Oct 2026] **Sup Notes tab → "Notes Feed" mixes in therapist (TX) session notes** — the feed in `renderNotesTab` merges supervisor general notes with every session's TX note (`// ── Notes feed — merge sup notes + session TX notes ──`). Since TX notes already have their own place (Team Notes / session notes), this feed should show **supervisor notes only**. Change: drop the session-TX-notes part of the merge (display only — no data is deleted; TX notes stay in their sessions). Check nothing else (e.g. print / Day report) relies on this feed. Own small chat. **FIXED in v2026-10-16-AX.**

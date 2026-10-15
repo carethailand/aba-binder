@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-17-BC -->
+<!-- BUILD v2026-10-17-BD -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-17-BC</title>
+<title>CARE Client Binder v2026-10-17-BD</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-17-BC';
+const APP_VERSION='v2026-10-17-BD';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-17-BD',date:'17 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
   {version:'v2026-10-17-BC',date:'17 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
   {version:'v2026-10-17-BB',date:'17 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
   {version:'v2026-10-17-BA',date:'17 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
@@ -765,29 +766,100 @@ async function _checkFreshness(){
 async function reloadClientData(){_hideStaleBanner();showSyncStatus&&showSyncStatus('loading');await loadFromSupabase();render();}
 document.addEventListener('visibilitychange',function(){if(!document.hidden)_checkFreshness();});
 setInterval(function(){if(!document.hidden)_checkFreshness();},45000);
+// ════════════════════════════════════════════════
+// PER-CLIENT LOADING (v-BD)
+// Start-up loads only clients, lessons, BIPs and staff. Opening a client loads ALL of that client's
+// sessions, behaviors and ABC (paged — no 500-row cap). The client screen shows "Loading…" until it is
+// complete, so nothing can be recorded on half-loaded data.
+// ════════════════════════════════════════════════
+var _clientLoaded={},_clientLoading={},_clientLoadErr={};
+function _clientLoadReset(){_clientLoaded={};_clientLoading={};_clientLoadErr={};}
+// Fetch every row (1000 per page). Returns null if any page fails — callers must treat null as "not loaded".
+async function _sbFetchAll(table,params){
+  var out=[],from=0,size=1000;
+  for(var guard=0;guard<500;guard++){
+    var rows=await sbFetch(table,'GET',null,params+'&limit='+size+'&offset='+from);
+    if(rows===null||!Array.isArray(rows))return null;
+    out=out.concat(rows);
+    if(rows.length<size)return out;
+    from+=size;
+  }
+  return null;
+}
+async function _ensureClientLoaded(cid){
+  if(!cid||_clientLoaded[cid]||_clientLoading[cid])return;
+  _clientLoading[cid]=true;_clientLoadErr[cid]=false;
+  try{
+    var q='client_id=eq.'+encodeURIComponent(cid)+'&order=date.asc,id.asc';
+    var res=await Promise.all([
+      _sbFetchAll('sessions','select=*&'+q),
+      _sbFetchAll('behaviors','select=*&'+q),
+      _sbFetchAll('abc_data','select=*&'+q)
+    ]);
+    if(res[0]===null||res[1]===null||res[2]===null){_clientLoadErr[cid]=true;return;}
+    // Merge: server rows replace this client's rows; anything only on this device (e.g. just saved) is kept
+    var merge=function(arr,rows,conv){
+      var got=rows.map(conv),ids={};got.forEach(function(x){ids[x.id]=1;});
+      return (arr||[]).filter(function(x){return x.clientId!==cid||!ids[x.id];}).concat(got);
+    };
+    DB.sessions=merge(DB.sessions,res[0],rowToSession);
+    DB.behaviors=merge(DB.behaviors,res[1],rowToBehavior);
+    DB.abcData=merge(DB.abcData,res[2],rowToABC);
+    // ABC rows are saved by flushSave when they differ from their baseline — baseline only the rows that came from the server
+    var abcIds={};res[2].forEach(function(r){abcIds[r.id]=1;});
+    DB.abcData.forEach(function(a){if(abcIds[a.id])_recBaseline['abc_data:'+a.id]=JSON.stringify(abcToRow(a));});
+    // First-trial cache heal for this client (same as start-up used to do). Re-baseline ONLY lessons that had
+    // no unsaved local edits, so a pending edit is never mistaken for "already saved".
+    var cl=(DB.lessons||[]).filter(function(l){return l.clientId===cid;}),clean={};
+    cl.forEach(function(l){clean[l.id]=_recBaseline['lessons:'+l.id]===JSON.stringify(lessonToRow(l));});
+    try{reconcileFirstTrialData(cid);}catch(e){console.warn('FT reconcile failed',e);}
+    cl.forEach(function(l){if(clean[l.id])_recBaseline['lessons:'+l.id]=JSON.stringify(lessonToRow(l));});
+    _clientLoaded[cid]=true;
+  }catch(e){console.error('client load failed',e);_clientLoadErr[cid]=true;}
+  finally{
+    _clientLoading[cid]=false;
+    if(currentView==='client'&&selectedClientId===cid){try{_backtrackFirstTrial();}catch(e){}render();}
+  }
+}
+function _retryClientLoad(){var cid=selectedClientId;if(!cid)return;_clientLoadErr[cid]=false;render();}
+function _clientLoadingHtml(){
+  var c=DB.clients.find(function(x){return x.id===selectedClientId;})||{};
+  var err=!!_clientLoadErr[selectedClientId];
+  return '<div class="card" style="text-align:center;padding:40px 20px;margin-top:16px">'
+    +(err
+      ?'<div style="font-size:1.6rem;margin-bottom:6px">⚠</div><h3 style="margin-bottom:6px">Couldn’t load '+esc(c.name||'this client')+'</h3><p style="color:var(--muted);font-size:.88rem;margin-bottom:14px">Check the internet connection, then try again. Nothing has been changed.</p><button class="btn btn-primary" onclick="_retryClientLoad()">Retry</button> <button class="btn btn-outline" onclick="showView(\'clients\')">Back to clients</button>'
+      :'<div style="font-size:1.6rem;margin-bottom:6px">\u23F3</div><h3 style="margin-bottom:4px">Loading '+esc(c.name||'client')+'…</h3><p style="color:var(--muted);font-size:.85rem">Getting the full history.</p>')
+    +'</div>';
+}
+// Client list badge: last session date from the database summary view (if it exists), otherwise from loaded data
+function _clientLastDate(cid){
+  var s=(DB.sessSummary||[]).find(function(x){return x.client_id===cid;});
+  if(s&&s.last_date)return s.last_date;
+  var l=(DB.sessions||[]).filter(function(x){return x.clientId===cid;}).sort(function(a,b){return b.date.localeCompare(a.date);})[0];
+  return l?l.date:null;
+}
+function _clientLastKnown(cid){return !!DB.sessSummary||!!_clientLoaded[cid];}
 async function loadFromSupabase(){
   showSyncStatus('loading');
   try{
     const _wt=(p,ms=14000)=>Promise.race([p,new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),ms))]);
-    const [users,clients,lessons,bips,sessions,behaviors,abcData]=await _wt(Promise.all([
+    // v-BD: sessions, behaviors and ABC are NOT loaded here — each client's full history loads when it is opened (_ensureClientLoaded)
+    const [users,clients,lessons,bips]=await _wt(Promise.all([
       sbFetch('users','GET',null,'select=*'),
       sbFetch('clients','GET',null,'select=*'),
       sbFetch('lessons','GET',null,'select=*'),
       sbFetch('bips','GET',null,'select=*'),
-      sbFetch('sessions','GET',null,'select=*&order=date.desc&limit=500'),
-      sbFetch('behaviors','GET',null,'select=*&order=date.desc&limit=1000'),
-      sbFetch('abc_data','GET',null,'select=*&order=date.desc&limit=500'),
     ]));
-    if(users===null){hideSyncStatus();return false;}
+    if(users===null||clients===null||lessons===null||bips===null){hideSyncStatus();return false;}
     DB.users=(users||[]).map(rowToUser);
     DB.clients=(clients||[]).map(rowToClient);
     DB.lessons=(lessons||[]).map(rowToLesson);
     DB.bips=(bips||[]).map(rowToBIP);
-    DB.sessions=(sessions||[]).map(rowToSession);
-    DB.behaviors=(behaviors||[]).map(rowToBehavior);
-    DB.abcData=(abcData||[]).map(rowToABC);
-    try{reconcileFirstTrialData();}catch(e){console.warn('FT reconcile failed',e);}
+    DB.sessions=[];DB.behaviors=[];DB.abcData=[];
+    _clientLoadReset();
     _captureBaselines();
+    // Client-list "Last:" dates from the summary view (optional — if the view doesn't exist yet, the badge just hides)
+    try{const _sum=await sbFetch('client_session_summary','GET',null,'select=*');DB.sessSummary=Array.isArray(_sum)?_sum:null;}catch(e){DB.sessSummary=null;}
     hideSyncStatus();return true;
   }catch(e){
     console.error('loadFromSupabase failed',e);
@@ -795,13 +867,14 @@ async function loadFromSupabase(){
   }
 }
 
-function reconcileFirstTrialData(){
+function reconcileFirstTrialData(onlyClientId){
   // Heal the denormalized first-trial cache (target.firstTrialData) from session records,
   // which are the source of truth. ADD-ONLY: never removes points, so archived history is kept.
   const byTarget={};
   (DB.lessons||[]).forEach(function(l){(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){byTarget[t.id]=t;});});});
   var healed=0;
   (DB.sessions||[]).forEach(function(s){
+    if(onlyClientId&&s.clientId!==onlyClientId)return;
     (s.lessonData||[]).forEach(function(ld){
       (ld.targets||[]).forEach(function(te){
         if(!te.firstTrial||te.na)return;
@@ -1324,7 +1397,7 @@ async function restoreArchive(file){
   };
   r.readAsText(file);
 }
-function exportDB(){const b=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='aba_backup_'+_todayLocal()+'.json';a.click();}
+async function exportDB(){toast('Preparing full export\u2026');const _all=await Promise.all([_sbFetchAll('sessions','select=*&order=date.asc,id.asc'),_sbFetchAll('behaviors','select=*&order=date.asc,id.asc'),_sbFetchAll('abc_data','select=*&order=date.asc,id.asc')]);if(_all.some(function(x){return x===null;})){toast('\u26A0 Full export failed \u2014 check connection and try again','error',6000);return;}const _exp=Object.assign({},DB,{sessions:_all[0].map(rowToSession),behaviors:_all[1].map(rowToBehavior),abcData:_all[2].map(rowToABC)});delete _exp.sessSummary;const b=new Blob([JSON.stringify(_exp,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='aba_backup_'+_todayLocal()+'.json';a.click();}
 function importDB(file){const r=new FileReader();r.onload=async e=>{try{const imp=JSON.parse(e.target.result);DB=imp;await flushSave();toast('Imported & synced!');render();}catch(x){toast('Invalid file.','error');}};r.readAsText(file);}
 
 let DB={users:[],clients:[],lessons:[],bips:[],sessions:[],behaviors:[],abcData:[]};
@@ -1857,7 +1930,7 @@ async function _saveEditedSession(sessId){
   if(result===null){toast('⚠ Save failed — check connection','error',5000);return;}
   // Reload this client's sessions from Supabase so the graph reflects the edit
   // (guards against any in-memory vs. DB mismatch)
-  const _freshSess=await sbFetch('sessions','GET',null,'select=*&client_id=eq.'+sess.clientId+'&order=date.desc&limit=500');
+  const _freshSess=await _sbFetchAll('sessions','select=*&client_id=eq.'+encodeURIComponent(sess.clientId)+'&order=date.asc,id.asc'); // full history, no cap
   if(_freshSess&&Array.isArray(_freshSess)){
     DB.sessions=DB.sessions.filter(function(s){return s.clientId!==sess.clientId;}).concat(_freshSess.map(rowToSession));
   }
@@ -2815,9 +2888,9 @@ function renderClientList(){
 
   function clientCard(c){
     const n=DB.lessons.filter(l=>l.clientId===c.id).length;
-    const last=DB.sessions.filter(s=>s.clientId===c.id).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const lastD=_clientLastDate(c.id);
     const flags=countFlags(c.id);
-    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'<span class="badge badge-gray">'+(last?'Last: '+last.date:'No sessions')+'</span>')+'</p></div>';
+    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':(lastD?'<span class="badge badge-gray">Last: '+lastD+'</span>':(_clientLastKnown(c.id)?'<span class="badge badge-gray">No sessions</span>':'')))+'</p></div>';
   }
 
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
@@ -2876,6 +2949,7 @@ function _supReassignHtml(c){try{if(!['director','admin'].includes(currentUser.r
 function _reassignSup(clientId,supId){if(!['director','admin'].includes(currentUser.role)){toast('Only a director or admin can reassign a case.');return;}var c=DB.clients.find(function(x){return x.id===clientId;});if(!c)return;c.supervisor=supId||'';sbSaveClient(c);toast('Case supervisor updated \u2713');render();}
 function renderClientView(){
   const c=DB.clients.find(x=>x.id===selectedClientId);if(!c)return'';
+  if(!_clientLoaded[selectedClientId]){if(!_clientLoading[selectedClientId]&&!_clientLoadErr[selectedClientId]){var _lc=selectedClientId;setTimeout(function(){_ensureClientLoaded(_lc);},0);}return _clientLoadingHtml();}
   const flags=countFlags(selectedClientId);
   const flagBanner=flags?'<div class="alert alert-warn no-print">⚑ <strong>'+flags+' target'+(flags>1?'s':'')+' flagged for mastery review</strong> — check Lessons tab.</div>':'';
   const isSup=['supervisor','director'].includes(currentUser.role);
@@ -4080,6 +4154,7 @@ function retrySaveSession(){
 }
 function saveSessionDraft(){
   if(!selectedClientId)return;
+  if(!_clientLoaded[selectedClientId])return; // client still loading — the session form isn't on screen
   const draft={clientId:selectedClientId,inputs:{},buttons:{},checkboxes:{}};
 
   // text inputs + number inputs
