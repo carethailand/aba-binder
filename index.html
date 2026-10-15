@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-17-BA -->
+<!-- BUILD v2026-10-17-BB -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-17-BA</title>
+<title>CARE Client Binder v2026-10-17-BB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-17-BA';
+const APP_VERSION='v2026-10-17-BB';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-17-BB',date:'17 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
   {version:'v2026-10-17-BA',date:'17 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
   {version:'v2026-10-16-AZ',date:'16 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
   {version:'v2026-10-16-AY',date:'16 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
@@ -3103,7 +3104,7 @@ function renderStimuliTab(){
       +'<div onclick="_stimToggle(\''+key+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer">'
       +'<span style="color:var(--muted);width:14px">'+(open?'▾':'▸')+'</span>'
       +'<div style="flex:1"><div style="font-weight:600">'+esc(l.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(t.name)+'</div></div>'
-      +'<span style="font-size:.78rem;background:#eef1f4;color:#374151;border-radius:6px;padding:2px 8px">'+used+' / '+shown.length+' today</span>'+(isSup?'<button class="no-print" title="'+(_isStimT(t)?'Delete target':'Turn off stimulus list')+'" onclick="event.stopPropagation();_stimDeleteAsk(\''+l.id+'\',\''+t.id+'\')" style="border:1px solid #eba99d;background:#fff;color:#a3392b;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.8rem">\uD83D\uDDD1</button>':'')+'</div>';
+      +'<span style="font-size:.78rem;background:#eef1f4;color:#374151;border-radius:6px;padding:2px 8px">'+used+' / '+shown.length+' today</span>'+(isSup?'<button class="no-print" title="Edit target" onclick="event.stopPropagation();editTarget(\''+l.id+'\',\''+_stimSdId(l,t.id)+'\',\''+t.id+'\')" style="border:1px solid #b8dcef;background:#fff;color:#1f8ec4;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.8rem">\u270F</button>':'')+(isSup?'<button class="no-print" title="'+(_isStimT(t)?'Delete target':'Turn off stimulus list')+'" onclick="event.stopPropagation();_stimDeleteAsk(\''+l.id+'\',\''+t.id+'\')" style="border:1px solid #eba99d;background:#fff;color:#a3392b;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.8rem">\uD83D\uDDD1</button>':'')+'</div>';
     if(open){
       html+='<div style="border-top:1px solid var(--border);padding:12px 16px">';
       // today: tap chips
@@ -4581,7 +4582,7 @@ function renderLessonCard(lesson){
   const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editLessonSupNote(\''+lesson.id+'\','+ni+')">\u270F edit</button>':'')+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
-  const sdsHtml=_orderedSDs(lesson.sds).map(function(_p){const sd=_p[0],si=_p[1];
+  const sdsHtml=_orderedSDs(lesson.sds).map(function(_p){const sd=_sdSess(_p[0]),si=_p[1]; // Stimuli checklist targets live in the Stimuli Checklist tab
     const tHtml=sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').map(t=>{
       const isFlagged=t.status==='flagged';
       const chartId='lch_'+lesson.id+'_'+sd.id+'_'+t.id;
