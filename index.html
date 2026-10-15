@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-16-AY -->
+<!-- BUILD v2026-10-16-AZ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-16-AY</title>
+<title>CARE Client Binder v2026-10-16-AZ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-16-AY';
+const APP_VERSION='v2026-10-16-AZ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-16-AZ',date:'16 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
   {version:'v2026-10-16-AY',date:'16 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
   {version:'v2026-10-16-AX',date:'16 Oct 2026',added:'',improved:'Sup Notes tab: the Notes Feed now shows supervisor notes only (therapist session notes are still saved with their sessions).',fixed:'Dates now use Thailand time. Before, anything saved between midnight and 7am (notes, mastered targets, step changes, sessions, behavior logs\u2026) was dated the previous day.'},
   {version:'v2026-10-16-AW',date:'16 Oct 2026',added:'Finish & Preview has a Therapist box next to Time. It fills in automatically with the therapist(s) who recorded that day, and you can type or change it.',improved:'Day report: the Therapist box also fills in automatically for the chosen date.',fixed:''},
@@ -1370,7 +1371,7 @@ function confirmEndSession(){
   // Count unscored targets
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId&&l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived');
   let unscored=0;
-  lessons.forEach(l=>l.sds.forEach(sd=>sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(t=>{
+  lessons.forEach(l=>l.sds.forEach(sd=>sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold'&&!_isStimT(t)).forEach(t=>{
     const id=l.id+'_'+sd.id+'_'+t.id;
     if(t.dataType==='percent'){
       const corEl=document.getElementById('cor_'+id);
@@ -1592,7 +1593,7 @@ function _doEditSession(sess){
       const savedTargets=ld?ld.targets||[]:[];
       const hasData=savedTargets.filter(t=>t.dataType!=='maintenance').length>0;
       const allActiveTargets=lesson.sds.flatMap(function(sd){
-        return sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).map(function(t){
+        return sd.targets.filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold'&&!_isStimT(t);}).map(function(t){
           const saved=savedTargets.find(function(te){return te.targetId===t.id;});
           return saved||{targetId:t.id,targetName:t.name,sdId:sd.id,dataType:t.dataType,_missing:true};
         });
@@ -1739,7 +1740,7 @@ async function _saveEditedSession(sessId){
     }
     // Add any missing targets that now have data in DOM
     lesson.sds.forEach(function(sd){
-      sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold').forEach(function(t){
+      sd.targets.filter(t=>t.status!=='mastered'&&t.status!=='on_hold'&&!_isStimT(t)).forEach(function(t){
         if(ld.targets.find(function(te){return te.targetId===t.id;}))return; // already exists
         // Check if DOM has any value for this target
         const corEl=document.querySelector('.se-cor[data-lid="'+lesson.id+'"][data-tid="'+t.id+'"]');
@@ -2432,7 +2433,7 @@ function _dayReportHtml(o){
         if(t.resumedDate===D)sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
         (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
         if(!withData)return;
-        const stimDay=[];sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});const m=ld&&ld.stim&&ld.stim[t.id];if(m)Object.keys(m).forEach(function(k){if(m[k])stimDay.push(esc(k)+' '+esc(m[k]));});});
+        const stimDay=[];sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});const m=ld&&ld.stim&&ld.stim[t.id];if(m)Object.keys(m).forEach(function(k){if(m[k])stimDay.push(esc(_stimResolve(t,k))+' '+esc(m[k]));});});
         if(stimDay.length)sdi+='<p style="margin:6px 0 2px"><strong>'+esc(t.name)+' \u2014 stimuli:</strong> '+stimDay.join(', ')+'</p>';
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
@@ -2656,7 +2657,7 @@ function _updateCoverageBar(){
   if(!fill||!lbl)return;
   var lessons=DB.lessons.filter(function(l){return l.clientId===selectedClientId&&l.phase==='acquisition';});
   var total=0,done=0;
-  lessons.forEach(function(l){(l.sds||[]).forEach(function(sd){(sd.targets||[]).filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold';}).forEach(function(t){
+  lessons.forEach(function(l){(l.sds||[]).forEach(function(sd){(sd.targets||[]).filter(function(t){return t.status!=='mastered'&&t.status!=='on_hold'&&!_isStimT(t);}).forEach(function(t){
     total++;
     var id=l.id+'_'+sd.id+'_'+t.id,has=false;
     if(t.dataType==='percent'){var e=document.getElementById('cor_'+id);has=!!(e&&e.value.trim()!=='');}
@@ -2905,7 +2906,7 @@ function renderClientView(){
   if(['junior','senior','qcd'].includes(currentUser.role)&&_actSess.started&&_actSess.clientId===selectedClientId&&_actSess.setting==='shadow'){tabs=tabs.filter(function(t){return t.id!=='session';});if(selectedTab==='session')selectedTab='schoolshadow';}
   if(isSup&&!_supSessMode&&selectedTab==='session')selectedTab='checklist';
   if((!isSup||_supSessMode)&&(selectedTab==='lessons'||selectedTab==='report'))selectedTab='checklist';
-  if(_stimHasAny()){var _stI=tabs.findIndex(function(t){return t.id==='session';});if(_stI<0)_stI=tabs.findIndex(function(t){return t.id==='behavior';});tabs=tabs.slice(0,_stI+1).concat([{id:'stimuli',l:'🏷 Stimuli Checklist'}],tabs.slice(_stI+1));}
+  if(_stimHasAny()){var _stI=tabs.findIndex(function(t){return t.id==='lessons';});if(_stI<0)_stI=tabs.findIndex(function(t){return t.id==='session';});if(_stI<0)_stI=tabs.findIndex(function(t){return t.id==='behavior';});tabs=tabs.slice(0,_stI+1).concat([{id:'stimuli',l:'🏷 Stimuli Checklist'}],tabs.slice(_stI+1));}
   else if(selectedTab==='stimuli')selectedTab='checklist';
   const tabHtml=tabs.map(t=>'<button class="tab unlock-exempt '+(selectedTab===t.id?'active':'')+'" onclick="setTab(\''+t.id+'\')">' +t.l+'</button>').join('');
   // Session sticky bar — TX only, always visible (red=idle, green=active)
@@ -3070,20 +3071,15 @@ function _stimHasMarks(stim){return !!stim&&Object.keys(stim).some(function(t){v
 function _stimTargets(){
   var out=[];
   DB.lessons.filter(function(l){return l.clientId===selectedClientId&&l.phase!=='archived';}).forEach(function(l){
-    (l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){if(t.stimOn)out.push({l:l,sd:sd,t:t});});});
+    (l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){if(t.stimOn||_isStimT(t))out.push({l:l,sd:sd,t:t});});});
   });
   return out;
 }
 function _stimHasAny(){return _stimTargets().length>0;}
 // Shared list: supervisor's list first, then every stimulus ever used in a session (oldest first), then today's draft
 function _stimNames(l,t,todayMarks){
-  var names=[],seen={};
-  var add=function(n){n=String(n||'').trim();if(!n)return;var k=n.toLowerCase();if(seen[k])return;seen[k]=1;names.push(n);};
-  (t.stimuli||[]).forEach(add);
-  DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(s){
-    var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.stim&&ld.stim[t.id])Object.keys(ld.stim[t.id]).forEach(add);
-  });
-  Object.keys(todayMarks||{}).forEach(add);
+  var names=_stimPastNames(l,t),seen={};names.forEach(function(n){seen[n.toLowerCase()]=1;});
+  Object.keys(todayMarks||{}).forEach(function(k){var n=_stimResolve(t,k).trim();if(n&&!seen[n.toLowerCase()]){seen[n.toLowerCase()]=1;names.push(n);}});
   return names;
 }
 function _stimCls(v){return v==='+'?'background:#e2f2df;color:#2f6b2c;border-color:#9fd08f':v==='−'?'background:#fbe4e1;color:#a3392b;border-color:#eba99d':v==='P'?'background:#fbeecb;color:#8a6410;border-color:#e8c14e':'background:#fff;color:#374151;border-color:#d5dae1';}
@@ -3096,7 +3092,7 @@ function renderStimuliTab(){
   var html=active?'':'<div class="alert alert-warn no-print" style="margin-bottom:12px">Start a 1:1 session to mark stimuli. History is shown below.</div>';
   items.forEach(function(it){
     var l=it.l,t=it.t,key=l.id+'_'+t.id;
-    var today=(marksAll[l.id]&&marksAll[l.id][t.id])||{};
+    var today=_stimResolveMarks(t,(marksAll[l.id]&&marksAll[l.id][t.id])||{});
     var hidden=(t.stimHidden||[]).map(function(x){return String(x).toLowerCase();});
     var names=_stimNames(l,t,today);
     var shown=names.filter(function(n){return hidden.indexOf(n.toLowerCase())<0;});
@@ -3117,19 +3113,23 @@ function renderStimuliTab(){
       if(active)html+='<div class="no-print" style="display:flex;gap:8px;margin-top:10px;max-width:420px"><input type="text" id="stim-add-'+key+'" placeholder="New stimulus" onkeydown="if(event.key===\'Enter\')_stimAdd(\''+l.id+'\',\''+t.id+'\')"><button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="_stimAdd(\''+l.id+'\',\''+t.id+'\')">+ Add stimulus</button></div>'
         +'<div style="font-size:.74rem;color:var(--muted);margin-top:6px">Tap: blank → + → − → P → blank. Saved with the session when you press End &amp; Save.</div>';
       // history grid
-      var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-12);
-      var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:_drFmtD(s.date)+'<br>'+esc((s.txName||'').split(' ')[0]),m:ld.stim[t.id]||{}};});
+      var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&_stimSessVisible(t,s)&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-12);
+      var pastL=_stimPastNames(l,t).map(function(x){return x.toLowerCase();});
+      var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:_drFmtD(s.date)+'<br>'+esc((s.txName||'').split(' ')[0]),m:_stimResolveMarks(t,ld.stim[t.id]||{})};});
       if(active)cols.push({h:'Today',m:today});
       if(cols.length&&names.length){
         html+='<div style="font-size:.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 6px">History</div>'
           +'<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%"><tr><td style="position:sticky;left:0;background:#e2f0f7;font-weight:700;padding:6px 10px;min-width:120px">Stimulus</td>'
           +cols.map(function(c){return '<td style="background:#e2f0f7;text-align:center;font-size:.72rem;font-weight:600;padding:4px 6px;min-width:48px;white-space:nowrap">'+c.h+'</td>';}).join('')+'</tr>'
           +names.map(function(n,ri){var isH=hidden.indexOf(n.toLowerCase())>=0;var bg=ri%2?'#fff':'#f7f9fb';
-            return '<tr><td style="position:sticky;left:0;background:'+bg+';padding:6px 10px;font-size:.86rem;'+(isH?'color:#94a0ae':'')+'">'+esc(n)
+            var canRen=isSup||(active&&pastL.indexOf(n.toLowerCase())<0);
+            return '<tr><td style="position:sticky;left:0;background:'+bg+';padding:6px 10px;font-size:.86rem;white-space:nowrap;'+(isH?'color:#94a0ae':'')+'">'+esc(n)
+              +(canRen?' <button class="no-print" title="Rename" onclick="_stimRename(\''+l.id+'\',\''+t.id+'\','+names.indexOf(n)+')" style="border:none;background:none;color:#1f8ec4;cursor:pointer;font-size:.8rem">\u270E</button>':'')
               +(isSup?' <button class="no-print" title="'+(isH?'Show again':'Hide from tap list')+'" onclick="_stimHide(\''+l.id+'\',\''+t.id+'\','+names.indexOf(n)+')" style="border:none;background:none;color:#94a0ae;cursor:pointer;font-size:.75rem">'+(isH?'show':'hide')+'</button>':'')+'</td>'
               +cols.map(function(c){var v=c.m[n]||'';return '<td style="text-align:center;background:'+bg+';padding:4px"><span style="display:inline-block;min-width:22px;border:1px solid;border-radius:4px;padding:1px 4px;font-size:.8rem;'+(v?_stimCls(v):'border-color:transparent')+'">'+(v||'')+'</span></td>';}).join('')+'</tr>';}).join('')
           +'</table></div>';
       }
+      if(isSup)html+='<div class="no-print" style="margin-top:10px;text-align:right"><button class="btn btn-outline btn-sm" onclick="_stimArchiveFlow(\''+l.id+'\',\''+t.id+'\')">\u21E9 Export &amp; clear\u2026</button></div>';
       html+='</div>';
     }
     html+='</div>';
@@ -3144,7 +3144,8 @@ function _stimTap(lId,tId,idx){
   var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});if(!t)return;
   var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];
   var n=_stimNames(l,t,m)[idx];if(!n)return;
-  var v=m[n]||'';m[n]=_STIM_CYCLE[(_STIM_CYCLE.indexOf(v)+1)%_STIM_CYCLE.length];
+  var key=Object.keys(m).find(function(k){return _stimResolve(t,k)===n;})||n;
+  var v=m[key]||'';m[key]=_STIM_CYCLE[(_STIM_CYCLE.indexOf(v)+1)%_STIM_CYCLE.length];
   _stimDraftSet(d);render();
 }
 function _stimAdd(lId,tId){
@@ -3172,9 +3173,87 @@ function _stimHide(lId,tId,idx){
 function _stimEditBlock(t){
   if(!['supervisor','director'].includes(currentUser.role))return '';
   return '<div style="background:#f0faed;border:1px solid #c6e6bf;border-radius:8px;padding:12px;margin-top:10px">'
-    +'<label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;cursor:pointer"><input type="checkbox" id="et-stim-on" style="width:auto"'+(t.stimOn?' checked':'')+'> Use stimulus list <span style="font-weight:400;color:var(--muted)">(shows in the Stimuli Checklist tab)</span></label>'
+    +'<label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:.85rem;cursor:pointer"><input type="checkbox" id="et-stim-on" style="width:auto"'+((t.stimOn||_isStimT(t))?' checked':'')+(_isStimT(t)?' disabled':'')+'> Use stimulus list <span style="font-weight:400;color:var(--muted)">(shows in the Stimuli Checklist tab)</span></label>'
     +'<label style="font-weight:600;font-size:.85rem;display:block;margin-top:8px;margin-bottom:4px">Starting stimuli <span style="font-weight:400;color:var(--muted)">(one per line, optional — therapists can add more)</span></label>'
     +'<textarea id="et-stim-list" rows="4" placeholder="Cat\nDog\nBird">'+esc((t.stimuli||[]).join('\n'))+'</textarea></div>';
+}
+// ── Stimuli Checklist v-AZ: "Stimuli checklist" data type, renaming, export & clear ──
+function _isStimT(t){return !!t&&t.dataType==='stimuli';}
+function _stimOnlyLesson(l){var all=[];(l.sds||[]).forEach(function(sd){all=all.concat(sd.targets||[]);});return all.length>0&&all.every(_isStimT);}
+// Session screen: an SD without its stimuli-checklist targets (they are recorded only in the Stimuli Checklist tab)
+function _sdSess(sd){return (sd.targets||[]).some(_isStimT)?Object.assign({},sd,{targets:sd.targets.filter(function(t){return !_isStimT(t);})}):sd;}
+// Supervisor renames are stored as t.stimRename {oldname(lowercase): newName}; old session records are never rewritten
+function _stimResolve(t,n){var r=t.stimRename||{};var k=String(n||'');var g=0;while(r[k.toLowerCase()]&&g++<20)k=r[k.toLowerCase()];return k;}
+function _stimResolveMarks(t,m){var o={};Object.keys(m||{}).forEach(function(k){var nk=_stimResolve(t,k);if(m[k]||!(nk in o))o[nk]=m[k];});return o;}
+// Sessions cleared by "Export & clear" stay saved but are no longer shown
+function _stimSessVisible(t,s){var a=t.stimArchive;return !a||!(s.date<a.at||(a.sessIds||[]).indexOf(s.id)>=0);}
+function _stimPastNames(l,t){
+  var names=[],seen={};var add=function(n){n=String(n||'').trim();if(!n)return;var k=n.toLowerCase();if(seen[k])return;seen[k]=1;names.push(n);};
+  (t.stimuli||[]).forEach(add);
+  DB.sessions.filter(function(s){return s.clientId===selectedClientId&&_stimSessVisible(t,s);}).sort(function(a,b){return a.date.localeCompare(b.date);}).forEach(function(s){
+    var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.stim&&ld.stim[t.id])Object.keys(ld.stim[t.id]).forEach(function(k){add(_stimResolve(t,k));});
+  });
+  return names;
+}
+function _stimFind(lId,tId){var l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return null;var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});return t?{l:l,t:t}:null;}
+function _stimRename(lId,tId,idx){
+  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
+  var today=(_stimDraftMarks()[lId]||{})[tId]||{};
+  var names=_stimNames(l,t,today);var n=names[idx];if(!n)return;
+  var past=_stimPastNames(l,t).map(function(x){return x.toLowerCase();});
+  var newToday=past.indexOf(n.toLowerCase())<0;
+  var isSup=['supervisor','director'].includes(currentUser.role);
+  if(!newToday&&!isSup){toast('Only a supervisor can rename a stimulus that is already in use','error',4000);return;}
+  var nn=prompt('Rename stimulus',n);if(nn===null)return;nn=nn.trim();
+  if(!nn||nn===n)return;
+  if(names.some(function(x){return x!==n&&x.toLowerCase()===nn.toLowerCase();})){toast('That name is already on the list','error');return;}
+  if(newToday){ // only in today's draft — no lesson change
+    var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];var key=Object.keys(m).find(function(k){return _stimResolve(t,k)===n;})||n;
+    var v=m[key]||'';delete m[key];m[nn]=v;_stimDraftSet(d);render();return;
+  }
+  if(!requireActiveSession())return;
+  if(!t.stimRename||typeof t.stimRename!=='object')t.stimRename={};
+  delete t.stimRename[nn.toLowerCase()];
+  t.stimRename[n.toLowerCase()]=nn;
+  if(Array.isArray(t.stimuli))t.stimuli=t.stimuli.map(function(x){return x.toLowerCase()===n.toLowerCase()?nn:x;});
+  if(Array.isArray(t.stimHidden))t.stimHidden=t.stimHidden.map(function(x){return String(x).toLowerCase()===n.toLowerCase()?nn:x;});
+  sbSaveLesson(l);toast('Renamed ✓');render();
+}
+function _stimCsvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function _stimExport(lId,tId){
+  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
+  var c=DB.clients.find(function(x){return x.id===selectedClientId;})||{};
+  var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&_stimSessVisible(t,s)&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);});
+  var names=_stimPastNames(l,t);
+  var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:s.date+(s.txName?' ('+s.txName+')':''),m:_stimResolveMarks(t,ld.stim[t.id])};});
+  var rows=[['Client',c.name||''],['Lesson',l.name],['Target',t.name],['Exported',_todayLocal()],[],['Stimulus'].concat(cols.map(function(x){return x.h;}))];
+  names.forEach(function(n){rows.push([n].concat(cols.map(function(x){return x.m[n]||'';})));});
+  var csv='﻿'+rows.map(function(r){return r.map(_stimCsvCell).join(',');}).join('\r\n');
+  var fn=('Stimuli '+(c.name||'')+' '+l.name+' '+t.name+' '+_todayLocal()).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.csv';
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=fn;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
+  toast('List exported ✓');
+}
+function _stimArchiveFlow(lId,tId){
+  if(!['supervisor','director'].includes(currentUser.role))return;
+  var f=_stimFind(lId,tId);if(!f)return;
+  modal('<div style="max-width:440px"><h3 style="margin-bottom:8px">Export &amp; clear — '+esc(f.t.name)+'</h3>'
+    +'<p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Export saves the list and its history as a spreadsheet file. Clearing gives the card a fresh start: past marks stay saved in their sessions but are no longer shown here, and the card itself stays.</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +'<button class="btn btn-outline" onclick="_stimExport(\''+lId+'\',\''+tId+'\')">Export only</button>'
+    +'<button class="btn btn-primary" onclick="_stimDoClear(\''+lId+'\',\''+tId+'\',true)">Export, then clear the list</button>'
+    +'<button class="btn btn-outline" style="color:#a3392b;border-color:#eba99d" onclick="_stimDoClear(\''+lId+'\',\''+tId+'\',false)">Clear without exporting</button>'
+    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _stimDoClear(lId,tId,exp){
+  if(!requireActiveSession())return;
+  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
+  if(exp)_stimExport(lId,tId);
+  if(!confirm('Clear the stimulus list for “'+t.name+'”?\n\nPast marks stay saved in their sessions but will no longer show on this card. The card stays.'))return;
+  var ids=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&ld&&ld.stim&&ld.stim[t.id];}).map(function(s){return s.id;});
+  t.stimArchive={at:_todayLocal(),sessIds:ids};
+  t.stimuli=[];t.stimHidden=[];t.stimRename={};
+  sbSaveLesson(l);closeModal();toast('List cleared ✓');render();
 }
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
@@ -3478,7 +3557,7 @@ function renderSessionEntry(){
 
   const today=_todayLocal();
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId).slice().sort((a,b)=>a.name.localeCompare(b.name));
-  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived');
+  const active=lessons.filter(l=>l.phase!=='maintenance'&&l.phase!=='hold'&&l.phase!=='archived'&&!_stimOnlyLesson(l));
   active.sort(function(a,b){var sa=_isStarred(a.id)?0:1,sb=_isStarred(b.id)?0:1;return sa-sb||a.name.localeCompare(b.name);});
   const maint=lessons.filter(l=>l.phase==='maintenance');
   const held=lessons.filter(l=>l.phase==='hold');
@@ -3512,7 +3591,7 @@ function renderLessonSessionBlock(lesson){
   if(supNote)body+='<div class="alert alert-info" style="margin-bottom:10px"><strong>Sup note ('+supNote.date+'):</strong><div style="margin-top:4px;white-space:normal">'+formatNoteText(supNote.text)+'</div></div>';
 
   if(lesson.phase==='acquisition'){
-    _orderedSDs(lesson.sds).forEach(function(_p){const sd=_p[0],si=_p[1];
+    _orderedSDs(lesson.sds).forEach(function(_p){const sd=_sdSess(_p[0]),si=_p[1];
       const activeTargets=sd.targets.filter(t=>t.status!=='mastered');
       const sessHasMastered=sd.targets.some(t=>t.status==='mastered');
       const sessHasHeld=sd.targets.some(t=>t.status==='on_hold');
@@ -4080,7 +4159,7 @@ async function saveSession(){
 
     if(lesson.phase==='acquisition'){
       lesson.sds.forEach(sd=>{
-        sd.targets.filter(t=>t.status!=='mastered').forEach(target=>{
+        sd.targets.filter(t=>t.status!=='mastered'&&!_isStimT(t)).forEach(target=>{
           const id=lesson.id+'_'+sd.id+'_'+target.id;
           const entry={targetId:target.id,targetName:target.name,sdId:sd.id,dataType:target.dataType};
 
@@ -4151,7 +4230,7 @@ async function saveSession(){
           }
         });
         // maintenance checklist
-        sd.targets.filter(t=>t.status==='mastered').forEach(target=>{
+        sd.targets.filter(t=>t.status==='mastered'&&!_isStimT(t)).forEach(target=>{
           const sel=document.querySelector('.cpi-btn[data-id="mc_'+lesson.id+'_'+target.id+'"].sel');
           if(sel)ld.targets.push({targetId:target.id,targetName:target.name,sdId:sd.id,dataType:'maintenance',result:sel.classList.contains('plus')?'+':sel.classList.contains('minus')?'-':'P'});
         });
@@ -4969,7 +5048,7 @@ function showAddLesson(){
   '<label style="margin-top:8px">Response<textarea id="nl-r" rows="2"></textarea></label>'+
   '<hr style="margin:12px 0"><h4 style="margin-bottom:10px">First Target</h4>'+
   '<label>Target name<input id="nl-tname" type="text" placeholder="e.g. Target 1"></label>'+
-  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option><option value="tally">Tally (raw count)</option><option value="checklist">First Trial</option></select></label></div><div class="fg-sm" id="nl-trials-wrap"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
+  '<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="nl-dtype" onchange="toggleTAFields()"><option value="percent">% Correct</option><option value="ta">Task Analysis (Chaining)</option><option value="rating">Rating Scale (1–5)</option><option value="tally">Tally (raw count)</option><option value="checklist">First Trial</option><option value="stimuli">Stimuli checklist</option></select></label></div><div class="fg-sm" id="nl-trials-wrap"><label>Trial count<input id="nl-trials" type="number" value="10"></label></div></div>'+
   '<div id="nl-ta-wrap" style="display:none"><label>Chaining mode<select id="nl-chain"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:8px">Steps (one per line)<textarea id="nl-steps" rows="5"></textarea></label></div>'+
   '<div id="nl-rating-wrap" style="display:none"><div style="background:#f5f6f8;border-radius:8px;padding:12px;margin-top:8px"><p style="font-size:.82rem;font-weight:600;margin-bottom:8px">Rating labels (1–5):</p>'+
   [1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:6px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="nl-rl'+i+'" placeholder="e.g. '+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+
@@ -5033,7 +5112,7 @@ function addTarget(lId,sId){if(!requireActiveSession())return;
     +'<p style="font-size:.82rem;color:var(--muted);margin-bottom:10px">SD: <strong>'+esc(sd.sd)+'</strong></p>'
     +'<label>Target name<input id="at-n" type="text" placeholder="e.g. 2-step instruction"></label>'
     +'<div class="form-row" style="margin-top:8px">'
-    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(&quot;at-ta&quot;).style.display=v===&quot;ta&quot;?&quot;&quot;:&quot;none&quot;;document.getElementById(&quot;at-rt&quot;).style.display=v===&quot;rating&quot;?&quot;&quot;:&quot;none&quot;;var _tw=document.getElementById(&quot;at-tr-wrap&quot;);if(_tw)_tw.style.display=v===&quot;tally&quot;?&quot;none&quot;:&quot;&quot;;var _tlw=document.getElementById(&quot;at-tally&quot;);if(_tlw)_tlw.style.display=v===&quot;tally&quot;?&quot;&quot;:&quot;none&quot;;"><option value=\"percent\">% Correct</option><option value=\"ta\">Task Analysis</option><option value=\"rating\">Rating Scale</option><option value=\"tally\">Tally (raw count)</option><option value=\"checklist\">First Trial</option></select></label></div>'
+    +'<div class="fg"><label>Data type<select id="at-dt" onchange="var v=this.value;document.getElementById(&quot;at-ta&quot;).style.display=v===&quot;ta&quot;?&quot;&quot;:&quot;none&quot;;document.getElementById(&quot;at-rt&quot;).style.display=v===&quot;rating&quot;?&quot;&quot;:&quot;none&quot;;var _tw=document.getElementById(&quot;at-tr-wrap&quot;);if(_tw)_tw.style.display=v===&quot;tally&quot;?&quot;none&quot;:&quot;&quot;;var _tlw=document.getElementById(&quot;at-tally&quot;);if(_tlw)_tlw.style.display=v===&quot;tally&quot;?&quot;&quot;:&quot;none&quot;;"><option value=\"percent\">% Correct</option><option value=\"ta\">Task Analysis</option><option value=\"rating\">Rating Scale</option><option value=\"tally\">Tally (raw count)</option><option value=\"checklist\">First Trial</option><option value=\"stimuli\">Stimuli checklist</option></select></label></div>'
     +'<div class="fg-sm"><label>Trials<input id="at-tr" type="number" value="10"></label></div></div>'
     +'<div id="at-ta" style="display:none"><label>Chain mode<select id="at-cm"><option value="forward">Forward</option><option value="backward">Backward</option><option value="total">Total Task</option></select></label><label style="margin-top:6px">Steps (one per line)<textarea id="at-st" rows="4"></textarea></label></div>'
     +'<div id="at-rt" style="display:none">'+[1,2,3,4,5].map(i=>'<div class="form-row" style="margin-bottom:4px"><div class="fg-xs"><label>'+i+'</label></div><div class="fg"><input id="at-rl'+i+'" placeholder="'+['Full physical','Partial physical','Gestural','Verbal','Independent'][i-1]+'"></div></div>').join('')+'</div>'
@@ -5248,7 +5327,7 @@ function editTarget(lId,sId,tId){if(!requireActiveSession())return;
   modal('<h3 style="margin-bottom:12px">Edit Target</h3>'+
   '<label>Name<input id="et-n" type="text" value="'+esc(t.name)+'"></label>'+
   '<div class="form-row" style="margin-top:8px"><div class="fg-sm"><label>Trial count<input id="et-tr" type="number" value="'+t.trialCount+'"></label></div><div class="fg"><label>Status<select id="et-st"><option value="not_started"'+(t.status==='not_started'?' selected':'')+'>Not started</option><option value="in_progress"'+(t.status==='in_progress'?' selected':'')+'>In progress</option><option value="mastered"'+(t.status==='mastered'?' selected':'')+'>Mastered</option></select></label></div></div>'
-  +(['supervisor','director'].includes(currentUser.role)?'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="et-dtype" onchange="(function(){var v=this.value;})()"><option value="percent"'+(t.dataType==="percent"?' selected':'')+'>% Correct</option><option value="ta"'+(t.dataType==="ta"?' selected':'')+'>Task Analysis (Chaining)</option><option value="rating"'+(t.dataType==="rating"?' selected':'')+'>Rating Scale</option><option value="tally"'+(t.dataType==="tally"?' selected':'')+'>Tally (raw count)</option><option value="checklist"'+(t.dataType==="checklist"?' selected':'')+'>First Trial</option></select></label></div></div>':'')+(t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
+  +(['supervisor','director'].includes(currentUser.role)?'<div class="form-row" style="margin-top:8px"><div class="fg"><label>Data type<select id="et-dtype" onchange="(function(){var v=this.value;})()"><option value="percent"'+(t.dataType==="percent"?' selected':'')+'>% Correct</option><option value="ta"'+(t.dataType==="ta"?' selected':'')+'>Task Analysis (Chaining)</option><option value="rating"'+(t.dataType==="rating"?' selected':'')+'>Rating Scale</option><option value="tally"'+(t.dataType==="tally"?' selected':'')+'>Tally (raw count)</option><option value="checklist"'+(t.dataType==="checklist"?' selected':'')+'>First Trial</option><option value="stimuli"'+(t.dataType==="stimuli"?' selected':'')+'>Stimuli checklist</option></select></label></div></div>':'')+(t.dataType==='ta'?'<label style="margin-top:8px">TA Steps<textarea id="et-st2" rows="5">'+esc(t.taSteps.join('\n'))+'</textarea></label>'+(['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Override Current Step <span style="font-weight:400;color:var(--muted);font-size:.8rem">(overrides auto-advance)</span><select id="et-tastep" style="width:100%"><option value="">— auto (use mastery data) —</option>'+t.taSteps.map(function(s,i){return'<option value="'+i+'"'+(t.taStepOverride!=null&&t.taStepOverride===i?' selected':'')+'>Step '+(i+1)+': '+esc(s)+'</option>';}).join('')+'</select></label>':'')
     :'')+
   (['supervisor','director'].includes(currentUser.role)?'<label style="margin-top:8px">Target Notes <span style="font-weight:400;color:var(--muted);font-size:.8rem">(visible to TX)</span><textarea id="et-note" rows="3" placeholder="Specific instructions...">'+esc(t.note||'')+'</textarea></label>':'')+
   supSection+_stimEditBlock(t)+
@@ -6555,7 +6634,7 @@ async function resetData(){
 // UTILS
 // ════════════════════════════════════════════════
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
-function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt||'';}
+function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt==='stimuli'?'Stimuli checklist':dt||'';}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function normFT(r){return r==='+'?'C':r==='-'?'I':r||'?';}
 function normFTCol(r){const n=normFT(r);return n==='C'?{c:'#2f6b2c',bg:'#e2f2df'}:n==='P'?{c:'#8a6410',bg:'#fbeecb'}:n==='I'?{c:'#b23a2a',bg:'#fbe0da'}:{c:'#6b7280',bg:'#eef1f4'};}

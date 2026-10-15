@@ -4,7 +4,7 @@ Hi, and thank you for taking care with this. 💙 A quick note on *why* this fil
 
 **This app holds real clinical records for children in ABA therapy.** Lost data isn't an inconvenience here — it can mean a therapist's whole day of observations, or a supervisor's setup, gone. We have been through that several times, and it was painful. So the single most important thing in this project is: **never lose or overwrite data.** Features can wait; data safety cannot. Everything below exists to protect the people whose information lives in this app. When in doubt, choose the safer option and ask.
 
-**Current version:** `v2026-10-16-AY`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
+**Current version:** `v2026-10-16-AZ`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
 
 ---
 
@@ -35,7 +35,7 @@ All of a client's data — School Shadow setup AND records, school info, notes, 
 - **Every SQL given to Songg starts with a name line** — `-- (keep) Name` or `-- (test) Name` — so saved queries in the Supabase SQL Editor can be labelled and cleaned up safely.
 - **`lessons.phase_log` column (added for v-AS).** `lessonToRow` only sends `phase_log` when a lesson has entries. The column must exist in Supabase BEFORE any version that writes it goes live, or lesson saves with phase changes fail.
 - **Dates use Thailand (device-local) time: always `_todayLocal()`**, never `new Date().toISOString().slice(0,10)` (UTC — saves before 07:00 got yesterday's date; fixed in v-AX).
-- **Stimuli Checklist (v-AY): therapists never write the lesson.** Taps live in a LOCAL draft (`care_stim:<clientId>`) and are written into the session record at End & Save (`lessonData[].stim`), then the draft is cleared (also cleared on cancel). New stimuli live only in session records; the shared list = supervisor list (`t.stimuli`) + every stimulus used in past sessions. Only supervisors change the lesson (`t.stimOn`, `t.stimuli`, `t.stimHidden`). Keep `ld.stim` intact anywhere session lessonData is rebuilt.
+- **Stimuli Checklist (v-AY): therapists never write the lesson.** Taps live in a LOCAL draft (`care_stim:<clientId>`) and are written into the session record at End & Save (`lessonData[].stim`), then the draft is cleared (also cleared on cancel). New stimuli live only in session records; the shared list = supervisor list (`t.stimuli`) + every stimulus used in past sessions. Only supervisors change the lesson (`t.stimOn`, `t.stimuli`, `t.stimHidden`). Keep `ld.stim` intact anywhere session lessonData is rebuilt. Renames are a supervisor map (`t.stimRename`) and "Export & clear" is `t.stimArchive` — old session records are never rewritten or deleted. Targets with `dataType:'stimuli'` must stay OFF the Session screen and out of saveSession / edit-session / no-data reminder / coverage bar (`_isStimT`, `_sdSess`, `_stimOnlyLesson`).
 - **The GitHub project is public.** Never commit client data, SQL with client details, or secret keys. Only the public `anon` key belongs in the code.
 - **`_isBusy()`** is typing-aware (focused field, or typed in the last 90s, or an active session). Both auto-update and daily-logout rely on it. Keep it that way.
 
