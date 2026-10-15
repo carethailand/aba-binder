@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-16-AZ -->
+<!-- BUILD v2026-10-17-BA -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-16-AZ</title>
+<title>CARE Client Binder v2026-10-17-BA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-16-AZ';
+const APP_VERSION='v2026-10-17-BA';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-17-BA',date:'17 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
   {version:'v2026-10-16-AZ',date:'16 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
   {version:'v2026-10-16-AY',date:'16 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
   {version:'v2026-10-16-AX',date:'16 Oct 2026',added:'',improved:'Sup Notes tab: the Notes Feed now shows supervisor notes only (therapist session notes are still saved with their sessions).',fixed:'Dates now use Thailand time. Before, anything saved between midnight and 7am (notes, mastered targets, step changes, sessions, behavior logs\u2026) was dated the previous day.'},
@@ -3102,7 +3103,7 @@ function renderStimuliTab(){
       +'<div onclick="_stimToggle(\''+key+'\')" style="display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer">'
       +'<span style="color:var(--muted);width:14px">'+(open?'▾':'▸')+'</span>'
       +'<div style="flex:1"><div style="font-weight:600">'+esc(l.name)+'</div><div style="font-size:.82rem;color:var(--muted)">'+esc(t.name)+'</div></div>'
-      +'<span style="font-size:.78rem;background:#eef1f4;color:#374151;border-radius:6px;padding:2px 8px">'+used+' / '+shown.length+' today</span></div>';
+      +'<span style="font-size:.78rem;background:#eef1f4;color:#374151;border-radius:6px;padding:2px 8px">'+used+' / '+shown.length+' today</span>'+(isSup?'<button class="no-print" title="'+(_isStimT(t)?'Delete target':'Turn off stimulus list')+'" onclick="event.stopPropagation();_stimDeleteAsk(\''+l.id+'\',\''+t.id+'\')" style="border:1px solid #eba99d;background:#fff;color:#a3392b;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:.8rem">\uD83D\uDDD1</button>':'')+'</div>';
     if(open){
       html+='<div style="border-top:1px solid var(--border);padding:12px 16px">';
       // today: tap chips
@@ -3129,7 +3130,7 @@ function renderStimuliTab(){
               +cols.map(function(c){var v=c.m[n]||'';return '<td style="text-align:center;background:'+bg+';padding:4px"><span style="display:inline-block;min-width:22px;border:1px solid;border-radius:4px;padding:1px 4px;font-size:.8rem;'+(v?_stimCls(v):'border-color:transparent')+'">'+(v||'')+'</span></td>';}).join('')+'</tr>';}).join('')
           +'</table></div>';
       }
-      if(isSup)html+='<div class="no-print" style="margin-top:10px;text-align:right"><button class="btn btn-outline btn-sm" onclick="_stimArchiveFlow(\''+l.id+'\',\''+t.id+'\')">\u21E9 Export &amp; clear\u2026</button></div>';
+      if(isSup)html+='<div class="no-print" style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn btn-outline btn-sm" onclick="_stimExport(\''+l.id+'\',\''+t.id+'\')">\u21E9 Export</button><button class="btn btn-outline btn-sm" style="color:#a3392b;border-color:#eba99d" onclick="_stimClearAsk(\''+l.id+'\',\''+t.id+'\')">Clear checklist</button></div>';
       html+='</div>';
     }
     html+='</div>';
@@ -3196,37 +3197,14 @@ function _stimPastNames(l,t){
   return names;
 }
 function _stimFind(lId,tId){var l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return null;var t=null;(l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(x){if(x.id===tId)t=x;});});return t?{l:l,t:t}:null;}
-function _stimRename(lId,tId,idx){
-  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
-  var today=(_stimDraftMarks()[lId]||{})[tId]||{};
-  var names=_stimNames(l,t,today);var n=names[idx];if(!n)return;
-  var past=_stimPastNames(l,t).map(function(x){return x.toLowerCase();});
-  var newToday=past.indexOf(n.toLowerCase())<0;
-  var isSup=['supervisor','director'].includes(currentUser.role);
-  if(!newToday&&!isSup){toast('Only a supervisor can rename a stimulus that is already in use','error',4000);return;}
-  var nn=prompt('Rename stimulus',n);if(nn===null)return;nn=nn.trim();
-  if(!nn||nn===n)return;
-  if(names.some(function(x){return x!==n&&x.toLowerCase()===nn.toLowerCase();})){toast('That name is already on the list','error');return;}
-  if(newToday){ // only in today's draft — no lesson change
-    var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];var key=Object.keys(m).find(function(k){return _stimResolve(t,k)===n;})||n;
-    var v=m[key]||'';delete m[key];m[nn]=v;_stimDraftSet(d);render();return;
-  }
-  if(!requireActiveSession())return;
-  if(!t.stimRename||typeof t.stimRename!=='object')t.stimRename={};
-  delete t.stimRename[nn.toLowerCase()];
-  t.stimRename[n.toLowerCase()]=nn;
-  if(Array.isArray(t.stimuli))t.stimuli=t.stimuli.map(function(x){return x.toLowerCase()===n.toLowerCase()?nn:x;});
-  if(Array.isArray(t.stimHidden))t.stimHidden=t.stimHidden.map(function(x){return String(x).toLowerCase()===n.toLowerCase()?nn:x;});
-  sbSaveLesson(l);toast('Renamed ✓');render();
-}
 function _stimCsvCell(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
 function _stimExport(lId,tId){
   var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
   var c=DB.clients.find(function(x){return x.id===selectedClientId;})||{};
   var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&_stimSessVisible(t,s)&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);});
   var names=_stimPastNames(l,t);
-  var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:s.date+(s.txName?' ('+s.txName+')':''),m:_stimResolveMarks(t,ld.stim[t.id])};});
-  var rows=[['Client',c.name||''],['Lesson',l.name],['Target',t.name],['Exported',_todayLocal()],[],['Stimulus'].concat(cols.map(function(x){return x.h;}))];
+  var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {d:_drFmtD(s.date),tx:(s.txName||''),m:_stimResolveMarks(t,ld.stim[t.id])};});
+  var rows=[['Stimulus'].concat(cols.map(function(x){return x.d;})),[''].concat(cols.map(function(x){return x.tx;}))];
   names.forEach(function(n){rows.push([n].concat(cols.map(function(x){return x.m[n]||'';})));});
   var csv='﻿'+rows.map(function(r){return r.map(_stimCsvCell).join(',');}).join('\r\n');
   var fn=('Stimuli '+(c.name||'')+' '+l.name+' '+t.name+' '+_todayLocal()).replace(/[\\/:*?"<>|]+/g,' ').replace(/\s+/g,' ').trim()+'.csv';
@@ -3234,27 +3212,63 @@ function _stimExport(lId,tId){
   setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},1000);
   toast('List exported ✓');
 }
-function _stimArchiveFlow(lId,tId){
-  if(!['supervisor','director'].includes(currentUser.role))return;
-  var f=_stimFind(lId,tId);if(!f)return;
-  modal('<div style="max-width:440px"><h3 style="margin-bottom:8px">Export &amp; clear — '+esc(f.t.name)+'</h3>'
-    +'<p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5">Export saves the list and its history as a spreadsheet file. Clearing gives the card a fresh start: past marks stay saved in their sessions but are no longer shown here, and the card itself stays.</p>'
-    +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +'<button class="btn btn-outline" onclick="_stimExport(\''+lId+'\',\''+tId+'\')">Export only</button>'
-    +'<button class="btn btn-primary" onclick="_stimDoClear(\''+lId+'\',\''+tId+'\',true)">Export, then clear the list</button>'
-    +'<button class="btn btn-outline" style="color:#a3392b;border-color:#eba99d" onclick="_stimDoClear(\''+lId+'\',\''+tId+'\',false)">Clear without exporting</button>'
-    +'<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+// ── v-BA: in-app dialogs (the browser's own OK/Cancel pop-ups can be blocked), simpler Export / Clear / Delete ──
+function _stimSdId(l,tId){var id=null;(l.sds||[]).forEach(function(sd){if((sd.targets||[]).some(function(x){return x.id===tId;}))id=sd.id;});return id;}
+function _stimRename(lId,tId,idx){
+  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
+  var names=_stimNames(l,t,_stimResolveMarks(t,(_stimDraftMarks()[lId]||{})[tId]||{}));var n=names[idx];if(!n)return;
+  var newToday=_stimPastNames(l,t).map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase())<0;
+  if(!newToday&&!['supervisor','director'].includes(currentUser.role)){toast('Only a supervisor can rename a stimulus that is already in use','error',4000);return;}
+  modal('<div style="max-width:380px"><h3 style="margin-bottom:10px">Rename stimulus</h3>'
+    +'<input type="text" id="stim-ren" value="'+esc(n)+'" onkeydown="if(event.key===\'Enter\')_stimRenameSave(\''+lId+'\',\''+tId+'\','+idx+')">'
+    +'<div id="stim-ren-err" style="color:var(--danger);font-size:.8rem;margin-top:6px"></div>'
+    +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="_stimRenameSave(\''+lId+'\',\''+tId+'\','+idx+')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+  setTimeout(function(){var e=document.getElementById('stim-ren');if(e){e.focus();e.select();}},50);
 }
-function _stimDoClear(lId,tId,exp){
+function _stimRenameSave(lId,tId,idx){
+  var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
+  var names=_stimNames(l,t,_stimResolveMarks(t,(_stimDraftMarks()[lId]||{})[tId]||{}));var n=names[idx];if(!n){closeModal();return;}
+  var nn=((document.getElementById('stim-ren')||{}).value||'').trim();var err=document.getElementById('stim-ren-err');
+  if(!nn){if(err)err.textContent='Type a name first';return;}
+  if(nn===n){closeModal();return;}
+  if(names.some(function(x){return x!==n&&x.toLowerCase()===nn.toLowerCase();})){if(err)err.textContent='That name is already on the list';return;}
+  var newToday=_stimPastNames(l,t).map(function(x){return x.toLowerCase();}).indexOf(n.toLowerCase())<0;
+  if(newToday){var d=_stimEnsure(lId,tId);var m=d.lessons[lId][tId];var key=Object.keys(m).find(function(k){return _stimResolve(t,k)===n;})||n;var v=m[key]||'';delete m[key];m[nn]=v;_stimDraftSet(d);closeModal();render();return;}
+  if(!requireActiveSession())return;
+  if(!t.stimRename||typeof t.stimRename!=='object')t.stimRename={};
+  delete t.stimRename[nn.toLowerCase()];t.stimRename[n.toLowerCase()]=nn;
+  if(Array.isArray(t.stimuli))t.stimuli=t.stimuli.map(function(x){return x.toLowerCase()===n.toLowerCase()?nn:x;});
+  if(Array.isArray(t.stimHidden))t.stimHidden=t.stimHidden.map(function(x){return String(x).toLowerCase()===n.toLowerCase()?nn:x;});
+  sbSaveLesson(l);closeModal();toast('Renamed ✓');render();
+}
+function _stimClearAsk(lId,tId){
+  if(!requireActiveSession())return;
+  var f=_stimFind(lId,tId);if(!f)return;
+  modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Clear checklist — '+esc(f.t.name)+'?</h3>'
+    +'<p style="font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:14px">The card stays and starts fresh. Past marks stay saved in their sessions but are no longer shown here. Export first if you want a copy.</p>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="_stimExport(\''+lId+'\',\''+tId+'\')">⇩ Export</button><button class="btn btn-danger" onclick="_stimDoClear(\''+lId+'\',\''+tId+'\')">Clear checklist</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _stimDoClear(lId,tId){
   if(!requireActiveSession())return;
   var f=_stimFind(lId,tId);if(!f)return;var l=f.l,t=f.t;
-  if(exp)_stimExport(lId,tId);
-  if(!confirm('Clear the stimulus list for “'+t.name+'”?\n\nPast marks stay saved in their sessions but will no longer show on this card. The card stays.'))return;
   var ids=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&ld&&ld.stim&&ld.stim[t.id];}).map(function(s){return s.id;});
-  t.stimArchive={at:_todayLocal(),sessIds:ids};
-  t.stimuli=[];t.stimHidden=[];t.stimRename={};
-  sbSaveLesson(l);closeModal();toast('List cleared ✓');render();
+  t.stimArchive={at:_todayLocal(),sessIds:ids};t.stimuli=[];t.stimHidden=[];t.stimRename={};
+  sbSaveLesson(l);closeModal();toast('Checklist cleared ✓');render();
 }
+function _stimDeleteAsk(lId,tId){
+  if(!requireActiveSession())return;
+  var f=_stimFind(lId,tId);if(!f)return;var t=f.t;
+  if(_isStimT(t)){
+    modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Delete target — '+esc(t.name)+'?</h3>'
+      +'<p style="font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:14px">This removes the target and its card. Past marks stay saved in their sessions but will no longer be shown. Export first if you want a copy.</p>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="_stimExport(\''+lId+'\',\''+tId+'\')">⇩ Export</button><button class="btn btn-danger" onclick="deleteTarget(\''+lId+'\',\''+_stimSdId(f.l,tId)+'\',\''+tId+'\')">Delete target</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+  }else{
+    modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Turn off the stimulus list — '+esc(t.name)+'?</h3>'
+      +'<p style="font-size:.85rem;color:var(--muted);line-height:1.5;margin-bottom:14px">This target also records scores on the Session screen, so it is not deleted — only its stimulus list is turned off. The list and history stay saved and come back if you turn it on again (Edit target).</p>'
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" onclick="_stimExport(\''+lId+'\',\''+tId+'\')">⇩ Export</button><button class="btn btn-danger" onclick="_stimTurnOff(\''+lId+'\',\''+tId+'\')">Turn off list</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+  }
+}
+function _stimTurnOff(lId,tId){if(!requireActiveSession())return;var f=_stimFind(lId,tId);if(!f)return;f.t.stimOn=false;sbSaveLesson(f.l);closeModal();toast('Stimulus list turned off');render();}
 function renderTab(){
   if(selectedTab==='session')return renderSessionEntry();
   if(selectedTab==='stimuli')return renderStimuliTab();
