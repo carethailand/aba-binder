@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-17-BB -->
+<!-- BUILD v2026-10-17-BC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-17-BB</title>
+<title>CARE Client Binder v2026-10-17-BC</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-17-BB';
+const APP_VERSION='v2026-10-17-BC';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-17-BC',date:'17 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
   {version:'v2026-10-17-BB',date:'17 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
   {version:'v2026-10-17-BA',date:'17 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
   {version:'v2026-10-16-AZ',date:'16 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
@@ -4265,7 +4266,8 @@ async function saveSession(){
     }
 
     // Stimuli Checklist marks (kept in a local draft while on the Stimuli tab) go into this session record
-    const _stm=_stimForLesson(lesson.id,date,ss3.date);
+    // Guarded: a problem with stimulus marks must never stop the rest of the session from saving
+    let _stm=null;try{_stm=_stimForLesson(lesson.id,date,ss3.date);}catch(e){console.warn('stimuli skipped',e);}
     if(_stm)ld.stim=_stm;
     if(ld.targets.length||ld.dtData||ld.stim)lessonData.push(ld);
   });
@@ -4279,7 +4281,7 @@ async function saveSession(){
   // Systemic empty-save guard: never silently save a session with no real data (catches wrong-tab/lost-draft/accidental ends and rating ghosts)
   var _hasRealData=lessonData.some(function(ld){
     if(ld.dtData)return true;
-    if(_stimHasMarks(ld.stim))return true;
+    try{if(_stimHasMarks(ld.stim))return true;}catch(e){}
     return (ld.targets||[]).some(function(t){return (t.dataType!=='maintenance'&&(t.pct!=null||t.count!=null||t.rating!=null||t.steps!=null||t.firstTrial!=null))||(t.dataType==='maintenance'&&t.result!=null);});
   });
   if(!_hasRealData&&(ss_save.setting||'therapy')!=='shadow'){
@@ -4333,7 +4335,7 @@ async function saveSession(){
     });
     clearSessState();
     clearSessionDraft();
-    _stimDraftClear(newSess.clientId);
+    try{_stimDraftClear(newSess.clientId);}catch(e){}
     _stopSessAutoSave();
     // Flush lesson/bip changes (mastery updates, first trial data, etc)
     await flushSave();
