@@ -100,6 +100,7 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 ---
 
 ## FUTURE / IDEAS (discussed, not built)
+- **Download report as Word (editable)** — *on hold: Songg checking with the supervisor team (16 Oct 2026).* Add a "Download Word" button next to PDF in Day report + Finish & Preview. Options assessed: (A) HTML→.doc, small effort, editable text but graphs don't show; (B) A + graphs converted to pictures first — **recommended**, medium effort, test in Word for iPad; (C) true .docx built piece by piece — larger, every report change made twice. Read-only export (no data risk). Open questions: where they edit (Word desktop / Word iPad / Google Docs), whether graphs are needed in the editable copy, keep PDF button too (suggested yes).
 - **Observation narrative box** — one free-form note on School Shadow (`Label:` / `- bullet` / `Rec:`).
 - **Finish-supervision report** — reorganize what prints by supervision type.
 - **Client-wide lesson-graph phase breaks.**
