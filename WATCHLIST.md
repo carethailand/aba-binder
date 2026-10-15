@@ -36,6 +36,8 @@
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
+- [17 Oct 2026] **App only loads the latest 500 sessions across ALL clients** (also 1,000 behaviors, 500 ABC) in `loadFromSupabase`. With ~20 cases that is only ~5–6 weeks of history: older sessions are safe in the database but missing from long graphs, Print BIP ranges, stimulus history, etc. Grows worse with more data. Fix (own chat, before year-end): load each client's full history when the client is opened (per-client fetch), keep the global load small. Read-only change to loading; test carefully that saves/merges still use complete data.
+
 
 
 - [17 Sep 2026] **URGENT — School Shadow data wiped by concurrent save.** Director added School Shadow content; a therapist with an older copy of the client loaded then saved during a 1:1, and her stale whole-record write overwrote the School Shadow section (incl. supervisor observation notes). 1:1 data unaffected (separate tables). ROOT CAUSE: entire client stored as one record; `sbSaveClient` blindly overwrites the whole record from in-memory state (no merge, no re-read). FIX: make client save re-read latest row and merge only changed sections. STATUS: FIX BUILT + 2-device test PASSED (v2026-09-17-O, section-level merge in sbSaveClient). Wiped JAA data will NOT be restored in-app — team re-enters YTD + today into Google Sheet and starts fresh in the app tomorrow. TODO before rollout: deploy v-O to GitHub. NET targets (Listening Comprehension, Transition) SQL ready if wanted.

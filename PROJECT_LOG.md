@@ -100,6 +100,8 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 ---
 
 ## FUTURE / IDEAS (discussed, not built)
+- **Discharged case management** — *requested 17 Oct 2026, design proposed.* Supervisor/director marks a client "Discharged" (date + optional reason) → client moves to a collapsed "Discharged" section, read-only, hidden from therapists' lists; "Export full record" (Archive printout + data file); "Reactivate" if they return. Permanent removal is never an app button — SQL for Songg to run only after the export is checked (check clinical-record retention rules first). Open question: can therapists still view discharged clients read-only?
+- **Storage estimate (17 Oct 2026):** app on GitHub ~0.6 MB (no client data there). Supabase free tier 500 MB; ~20 cases ≈ 50–75 MB/year (stimulus marks <1 MB/yr) → ~6+ years of room. Check actual size with the "(keep) Storage check" SQL.
 - ~~Stimulus list (simple version)~~ — **built in v2026-10-16-AY** as the Stimuli Checklist tab (see CHANGELOG).
 - **Download report as Word (editable)** — *on hold: Songg checking with the supervisor team (16 Oct 2026).* Add a "Download Word" button next to PDF in Day report + Finish & Preview. Options assessed: (A) HTML→.doc, small effort, editable text but graphs don't show; (B) A + graphs converted to pictures first — **recommended**, medium effort, test in Word for iPad; (C) true .docx built piece by piece — larger, every report change made twice. Read-only export (no data risk). Open questions: where they edit (Word desktop / Word iPad / Google Docs), whether graphs are needed in the editable copy, keep PDF button too (suggested yes).
 - **Observation narrative box** — one free-form note on School Shadow (`Label:` / `- bullet` / `Rec:`).
