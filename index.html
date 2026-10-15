@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-17-BD -->
+<!-- BUILD v2026-10-15-BD -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-17-BD</title>
+<title>CARE Client Binder v2026-10-15-BD</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,18 +454,18 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-17-BD';
+const APP_VERSION='v2026-10-15-BD';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
-  {version:'v2026-10-17-BD',date:'17 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
-  {version:'v2026-10-17-BC',date:'17 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
-  {version:'v2026-10-17-BB',date:'17 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
-  {version:'v2026-10-17-BA',date:'17 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
-  {version:'v2026-10-16-AZ',date:'16 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
-  {version:'v2026-10-16-AY',date:'16 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
-  {version:'v2026-10-16-AX',date:'16 Oct 2026',added:'',improved:'Sup Notes tab: the Notes Feed now shows supervisor notes only (therapist session notes are still saved with their sessions).',fixed:'Dates now use Thailand time. Before, anything saved between midnight and 7am (notes, mastered targets, step changes, sessions, behavior logs\u2026) was dated the previous day.'},
-  {version:'v2026-10-16-AW',date:'16 Oct 2026',added:'Finish & Preview has a Therapist box next to Time. It fills in automatically with the therapist(s) who recorded that day, and you can type or change it.',improved:'Day report: the Therapist box also fills in automatically for the chosen date.',fixed:''},
+  {version:'v2026-10-15-BD',date:'15 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
+  {version:'v2026-10-17-BC',date:'15 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
+  {version:'v2026-10-17-BB',date:'15 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
+  {version:'v2026-10-17-BA',date:'15 Oct 2026',added:'Stimuli Checklist: delete button (\uD83D\uDDD1) on each card\u2019s headline for supervisors \u2014 deletes a Stimuli checklist target, or turns off the list on a normal target (its scores are kept).',improved:'Simpler buttons: \u21E9 Export and Clear checklist side by side. The exported spreadsheet now looks like the screen (stimuli on the left, date and therapist across the top).',fixed:'Clear checklist and Rename now use the app\u2019s own pop-up boxes, so they work in every browser.'},
+  {version:'v2026-10-16-AZ',date:'15 Oct 2026',added:'\u201cStimuli checklist\u201d is now a data type in Add Target \u2014 those targets are recorded only in the Stimuli Checklist tab, not on the Session screen. Rename a stimulus (\u270E): therapists can rename stimuli they added today; supervisors can rename any (past sessions show the new name). Supervisors can \u201cExport & clear\u201d a long list: export the list and history as a spreadsheet, then give the card a fresh start (past marks stay saved).',improved:'For supervisors the Stimuli Checklist tab now comes after Program Edit.',fixed:''},
+  {version:'v2026-10-16-AY',date:'15 Oct 2026',added:'Stimuli Checklist: a supervisor can turn on \u201cUse stimulus list\u201d for a target (Program Edit \u2192 Edit target). A new Stimuli Checklist tab (after Session) shows one card per list; during a 1:1 session, tap each stimulus to mark + / \u2212 / P, or add a new stimulus \u2014 the list is shared with the whole team. Marks are saved with the session at End & Save and shown in a history grid (newest on the right) and in the Day report when lesson data is included.',improved:'On a computer, all tabs now fit on one line.',fixed:''},
+  {version:'v2026-10-16-AX',date:'15 Oct 2026',added:'',improved:'Sup Notes tab: the Notes Feed now shows supervisor notes only (therapist session notes are still saved with their sessions).',fixed:'Dates now use Thailand time. Before, anything saved between midnight and 7am (notes, mastered targets, step changes, sessions, behavior logs\u2026) was dated the previous day.'},
+  {version:'v2026-10-16-AW',date:'15 Oct 2026',added:'Finish & Preview has a Therapist box next to Time. It fills in automatically with the therapist(s) who recorded that day, and you can type or change it.',improved:'Day report: the Therapist box also fills in automatically for the chosen date.',fixed:''},
   {version:'v2026-10-15-AV',date:'15 Oct 2026',added:'',improved:'Day report: when a lesson has more than one SD, each SD\u2019s notes, new / mastered / on-hold targets and step changes are grouped under an \u201cSD1:\u201d, \u201cSD2:\u201d heading so it is clear which SD they belong to.',fixed:''},
   {version:'v2026-10-15-AU',date:'15 Oct 2026',added:'',improved:'Finish & Preview now shows and prints the Day report for that date (same format as Report \u2192 Day report), with the same lesson-data and reinforcer tick boxes. Details under each lesson, behavior and BIP section are indented so each one stands apart.',fixed:''},
   {version:'v2026-10-15-AT',date:'15 Oct 2026',added:'',improved:'Printouts (supervision report, Day report, Print BIP) now use one even text size; section headlines are 2pt bigger. Labels such as SD: and R: stay bold with regular text after them.',fixed:''},
