@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-15-BD -->
+<!-- BUILD v2026-10-16-BE -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-15-BD</title>
+<title>CARE Client Binder v2026-10-16-BE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-15-BD';
+const APP_VERSION='v2026-10-16-BE';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-16-BE',date:'16 Oct 2026',added:'',improved:'Day report / Finish & Preview: teaching-step changes now show the step names, e.g. \u201cStep 1: MT alone \u2192 Step 2: Random Rotation\u201d.',fixed:''},
   {version:'v2026-10-15-BD',date:'15 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
   {version:'v2026-10-17-BC',date:'15 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
   {version:'v2026-10-17-BB',date:'15 Oct 2026',added:'Stimuli Checklist cards have an \u270F Edit target button for supervisors.',improved:'Program Edit no longer shows Stimuli checklist targets (they are managed in the Stimuli Checklist tab).',fixed:''},
@@ -2429,6 +2430,8 @@ function _drPhaseLabel(e){var nm={acquisition:'Acquisition',dt:'DT',maintenance:
   if(e.to==='acquisition'&&(e.from==='maintenance'||e.from==='archived'))return 'Lesson reintroduced \u2192 Acquisition';return 'Phase: '+(nm[e.from]||e.from)+' \u2192 '+(nm[e.to]||e.to);}
 function _drTxNames(date){return [...new Set((DB.sessions||[]).filter(function(s){return s.clientId===selectedClientId&&s.date===date;}).map(function(s){return s.txName;}).filter(Boolean))].join(', ');}
 function _rbDateChanged(inp){var t=document.getElementById('rb-tx');if(t&&t.dataset.auto==='1')t.value=_drTxNames(inp.value);}
+// "Step 2: Random Rotation" — uses the target's own teaching steps, else the SD's (same as Edit Target)
+function _drStepLbl(t,sd,i){var st=(t.teachingSteps&&t.teachingSteps.length)?t.teachingSteps:((sd&&sd.teachingSteps)||[]);var n=st[i];return 'Step '+(i+1)+(n?': '+esc(n):'');}
 function _drBehVal(x){return x.count!=null?x.count+'':x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+' min':'';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
@@ -2507,7 +2510,7 @@ function _dayReportHtml(o){
         if(t.masteredDate===D)sdi+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
         if(t.heldDate===D)sdi+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
         if(t.resumedDate===D)sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
-        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — step '+((ch.from||0)+1)+' → '+((ch.to||0)+1)+'</p>';});
+        (t.dtStepChanges||[]).filter(function(ch){return ch.date===D;}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — '+_drStepLbl(t,sd,ch.from||0)+' → '+_drStepLbl(t,sd,ch.to||0)+'</p>';});
         if(!withData)return;
         const stimDay=[];sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});const m=ld&&ld.stim&&ld.stim[t.id];if(m)Object.keys(m).forEach(function(k){if(m[k])stimDay.push(esc(_stimResolve(t,k))+' '+esc(m[k]));});});
         if(stimDay.length)sdi+='<p style="margin:6px 0 2px"><strong>'+esc(t.name)+' \u2014 stimuli:</strong> '+stimDay.join(', ')+'</p>';
