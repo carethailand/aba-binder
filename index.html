@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-16-BE -->
+<!-- BUILD v2026-10-16-BF -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-16-BE</title>
+<title>CARE Client Binder v2026-10-16-BF</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-16-BE';
+const APP_VERSION='v2026-10-16-BF';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-16-BF',date:'16 Oct 2026',added:'Day report / Finish & Preview now include every lesson note from that day at its own level: therapists\u2019 session lesson notes under the lesson, SD notes under the SD, and target notes under the target (target notes are dated from this version on).',improved:'',fixed:''},
   {version:'v2026-10-16-BE',date:'16 Oct 2026',added:'',improved:'Day report / Finish & Preview: teaching-step changes now show the step names, e.g. \u201cStep 1: MT alone \u2192 Step 2: Random Rotation\u201d.',fixed:''},
   {version:'v2026-10-15-BD',date:'15 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
   {version:'v2026-10-17-BC',date:'15 Oct 2026',added:'',improved:'Safety: if anything goes wrong reading stimulus marks, End & Save skips them and saves the rest of the session as normal.',fixed:''},
@@ -2500,12 +2501,14 @@ function _dayReportHtml(o){
     let inner='';
     (l.phaseLog||[]).filter(function(e){return e.date===D;}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D;}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
+    sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.note&&String(ld.note).trim())inner+='<div style="margin:4px 0"><strong>Session note'+(s.txName?' ('+esc(s.txName)+')':'')+':</strong>'+_drParas(ld.note)+'</div>';});
     const multiSD=(l.sds||[]).length>1;
     (l.sds||[]).forEach(function(sd,si){
       let sdi='';
       (sd.notes||[]).filter(function(n){return n.date===D;}).forEach(function(n){sdi+='<div style="margin:4px 0"><strong>'+(multiSD?'Note':'SD note'+(sd.sd?' ('+esc(sd.sd)+')':''))+':</strong>'+_drParas(n.text)+'</div>';});
       (sd.modHistory||[]).filter(function(m){return m.date===D;}).forEach(function(m){sdi+='<p><strong>Modification:</strong> '+esc(m.label||'')+'</p>';});
       (sd.targets||[]).forEach(function(t){
+        if(t.noteDate===D&&t.note)sdi+='<div style="margin:4px 0"><strong>Target note ('+esc(t.name)+'):</strong>'+_drParas(t.note)+'</div>';
         if(t.introducedDate===D)sdi+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
         if(t.masteredDate===D)sdi+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
         if(t.heldDate===D)sdi+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
@@ -5447,7 +5450,7 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
   }
   t.trialCount=parseInt(document.getElementById('et-tr').value)||t.trialCount;
   t.status=document.getElementById('et-st').value;
-  const noteEl=document.getElementById('et-note');if(noteEl)t.note=noteEl.value.trim();
+  const noteEl=document.getElementById('et-note');if(noteEl){const _nv=noteEl.value.trim();if(_nv!==(t.note||'')){t.note=_nv;t.noteDate=_todayLocal();}}
   if(t.dataType==='ta'){
     const el=document.getElementById('et-st2');if(el)t.taSteps=el.value.split('\n').map(s=>s.trim()).filter(Boolean);
     const taOvEl=document.getElementById('et-tastep');
