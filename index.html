@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-16-BF -->
+<!-- BUILD v2026-10-18-BG -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-16-BF</title>
+<title>CARE Client Binder v2026-10-18-BG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-16-BF';
+const APP_VERSION='v2026-10-18-BG';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-18-BG',date:'18 Oct 2026',added:'',improved:'',fixed:'Program Checklist, Stimuli history, Edit Last, Delete Last and the Therapist box: several sessions on the same day now appear in the order they were recorded (before, same-day sessions could appear in a random order).'},
   {version:'v2026-10-16-BF',date:'16 Oct 2026',added:'Day report / Finish & Preview now include every lesson note from that day at its own level: therapists\u2019 session lesson notes under the lesson, SD notes under the SD, and target notes under the target (target notes are dated from this version on).',improved:'',fixed:''},
   {version:'v2026-10-16-BE',date:'16 Oct 2026',added:'',improved:'Day report / Finish & Preview: teaching-step changes now show the step names, e.g. \u201cStep 1: MT alone \u2192 Step 2: Random Rotation\u201d.',fixed:''},
   {version:'v2026-10-15-BD',date:'15 Oct 2026',added:'',improved:'Faster, more private start-up: the app no longer downloads every client\u2019s sessions at login. Opening a client loads that client\u2019s FULL history (no more 500-session limit), with a short \u201cLoading\u2026\u201d screen. Full Export now fetches everything before saving the backup.',fixed:''},
@@ -1631,7 +1632,7 @@ function seDeleteBIPLog(logId){
 }
 
 function editLastSession(){
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort(function(a,b){return _sessCmp(b,a);}).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
   if(sessions.length===1){
     _doEditSession(sessions[0]);
@@ -1947,7 +1948,7 @@ function _restoreEditSession(sess){
 
 function deleteLastSession(){
   if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can delete a session.','error');return;}
-  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort((a,b)=>b.date.localeCompare(a.date)).slice(0,10);
+  const sessions=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance').sort(function(a,b){return _sessCmp(b,a);}).slice(0,10);
   if(!sessions.length){toast('No previous sessions found.','error');return;}
   if(sessions.length===1){
     _doDeleteSession(sessions[0]);
@@ -2429,7 +2430,7 @@ function _drBipCharts(b,logs){
 function _drPhaseLabel(e){var nm={acquisition:'Acquisition',dt:'DT',maintenance:'Maintenance',hold:'Hold',archived:'Archived'};
   if(e.to==='hold')return 'Lesson put on hold';if(e.from==='hold')return 'Lesson resumed \u2192 '+(nm[e.to]||e.to);if(e.to==='archived')return 'Lesson archived';
   if(e.to==='acquisition'&&(e.from==='maintenance'||e.from==='archived'))return 'Lesson reintroduced \u2192 Acquisition';return 'Phase: '+(nm[e.from]||e.from)+' \u2192 '+(nm[e.to]||e.to);}
-function _drTxNames(date){return [...new Set((DB.sessions||[]).filter(function(s){return s.clientId===selectedClientId&&s.date===date;}).map(function(s){return s.txName;}).filter(Boolean))].join(', ');}
+function _drTxNames(date){return [...new Set((DB.sessions||[]).filter(function(s){return s.clientId===selectedClientId&&s.date===date;}).sort(_sessCmp).map(function(s){return s.txName;}).filter(Boolean))].join(', ');}
 function _rbDateChanged(inp){var t=document.getElementById('rb-tx');if(t&&t.dataset.auto==='1')t.value=_drTxNames(inp.value);}
 // "Step 2: Random Rotation" — uses the target's own teaching steps, else the SD's (same as Edit Target)
 function _drStepLbl(t,sd,i){var st=(t.teachingSteps&&t.teachingSteps.length)?t.teachingSteps:((sd&&sd.teachingSteps)||[]);var n=st[i];return 'Step '+(i+1)+(n?': '+esc(n):'');}
@@ -3196,7 +3197,7 @@ function renderStimuliTab(){
       if(active)html+='<div class="no-print" style="display:flex;gap:8px;margin-top:10px;max-width:420px"><input type="text" id="stim-add-'+key+'" placeholder="New stimulus" onkeydown="if(event.key===\'Enter\')_stimAdd(\''+l.id+'\',\''+t.id+'\')"><button class="btn btn-outline btn-sm" style="white-space:nowrap" onclick="_stimAdd(\''+l.id+'\',\''+t.id+'\')">+ Add stimulus</button></div>'
         +'<div style="font-size:.74rem;color:var(--muted);margin-top:6px">Tap: blank → + → − → P → blank. Saved with the session when you press End &amp; Save.</div>';
       // history grid
-      var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&_stimSessVisible(t,s)&&ld&&ld.stim&&ld.stim[t.id];}).sort(function(a,b){return a.date.localeCompare(b.date);}).slice(-12);
+      var sess=DB.sessions.filter(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return s.clientId===selectedClientId&&_stimSessVisible(t,s)&&ld&&ld.stim&&ld.stim[t.id];}).sort(_sessCmp).slice(-12);
       var pastL=_stimPastNames(l,t).map(function(x){return x.toLowerCase();});
       var cols=sess.map(function(s){var ld=s.lessonData.find(function(x){return x.lessonId===l.id;});return {h:_drFmtD(s.date)+'<br>'+esc((s.txName||'').split(' ')[0]),m:_stimResolveMarks(t,ld.stim[t.id]||{})};});
       if(active)cols.push({h:'Today',m:today});
@@ -5625,8 +5626,8 @@ function renderProgramChecklist(){
     return '<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+initRow+spacer+rows+'</table></div>';
   }
 
-  const inSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')!=='shadow').sort((a,b)=>a.date.localeCompare(b.date)).slice(-30);
-  const mSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType==='maintenance'&&(s.setting||'therapy')!=='shadow').sort((a,b)=>a.date.localeCompare(b.date)).slice(-20);
+  const inSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType!=='maintenance'&&(s.setting||'therapy')!=='shadow').sort(_sessCmp).slice(-30);
+  const mSess=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.sessType==='maintenance'&&(s.setting||'therapy')!=='shadow').sort(_sessCmp).slice(-20);
   const _secHead=function(txt,color){return '<div style="font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:'+color+';margin:18px 0 8px;border-top:1px solid var(--border);padding-top:14px">'+txt+'</div>';};
 
   let out='<div class="card"><div class="chk-head" style="display:flex;align-items:center;gap:8px;margin-bottom:14px"><h2 style="flex:1;min-width:0">Program Checklist</h2>'+(!isViewOnly()?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="editLastSession()" title="Edit a recent session (works any time)">✏ Edit Last</button>':'')+'</div>';
@@ -6732,6 +6733,9 @@ async function resetData(){
 // UTILS
 // ════════════════════════════════════════════════
 function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36);}
+// Order sessions that share a date by when they were saved: server created_at, else the save time inside the id (uid ends with Date.now() in base 36)
+function _sessSavedAt(s){if(s&&s.createdAt){var t=Date.parse(s.createdAt);if(!isNaN(t))return t;}var id=String((s&&s.id)||'');if(id.length>=9){var n=parseInt(id.slice(-8),36);if(n>1.5e12&&n<4.1e12)return n;}return 0;}
+function _sessCmp(a,b){return a.date.localeCompare(b.date)||(_sessSavedAt(a)-_sessSavedAt(b))||String(a.id).localeCompare(String(b.id));}
 function dtLabel(dt){return dt==='percent'?'% Correct':dt==='ta'?'Task Analysis':dt==='rating'?'Rating Scale':dt==='tally'?'Tally':dt==='checklist'?'First Trial':dt==='stimuli'?'Stimuli checklist':dt||'';}
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function normFT(r){return r==='+'?'C':r==='-'?'I':r||'?';}
