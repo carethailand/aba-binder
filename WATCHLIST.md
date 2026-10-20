@@ -36,7 +36,6 @@
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
-- [20 Oct 2026] **Notes from one visit split across two days → Day report misses some** (reported by a supervisor). Cause: general/supervisor notes (`saveNote`) use the visit/session date (`getActiveState().date`), but program notes, SD notes, behavior notes, comm notes, School Shadow notes, mastered/hold/step stamps use today's date (`_todayLocal()`). If the visit date ≠ today (back-dated visit, or a visit left open overnight — daily sign-out is skipped while busy), notes land on two days. (Also pre-v-AX: saves before 07:00 were dated the previous day.) Proposed fix: everything saved during an active visit/session uses that visit/session date; warn when continuing a visit dated a different day. Existing notes not moved.
 
 
 
@@ -47,6 +46,8 @@ _Format: [date] area — what you did → what happened → who/role, which clie
 
 ## RESOLVED
 _Move fixed bugs here with the version that fixed them._
+
+- [20 Oct 2026] **Notes from one visit split across two days → Day report misses some** (reported by a supervisor). Cause: general/supervisor notes (`saveNote`) use the visit/session date (`getActiveState().date`), but program notes, SD notes, behavior notes, comm notes, School Shadow notes, mastered/hold/step stamps use today's date (`_todayLocal()`). If the visit date ≠ today (back-dated visit, or a visit left open overnight — daily sign-out is skipped while busy), notes land on two days. (Also pre-v-AX: saves before 07:00 were dated the previous day.) Proposed fix: everything saved during an active visit/session uses that visit/session date; warn when continuing a visit dated a different day. Existing notes not moved. **FIXED in v2026-10-20-BH (`_workDate()` + 'Recording for <date>' notice). Notes already split were not moved.**
 
 - [17 Oct 2026] **App only loads the latest 500 sessions across ALL clients** (also 1,000 behaviors, 500 ABC) in `loadFromSupabase`. With ~20 cases that is only ~5–6 weeks of history: older sessions are safe in the database but missing from long graphs, Print BIP ranges, stimulus history, etc. Grows worse with more data. Fix (own chat, before year-end): load each client's full history when the client is opened (per-client fetch), keep the global load small. Read-only change to loading; test carefully that saves/merges still use complete data. **FIXED in v2026-10-17-BD (per-client loading).**
 

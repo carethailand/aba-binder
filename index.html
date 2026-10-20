@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-18-BG -->
+<!-- BUILD v2026-10-20-BH -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-18-BG</title>
+<title>CARE Client Binder v2026-10-20-BH</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-18-BG';
+const APP_VERSION='v2026-10-20-BH';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-20-BH',date:'20 Oct 2026',added:'A notice shows when you are recording for a day other than today.',improved:'',fixed:'Notes and changes from one visit now all land on the visit\u2019s date. Before, if a visit was started for an earlier clinic/overlap day, general notes went to that day but program notes, SD notes, behavior notes, mastered / on-hold / step changes went to the day they were typed \u2014 so the Day report for the visit missed some of them.'},
   {version:'v2026-10-18-BG',date:'18 Oct 2026',added:'',improved:'',fixed:'Program Checklist, Stimuli history, Edit Last, Delete Last and the Therapist box: several sessions on the same day now appear in the order they were recorded (before, same-day sessions could appear in a random order).'},
   {version:'v2026-10-16-BF',date:'16 Oct 2026',added:'Day report / Finish & Preview now include every lesson note from that day at its own level: therapists\u2019 session lesson notes under the lesson, SD notes under the SD, and target notes under the target (target notes are dated from this version on).',improved:'',fixed:''},
   {version:'v2026-10-16-BE',date:'16 Oct 2026',added:'',improved:'Day report / Finish & Preview: teaching-step changes now show the step names, e.g. \u201cStep 1: MT alone \u2192 Step 2: Random Rotation\u201d.',fixed:''},
@@ -1416,6 +1417,9 @@ function getSessState(){try{return JSON.parse(sessionStorage.getItem(SESS_KEY))|
 function setSessState(o){sessionStorage.setItem(SESS_KEY,JSON.stringify(o));}
 function clearSessState(){sessionStorage.removeItem(SESS_KEY);}
 function updateSessState(key,val){const s=getSessState();s[key]=val;setSessState(s);}
+// The date everything saved now belongs to: the visit/session in progress for THIS client, else today.
+// (A supervisor may start a visit for an earlier clinic/overlap day — all notes and changes must land on that day.)
+function _workDate(){try{var st=getActiveState();if(st&&st.started&&st.clientId===selectedClientId&&st.date)return st.date;}catch(e){}return _todayLocal();}
 function getActiveState(){
   const ss=getSessState();
   if(ss.started&&ss.clientId===selectedClientId)return ss;
@@ -2437,7 +2441,7 @@ function _drStepLbl(t,sd,i){var st=(t.teachingSteps&&t.teachingSteps.length)?t.t
 function _drBehVal(x){return x.count!=null?x.count+'':x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+' min':'';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
-  const today=_todayLocal();
+  const today=_workDate(); // a visit for an earlier day opens that day's report
   modal('<div style="max-width:480px">'
    +'<h3 style="margin-bottom:6px">🖨 Day report — '+esc(c.name)+'</h3>'
    +'<p style="font-size:.8rem;color:#6b7280;margin-bottom:14px;line-height:1.5">Prints what was updated for this client on the chosen date: supervisor notes, behavior (notes + 4-week graphs), and lesson updates (notes, new / mastered / on-hold targets, step changes).</p>'
@@ -3082,7 +3086,7 @@ function renderClientView(){
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
   const _lsSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));})[0];
   const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
-  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+(_workDate()!==_todayLocal()?'<div class="alert alert-warn no-print" style="margin-bottom:10px">\uD83D\uDCC5 Recording for <strong>'+_drFmtD(_workDate())+'</strong> (not today) \u2014 everything you save in this visit is dated <strong>'+_drFmtD(_workDate())+'</strong>. Change the date in the bar above if that\u2019s not right.</div>':'')+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
 function _isDemoClient(cid){try{var c=(DB.clients||[]).find(function(x){return x.id===cid;});return !!c&&(c.name||'').trim().toLowerCase()==='demo client';}catch(e){return false;}}
 function isViewOnly(){
@@ -3447,7 +3451,7 @@ function _ssSaveAll(){
   if(miss){toast('Saved. Add “Total” for the NET target to record its %.','error');return;}
   toast('Saved ✓');render();
 }
-function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:_todayLocal(),author:currentUser.name,role:currentUser.role,text:t});_ssSave();_clearFieldDraft('ssn-note-in');render();}
+function _ssAddNote(){if(!['admin','supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add observation notes.');return;}var ss=_ssGet();var el=document.getElementById('ssn-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}ss.notes.push({id:uid(),date:_workDate(),author:currentUser.name,role:currentUser.role,text:t});_ssSave();_clearFieldDraft('ssn-note-in');render();}
 function _ssDelNote(btn){if(!['admin','supervisor','director'].includes(currentUser.role))return;var ss=_ssGet();ss.notes=(ss.notes||[]).filter(function(n){return n.id!==btn.dataset.id;});_ssSave();render();}
 function _ssSetMonth(v){if(v){_ssMonth=v;render();}}
 function _ssPctOf(o){return o&&o.op?Math.round(o.c/o.op*100):0;}
@@ -4522,7 +4526,7 @@ function checkFirstTrialCriteria(lesson,target){
   if(sd){
     const idx=sd.targets.findIndex(function(t){return t.id===target.id;});
     const next=sd.targets.slice(idx+1).find(function(t){return t.status==='not_started';});
-    const today=_todayLocal();
+    const today=_workDate();
     if(next){next.status='in_progress';next.introducedDate=today;toast('✅ '+target.name+' met criteria (all steps) → '+next.name+' now active',4000);}
     else{toast('✅ '+target.name+' met criteria — all steps complete!',3000);}
   }
@@ -4812,7 +4816,7 @@ function addBehaviorNote(){
   if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add behavior notes.');return;}
   var el=document.getElementById('beh-note-in');var txt=el?el.value.trim():'';if(!txt){toast('Type a note first');return;}
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.behaviorNotes)c.behaviorNotes=[];
-  c.behaviorNotes.push({id:uid(),date:_todayLocal(),authorId:currentUser.id,authorName:currentUser.name,text:txt});
+  c.behaviorNotes.push({id:uid(),date:_workDate(),authorId:currentUser.id,authorName:currentUser.name,text:txt});
   sbSaveClient(c);_clearFieldDraft('beh-note-in');render();
 }
 function delBehaviorNote(nid){
@@ -4937,15 +4941,15 @@ function setTargetStatus(lId,sId,tId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
   const t=sd.targets.find(x=>x.id===tId);if(!t)return;
-  const today=_todayLocal();
+  const today=_workDate();
   if(status==='mastered'){
     t.status='mastered';t.masteredDate=today;
     toast('✓ Target mastered: '+t.name);
   } else if(status==='on_hold'){
-    t._prevStatus=t.status;t.status='on_hold';t.heldDate=_todayLocal();
+    t._prevStatus=t.status;t.status='on_hold';t.heldDate=today;
     toast('⏸ Target on hold: '+t.name);
   } else if(status==='in_progress'){
-    if(t.status==='on_hold')t.resumedDate=_todayLocal();
+    if(t.status==='on_hold')t.resumedDate=today;
     t.status='in_progress';
     toast('▶ Target resumed: '+t.name);
   }
@@ -4970,13 +4974,13 @@ function _orderedSDs(sds){
 function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(function(x){return x.id===lId;});if(!l)return;
   const sd=l.sds.find(function(x){return x.id===sId;});if(!sd)return;
-  const today=_todayLocal();
+  const today=_workDate();
   const targets=sd.targets||[];
   if(status==='on_hold'){
     const aff=targets.filter(function(t){return t.status!=='on_hold'&&t.status!=='mastered';});
     if(!aff.length){toast('No active targets to hold in this SD');return;}
     if(!confirm('Put all '+aff.length+' active target(s) in this SD on hold?'))return;
-    aff.forEach(function(t){t._prevStatus=t.status;t.status='on_hold';t.heldDate=_todayLocal();});
+    aff.forEach(function(t){t._prevStatus=t.status;t.status='on_hold';t.heldDate=today;});
     toast('\u23F8 '+aff.length+' target(s) put on hold');
   } else if(status==='mastered'){
     const aff=targets.filter(function(t){return t.status!=='mastered';});
@@ -4986,7 +4990,7 @@ function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
     toast('\u2713 '+aff.length+' target(s) mastered');
   } else if(status==='in_progress'){
     const aff=targets.filter(function(t){return t.status==='on_hold';});
-    aff.forEach(function(t){t.status='in_progress';t.resumedDate=_todayLocal();});
+    aff.forEach(function(t){t.status='in_progress';t.resumedDate=today;});
     toast('\u25B6 '+aff.length+' target(s) resumed');
   }
   saveData();render();
@@ -5015,7 +5019,7 @@ function saveLessonSupNote(lId,idx){if(!requireActiveSession())return;
 }
 function confirmMastery(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
-  t.status='mastered';t.masteredDate=_todayLocal();
+  t.status='mastered';t.masteredDate=_workDate();
   const allMastered=l.sds.every(s=>s.targets.every(x=>x.status==='mastered'));
   saveData();toast(allMastered?'🎉 All targets mastered! Consider advancing phase.':'✓ Target mastered',allMastered?4000:2500);render();
 }
@@ -5094,7 +5098,7 @@ function saveReintroduce(){if(!requireActiveSession())return;
 
 
 // Dated record of lesson phase changes (hold, maintenance, archive, reintroduce…) for the Day report. Saved in lessons.phase_log.
-function _logPhase(l,from,to){if(!l||from===to)return;if(!Array.isArray(l.phaseLog))l.phaseLog=[];l.phaseLog.push({date:_todayLocal(),from:from||'',to:to||'',byName:(currentUser&&currentUser.name)||''});}
+function _logPhase(l,from,to){if(!l||from===to)return;if(!Array.isArray(l.phaseLog))l.phaseLog=[];l.phaseLog.push({date:_workDate(),from:from||'',to:to||'',byName:(currentUser&&currentUser.name)||''});}
 function setLessonStatus(lId,status){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   if(status==='maintenance'&&l.phase!=='maintenance'){
@@ -5175,8 +5179,8 @@ function saveNewLesson(){if(!requireActiveSession())return;
     phase:'acquisition',maintenanceSchedule:'',dtType:'successive',dtStepIndex:0,dtStepRecords:{},
     masteryRule:{pct:parseInt(document.getElementById('nl-pct').value)||80,sessions:parseInt(document.getElementById('nl-sess').value)||3,therapists:parseInt(document.getElementById('nl-tx').value)||2},
     sds:[{id:uid(),sd:document.getElementById('nl-sd').value.trim(),response:document.getElementById('nl-r').value.trim(),teachingStyle:style,
-      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'in_progress',introducedDate:_todayLocal(),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
-    supNotes:snote?[{date:_todayLocal(),author:currentUser.id,text:snote}]:[]
+      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'in_progress',introducedDate:_workDate(),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
+    supNotes:snote?[{date:_workDate(),author:currentUser.id,text:snote}]:[]
   });
   saveData();render();
 }
@@ -5296,7 +5300,7 @@ function saveSDNote(lId,sId,val){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
   const sd=l.sds.find(x=>x.id===sId);if(!sd)return;
   if(!sd.notes)sd.notes=[];
-  const _today=_todayLocal();
+  const _today=_workDate();
   // update existing entry for today from same author, otherwise push new
   const _existing=sd.notes.find(function(n){return n.date===_today&&n.authorId===currentUser.id;});
   if(_existing){_existing.text=_txt;}
@@ -5402,7 +5406,7 @@ function applyMeetCriteria(lId,sId,tId){if(!requireActiveSession())return;
   const el=document.getElementById('mc-step');if(!el)return;
   const newIdx=parseInt(el.value);
   const steps=t.teachingSteps||[];
-  const today=_todayLocal();
+  const today=_workDate();
   if(!t.dtStepChanges)t.dtStepChanges=[];
   const sessCountNow=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.lessonData&&s.lessonData.some(ld=>ld.lessonId===lId&&ld.targets&&ld.targets.some(tt=>tt.targetId===tId&&(tt.pct!=null||tt.rating!=null)&&!tt.na))).length;
   t.dtStepChanges.push({from:t.dtStepIndex||0,to:newIdx,date:today,sessionCount:sessCountNow,by:currentUser.id,byName:currentUser.name,reason:'meet_criteria'});
@@ -5442,7 +5446,7 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
       // Put existing target on hold (preserves all data)
       t.status='on_hold';
       // Create new target with same name, new data type
-      const newT={id:uid(),name:t.name,dataType:newDtype,taSteps:newDtype==='ta'?[]:[],chainingMode:'forward',stepMasteryRecords:{},ratingScale:newDtype==='rating'?{min:1,max:5,labels:{1:'1',2:'2',3:'3',4:'4',5:'5'}}:null,tallyGoal:null,tallyPeriod:null,status:'in_progress',introducedDate:_todayLocal(),masteredDate:'',trialCount:t.trialCount||10,teachingSteps:t.teachingSteps||[],dtStepIndex:0,dtStepChanges:[],firstTrialData:[],note:t.note||''};
+      const newT={id:uid(),name:t.name,dataType:newDtype,taSteps:newDtype==='ta'?[]:[],chainingMode:'forward',stepMasteryRecords:{},ratingScale:newDtype==='rating'?{min:1,max:5,labels:{1:'1',2:'2',3:'3',4:'4',5:'5'}}:null,tallyGoal:null,tallyPeriod:null,status:'in_progress',introducedDate:_workDate(),masteredDate:'',trialCount:t.trialCount||10,teachingSteps:t.teachingSteps||[],dtStepIndex:0,dtStepChanges:[],firstTrialData:[],note:t.note||''};
       sd.targets.push(newT);
       toast('Data type changed — original target put on hold, new target created.');
       sbSaveLesson(l);render();closeModal();
@@ -5451,7 +5455,7 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
   }
   t.trialCount=parseInt(document.getElementById('et-tr').value)||t.trialCount;
   t.status=document.getElementById('et-st').value;
-  const noteEl=document.getElementById('et-note');if(noteEl){const _nv=noteEl.value.trim();if(_nv!==(t.note||'')){t.note=_nv;t.noteDate=_todayLocal();}}
+  const noteEl=document.getElementById('et-note');if(noteEl){const _nv=noteEl.value.trim();if(_nv!==(t.note||'')){t.note=_nv;t.noteDate=_workDate();}}
   if(t.dataType==='ta'){
     const el=document.getElementById('et-st2');if(el)t.taSteps=el.value.split('\n').map(s=>s.trim()).filter(Boolean);
     const taOvEl=document.getElementById('et-tastep');
@@ -5472,7 +5476,7 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
       const newIdx=parseInt(dsEl.value)||0;
       if(newIdx!==(t.dtStepIndex||0)){
         if(!t.dtStepChanges)t.dtStepChanges=[];
-        const today=_todayLocal();
+        const today=_workDate();
         const scNow=DB.sessions.filter(s=>s.clientId===selectedClientId&&s.lessonData&&s.lessonData.some(ld=>ld.lessonId===lId&&ld.targets&&ld.targets.some(tt=>tt.targetId===tId&&(tt.pct!=null||tt.rating!=null)&&!tt.na))).length;
         t.dtStepChanges.push({from:t.dtStepIndex||0,to:newIdx,date:today,sessionCount:scNow,by:currentUser.id,byName:currentUser.name,reason:'manual_edit'});
         t.dtStepIndex=newIdx;
@@ -5500,7 +5504,7 @@ function deleteTarget(lId,sId,tId){
 function addLessonNote(lId){
   modal('<h3 style="margin-bottom:12px">General Notes</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveLessonNote(lId){if(!requireActiveSession())return;const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({date:_todayLocal(),author:currentUser.id,text});saveData();render();}
+function saveLessonNote(lId){if(!requireActiveSession())return;const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({date:_workDate(),author:currentUser.id,text});saveData();render();}
 
 // ════════════════════════════════════════════════
 // MAINTENANCE TAB
@@ -5982,7 +5986,7 @@ function markSDChange(lid,sdid){
   var l=DB.lessons.find(function(x){return x.id===lid;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===sdid;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
   sd.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
   var existing=sd.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-l="'+lid+'" data-sd="'+sdid+'" data-id="'+m.id+'" onclick="delSDChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
-  modal('<h3 style="margin-bottom:8px">Mark plan change</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the % graph and a ✎ marker on the first-trial strip.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_todayLocal()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. faded prompt, added SD-R" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-l="'+lid+'" data-sd="'+sdid+'" onclick="addSDChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+  modal('<h3 style="margin-bottom:8px">Mark plan change</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the % graph and a ✎ marker on the first-trial strip.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. faded prompt, added SD-R" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-l="'+lid+'" data-sd="'+sdid+'" onclick="addSDChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
 }
 function addSDChange(btn){
   var l=DB.lessons.find(function(x){return x.id===btn.dataset.l;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===btn.dataset.sd;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
@@ -6001,7 +6005,7 @@ function markBIPChange(bipId){
   var bip=(DB.bips||[]).find(function(x){return x.id===bipId;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
   bip.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
   var existing=bip.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-bip="'+bipId+'" data-id="'+m.id+'" onclick="delBIPChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
-  modal('<h3 style="margin-bottom:8px">Mark plan change — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the BIP graph.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_todayLocal()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. changed extinction, new reinforcer" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+  modal('<h3 style="margin-bottom:8px">Mark plan change — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the BIP graph.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. changed extinction, new reinforcer" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
 }
 function addBIPChange(btn){
   var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
@@ -6019,7 +6023,7 @@ function markBIPBreak(bipId){
   if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can mark breaks.');return;}
   var bip=(DB.bips||[]).find(function(x){return x.id===bipId;});if(!bip)return;if(!Array.isArray(bip.breaks))bip.breaks=[];
   var existing=bip.breaks.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(bk){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(bk.date)+' — '+esc(bk.reason||'break')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-bip="'+bipId+'" data-id="'+bk.id+'" onclick="delBIPBreak(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No breaks marked.</p>';
-  modal('<h3 style="margin-bottom:8px">Mark a break — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Breaks the graph line where data collection paused (illness, absence). Gaps over 4 weeks break automatically.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="brk-date" type="date" value="'+_todayLocal()+'" style="display:block"></label><label style="font-size:.8rem">Reason<select id="brk-reason" style="display:block"><option value="sick">Sick</option><option value="away">Away</option><option value="other">Other</option></select></label><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPBreak(this)">Add break</button></div><div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+  modal('<h3 style="margin-bottom:8px">Mark a break — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Breaks the graph line where data collection paused (illness, absence). Gaps over 4 weeks break automatically.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="brk-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem">Reason<select id="brk-reason" style="display:block"><option value="sick">Sick</option><option value="away">Away</option><option value="other">Other</option></select></label><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPBreak(this)">Add break</button></div><div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
 }
 function addBIPBreak(btn){
   var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;if(!Array.isArray(bip.breaks))bip.breaks=[];
@@ -6307,7 +6311,7 @@ function addCommNote(){
   if(!['junior','senior'].includes(currentUser.role)){toast('Only therapists can post team notes.');return;}
   var el=document.getElementById('comm-note-in');var t=el?el.value.trim():'';if(!t){toast('Type a note first');return;}
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c.commNotes)c.commNotes=[];
-  c.commNotes.push({id:uid(),date:_todayLocal(),author:currentUser.name,role:currentUser.role,text:t});
+  c.commNotes.push({id:uid(),date:_workDate(),author:currentUser.name,role:currentUser.role,text:t});
   sbSaveClient(c);_clearFieldDraft('comm-note-in');render();
 }
 function delCommNote(btn){
