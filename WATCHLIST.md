@@ -36,6 +36,8 @@
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
+- [20 Oct 2026] **Notes from one visit split across two days → Day report misses some** (reported by a supervisor). Cause: general/supervisor notes (`saveNote`) use the visit/session date (`getActiveState().date`), but program notes, SD notes, behavior notes, comm notes, School Shadow notes, mastered/hold/step stamps use today's date (`_todayLocal()`). If the visit date ≠ today (back-dated visit, or a visit left open overnight — daily sign-out is skipped while busy), notes land on two days. (Also pre-v-AX: saves before 07:00 were dated the previous day.) Proposed fix: everything saved during an active visit/session uses that visit/session date; warn when continuing a visit dated a different day. Existing notes not moved.
+
 
 
 
