@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-20-BI -->
+<!-- BUILD v2026-10-26-BJ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-20-BI</title>
+<title>CARE Client Binder v2026-10-26-BJ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-20-BI';
+const APP_VERSION='v2026-10-26-BJ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-26-BJ',date:'26 Oct 2026',added:'Day report / Finish & Preview: School Shadow notes are now included, and newly added lessons, SDs and targets show as \u201cNew lesson\u201d, \u201cNew SD: \u2026\u201d and \u201cNew target: \u2026\u201d on the day they were added.',improved:'',fixed:'Targets added with + Target (and new SDs) were missing from the Day report because the date they were added was never recorded.'},
   {version:'v2026-10-20-BI',date:'20 Oct 2026',added:'Clinic and Overlap visits on the same day now print separately: everything a supervisor saves during a visit is labelled with the visit type, and the Day report / Finish & Preview show only that type\u2019s updates. Session data and behavior still show for the whole day. New Type option \u201cAll visits (whole day)\u201d.',improved:'',fixed:''},
   {version:'v2026-10-20-BH',date:'20 Oct 2026',added:'A notice shows when you are recording for a day other than today.',improved:'',fixed:'Notes and changes from one visit now all land on the visit\u2019s date. Before, if a visit was started for an earlier clinic/overlap day, general notes went to that day but program notes, SD notes, behavior notes, mastered / on-hold / step changes went to the day they were typed \u2014 so the Day report for the visit missed some of them.'},
   {version:'v2026-10-18-BG',date:'18 Oct 2026',added:'',improved:'',fixed:'Program Checklist, Stimuli history, Edit Last, Delete Last and the Therapist box: several sessions on the same day now appear in the order they were recorded (before, same-day sessions could appear in a random order).'},
@@ -2513,17 +2514,19 @@ function _dayReportHtml(o){
   let lh='';
   DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
     let inner='';
+    if(l.addedDate===D&&KO(l.addedKind))inner+='<p style="color:#1a6f94"><strong>New lesson</strong></p>';
     (l.phaseLog||[]).filter(function(e){return e.date===D&&KO(e.kind);}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D&&KO(n.kind);}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
     sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.note&&String(ld.note).trim())inner+='<div style="margin:4px 0"><strong>Session note'+(s.txName?' ('+esc(s.txName)+')':'')+':</strong>'+_drParas(ld.note)+'</div>';});
     const multiSD=(l.sds||[]).length>1;
     (l.sds||[]).forEach(function(sd,si){
       let sdi='';
+      if(sd.addedDate===D&&KO(sd.addedKind))sdi+='<p style="color:#1a6f94"><strong>New SD'+(multiSD?'':':')+'</strong> '+(multiSD?'':esc(sd.sd||''))+(sd.response?' <span style="color:#6b7280">(R: '+esc(sd.response)+')</span>':'')+'</p>';
       (sd.notes||[]).filter(function(n){return n.date===D&&KO(n.kind);}).forEach(function(n){sdi+='<div style="margin:4px 0"><strong>'+(multiSD?'Note':'SD note'+(sd.sd?' ('+esc(sd.sd)+')':''))+':</strong>'+_drParas(n.text)+'</div>';});
       (sd.modHistory||[]).filter(function(m){return m.date===D&&KO(m.kind);}).forEach(function(m){sdi+='<p><strong>Modification:</strong> '+esc(m.label||'')+'</p>';});
       (sd.targets||[]).forEach(function(t){
         if(t.noteDate===D&&KO(t.noteKind)&&t.note)sdi+='<div style="margin:4px 0"><strong>Target note ('+esc(t.name)+'):</strong>'+_drParas(t.note)+'</div>';
-        if(t.introducedDate===D&&KO(t.introducedKind))sdi+='<p><strong>New target:</strong> '+esc(t.name)+'</p>';
+        if((t.addedDate===D&&KO(t.addedKind))||(!t.addedDate&&t.introducedDate===D&&KO(t.introducedKind)))sdi+='<p style="color:#1a6f94"><strong>New target:</strong> '+esc(t.name)+'</p>';
         if(t.masteredDate===D&&KO(t.masteredKind))sdi+='<p style="color:#2f6b2c"><strong>Mastered:</strong> '+esc(t.name)+'</p>';
         if(t.heldDate===D&&KO(t.heldKind))sdi+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
         if(t.resumedDate===D&&KO(t.resumedKind))sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
@@ -2545,6 +2548,9 @@ function _dayReportHtml(o){
     if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><div class="ldet">'+inner+'</div>';
   });
   body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
+  // School Shadow observation notes for this day (section only appears when there are some)
+  const ssNotes=((c.schoolShadow&&c.schoolShadow.notes)||[]).filter(function(n){return n.date===D&&KO(n.kind);});
+  if(ssNotes.length)body+='<div class="sec-title">School Shadow</div>'+ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('');
   // 4. Reinforcer list (optional, whole list)
   if(o.reinf&&(c.reinforcers||[]).length){
     body+='<div class="sec-title">Reinforcers</div><ul>'+c.reinforcers.map(function(r){return '<li>'+esc(r.name)+(r.type?' ('+esc(r.type)+')':'')+'</li>';}).join('')+'</ul>';
@@ -5184,11 +5190,11 @@ function saveNewLesson(){if(!requireActiveSession())return;
   const tallyPeriod=dtype==='tally'&&_nlTp?(parseInt(_nlTp.value)||null):null;
   const snote=document.getElementById('nl-snote').value.trim();
   DB.lessons.push({
-    id:uid(),clientId:selectedClientId,name,teachingStyle:style,
+    id:uid(),clientId:selectedClientId,addedDate:_workDate(),addedKind:_workKind(),name,teachingStyle:style,
     phase:'acquisition',maintenanceSchedule:'',dtType:'successive',dtStepIndex:0,dtStepRecords:{},
     masteryRule:{pct:parseInt(document.getElementById('nl-pct').value)||80,sessions:parseInt(document.getElementById('nl-sess').value)||3,therapists:parseInt(document.getElementById('nl-tx').value)||2},
-    sds:[{id:uid(),sd:document.getElementById('nl-sd').value.trim(),response:document.getElementById('nl-r').value.trim(),teachingStyle:style,
-      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'in_progress',introducedDate:_workDate(),introducedKind:_workKind(),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
+    sds:[{id:uid(),addedDate:_workDate(),addedKind:_workKind(),sd:document.getElementById('nl-sd').value.trim(),response:document.getElementById('nl-r').value.trim(),teachingStyle:style,
+      targets:[{id:uid(),name:document.getElementById('nl-tname').value.trim()||'Target 1',dataType:dtype,taSteps,chainingMode:chain,stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'in_progress',introducedDate:_workDate(),introducedKind:_workKind(),addedDate:_workDate(),addedKind:_workKind(),masteredDate:'',trialCount:parseInt(document.getElementById('nl-trials').value)||10}]}],
     supNotes:snote?[{kind:_workKind(),date:_workDate(),author:currentUser.id,text:snote}]:[]
   });
   saveData();render();
@@ -5212,7 +5218,7 @@ function saveNewSD(lId){
   const r=document.getElementById('ns-r').value.trim();
   if(!sd)return;
   const sdTeachingSteps=(document.getElementById('ns-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
-  l.sds.push({id:uid(),sd,response:r,teachingStyle:'DTT',teachingSteps:sdTeachingSteps,targets:[]});
+  l.sds.push({id:uid(),addedDate:_workDate(),addedKind:_workKind(),sd,response:r,teachingStyle:'DTT',teachingSteps:sdTeachingSteps,targets:[]});
   saveData();closeModal();render();
 }
 
@@ -5245,7 +5251,7 @@ function saveAddTarget(lId,sId){
   const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
   const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
   const teachingSteps=(document.getElementById('at-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',addedDate:_workDate(),addedKind:_workKind(),masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
   sd.targets.push(newT);
   sbSaveLesson(l);closeModal();render();
 }
@@ -5272,9 +5278,9 @@ function saveAddSDTarget(lId){
   const tallyGoal=dtype==='tally'?(parseInt(document.getElementById('at-tally-goal').value)||null):null;
   const tallyPeriod=dtype==='tally'?(parseInt(document.getElementById('at-tally-period').value)||null):null;
   const teachingSteps=(document.getElementById('at-tsteps')||{value:''}).value.split('\n').map(s=>s.trim()).filter(Boolean);
-  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
+  const newT={id:uid(),name:document.getElementById('at-n').value.trim()||'New target',dataType:dtype,taSteps,chainingMode:document.getElementById('at-cm')&&dtype==='ta'?document.getElementById('at-cm').value:'total',stepMasteryRecords:{},ratingScale:rl,tallyGoal,tallyPeriod,status:'not_started',introducedDate:'',addedDate:_workDate(),addedKind:_workKind(),masteredDate:'',trialCount:parseInt(document.getElementById('at-tr').value)||10,teachingSteps,dtStepIndex:0,dtStepChanges:[],firstTrialData:[]};
   const atTs=(document.getElementById('at-ts')||{}).value||'DTT';
-  if(sdSel==='new'){l.sds.push({id:uid(),sd:document.getElementById('at-sd-t').value.trim(),response:document.getElementById('at-r-t').value.trim(),teachingStyle:atTs,targets:[newT]});}
+  if(sdSel==='new'){l.sds.push({id:uid(),addedDate:_workDate(),addedKind:_workKind(),sd:document.getElementById('at-sd-t').value.trim(),response:document.getElementById('at-r-t').value.trim(),teachingStyle:atTs,targets:[newT]});}
   else{l.sds.find(s=>s.id===sdSel).targets.push(newT);}
   saveData();render();
 }
@@ -5455,7 +5461,7 @@ function saveEditTarget(lId,sId,tId){if(!requireActiveSession())return;
       // Put existing target on hold (preserves all data)
       t.status='on_hold';
       // Create new target with same name, new data type
-      const newT={id:uid(),name:t.name,dataType:newDtype,taSteps:newDtype==='ta'?[]:[],chainingMode:'forward',stepMasteryRecords:{},ratingScale:newDtype==='rating'?{min:1,max:5,labels:{1:'1',2:'2',3:'3',4:'4',5:'5'}}:null,tallyGoal:null,tallyPeriod:null,status:'in_progress',introducedDate:_workDate(),introducedKind:_workKind(),masteredDate:'',trialCount:t.trialCount||10,teachingSteps:t.teachingSteps||[],dtStepIndex:0,dtStepChanges:[],firstTrialData:[],note:t.note||''};
+      const newT={id:uid(),name:t.name,dataType:newDtype,taSteps:newDtype==='ta'?[]:[],chainingMode:'forward',stepMasteryRecords:{},ratingScale:newDtype==='rating'?{min:1,max:5,labels:{1:'1',2:'2',3:'3',4:'4',5:'5'}}:null,tallyGoal:null,tallyPeriod:null,status:'in_progress',introducedDate:_workDate(),introducedKind:_workKind(),addedDate:_workDate(),addedKind:_workKind(),masteredDate:'',trialCount:t.trialCount||10,teachingSteps:t.teachingSteps||[],dtStepIndex:0,dtStepChanges:[],firstTrialData:[],note:t.note||''};
       sd.targets.push(newT);
       toast('Data type changed — original target put on hold, new target created.');
       sbSaveLesson(l);render();closeModal();
