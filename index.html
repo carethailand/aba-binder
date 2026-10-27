@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BP -->
+<!-- BUILD v2026-10-27-BQ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BP</title>
+<title>CARE Client Binder v2026-10-27-BQ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BP';
+const APP_VERSION='v2026-10-27-BQ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BQ',date:'27 Oct 2026',added:'Printed BIP graphs (Day report, Finish & Preview, Print BIP) now show breaks like the screen: a dotted line with its label (\u27CB away, \u27CB sick, \u27CB 5w for a long gap) and a gap in the line between the last point before the break and the next one.',improved:'',fixed:''},
   {version:'v2026-10-27-BP',date:'27 Oct 2026',added:'',improved:'',fixed:'BIP graph breaks (Sick / Away / Other, and the automatic \u22654-week gap) now stop the line at the dotted break, instead of the line running straight through it.'},
   {version:'v2026-10-27-BO',date:'27 Oct 2026',added:'',improved:'',fixed:'Saving is more reliable: a change made while a previous save was still in progress (e.g. + Target then Hold straight away) could be marked as saved without being sent, and a save that failed because of the connection was not retried. Both now save correctly; a failed save stays pending and is retried automatically.'},
   {version:'v2026-10-27-BN',date:'27 Oct 2026',added:'First-trial strip: each marker now says what it is \u2014 a short line under the strip (e.g. \u201c\u270E 27.10.26 \u2014 Move to field of 9 items\u201d, \u201cS2 17.10.26 \u2014 Step 2: Random Rotation\u201d), plus a pop-up when you hover or long-press the marker.',improved:'',fixed:''},
@@ -2380,11 +2381,14 @@ function _svgChart(points,opts){
   const ticks=opts.ticks||[min,(min+max)/2,max];
   const grid=ticks.map(function(v){var y=yS(v).toFixed(1);var lab=opts.tickLabel?opts.tickLabel(v):(v+suffix);return '<line x1="'+pad+'" y1="'+y+'" x2="'+(W-pad)+'" y2="'+y+'" stroke="#eef1f4" stroke-width="1"/><text x="'+(pad-4)+'" y="'+y+'" text-anchor="end" dominant-baseline="middle" font-size="9" fill="#94a0ae">'+lab+'</text>';}).join('');
   const mastery=opts.mastery!=null?'<line x1="'+pad+'" y1="'+yS(opts.mastery).toFixed(1)+'" x2="'+(W-pad)+'" y2="'+yS(opts.mastery).toFixed(1)+'" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3"/>':'';
-  const poly='<polyline points="'+points.map(function(p,i){return (pad+i*xStep).toFixed(1)+','+yS(p.y).toFixed(1);}).join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';
-  const dots=points.map(function(p,i){return '<circle cx="'+(pad+i*xStep).toFixed(1)+'" cy="'+yS(p.y).toFixed(1)+'" r="3" fill="'+(p.color||color)+'" stroke="white" stroke-width="1.5"/>';}).join('');
+  // A break column ({brk:true,label}) ends the line; the next point starts a new piece (BIP breaks, v-BQ)
+  var segs=[],cur=[];points.forEach(function(p,i){if(p.brk){if(cur.length)segs.push(cur);cur=[];}else cur.push((pad+i*xStep).toFixed(1)+','+yS(p.y).toFixed(1));});if(cur.length)segs.push(cur);
+  const poly=segs.filter(function(sg){return sg.length>1;}).map(function(sg){return '<polyline points="'+sg.join(' ')+'" fill="none" stroke="'+color+'" stroke-width="2" stroke-linejoin="round"/>';}).join('');
+  const brks=points.map(function(p,i){if(!p.brk)return '';var x=(pad+i*xStep).toFixed(1);return '<line x1="'+x+'" y1="'+(pad-8)+'" x2="'+x+'" y2="'+(H-pad)+'" stroke="#9aa3ad" stroke-width="1.5" stroke-dasharray="2,3"/><text x="'+x+'" y="'+(pad-12)+'" text-anchor="middle" font-size="9" fill="#6b7280">\u27CB '+esc(p.label||'break')+'</text>';}).join('');
+  const dots=points.map(function(p,i){if(p.brk)return '';return '<circle cx="'+(pad+i*xStep).toFixed(1)+'" cy="'+yS(p.y).toFixed(1)+'" r="3" fill="'+(p.color||color)+'" stroke="white" stroke-width="1.5"/>';}).join('');
   const stp=Math.max(1,Math.ceil(n/9));
-  const labels=points.map(function(p,i){if(n<=6||i===0||i===n-1||i%stp===0){return '<text x="'+(pad+i*xStep).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" fill="#6b7280">'+esc(_mmmD(p.date))+'</text>';}return'';}).join('');
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:auto;display:block;margin:6px 0"><rect width="'+W+'" height="'+H+'" fill="#f9fafb" rx="4"/>'+grid+mastery+poly+dots+labels+'</svg>';
+  const labels=points.map(function(p,i){if(p.brk)return '';if(n<=6||i===0||i===n-1||i%stp===0){return '<text x="'+(pad+i*xStep).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="9" fill="#6b7280">'+esc(_mmmD(p.date))+'</text>';}return'';}).join('');
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" style="width:100%;height:auto;display:block;margin:6px 0"><rect width="'+W+'" height="'+H+'" fill="#f9fafb" rx="4"/>'+grid+mastery+brks+poly+dots+labels+'</svg>';
 }
 function _printHtml(html,pdfName){
   let _pf=document.getElementById('_print_frame');if(_pf)_pf.remove();
@@ -2437,7 +2441,7 @@ function _drTargetChart(l,t,entries){
   return '';
 }
 // One graph per measurement for a BIP in one setting (logs already limited to the window and setting)
-function _drBipCharts(b,logs){
+function _drBipCharts(b,logs,range){
   var names={frequency:'Frequency (count)',duration:'Duration (min)',rate:'Rate (per hr)'};
   var colors={frequency:'#d84a3a',duration:'#1f8ec4',rate:'#c98a12'};
   var goal=(b.goalValue!=null&&b.goalValue!=='')?parseFloat(b.goalValue):null;
@@ -2449,8 +2453,12 @@ function _drBipCharts(b,logs){
     var gp=order.map(function(d){var a=byDate[d];var s=a.reduce(function(p,q){return p+q;},0);return {date:d,y:+(meas==='frequency'?s:s/a.length).toFixed(2)};});
     var mx=Math.max.apply(null,gp.map(function(p){return p.y;}));if(goal!=null&&goal>mx)mx=goal;mx=(mx>0?mx*1.2:5);
     var suf=meas==='rate'?'/hr':meas==='duration'?'min':'';
+    var evs=gp.map(function(pt){return {t:'p',date:pt.date,p:pt};});
+    (Array.isArray(b.breaks)?b.breaks:[]).forEach(function(bk){if(!bk.date)return;if(range&&range.from&&bk.date<range.from)return;if(range&&range.to&&bk.date>range.to)return;evs.push({t:'b',date:bk.date,label:bk.reason||'break'});});
+    evs.sort(function(a,c){if(a.date!==c.date)return a.date<c.date?-1:1;return (a.t==='b'?0:1)-(c.t==='b'?0:1);});
+    var cols=[];evs.forEach(function(e){if(e.t==='b'){cols.push({brk:true,label:e.label});return;}var prev=cols[cols.length-1];if(prev&&!prev.brk){var gap=Math.round((new Date(e.date+'T00:00')-new Date(prev.date+'T00:00'))/864e5);if(gap>28)cols.push({brk:true,label:Math.round(gap/7)+'w'});}cols.push(e.p);});
     out+='<p style="margin:6px 0 0;font-size:.8rem;font-weight:600;color:'+colors[meas]+'">'+names[meas]+'</p>'
-      +_svgChart(gp,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:colors[meas],mastery:(goal!=null&&!isNaN(goal))?goal:null});
+      +_svgChart(cols,{min:0,max:mx,ticks:[0,+(mx/2).toFixed(1),+mx.toFixed(1)],suffix:suf,color:colors[meas],mastery:(goal!=null&&!isNaN(goal))?goal:null});
   });
   return out;
 }
@@ -2519,7 +2527,7 @@ function _dayReportHtml(o){
       shown=true;
       bh+='<p><strong>Today:</strong> '+dayLogs.map(function(x){return esc(_drBehVal(x))+(x.function&&(b.functions||[]).length>1?' ('+esc(bipFnLabel(x.function))+')':'')+(x.txName?' — '+esc(x.txName):'');}).join(', ')+'</p>';
       const win=inCx.filter(function(x){return x.date>=from&&x.date<=D;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      bh+=_drBipCharts(b,win)+'</div>';
+      bh+=_drBipCharts(b,win,{from:from,to:D})+'</div>';
     });
     if(!shown&&mods.length)bh+='<div class="lesson-title">'+esc(b.name)+'</div><div class="ldet">'+mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+'</p>';}).join('')+'</div>';
   });
@@ -2653,7 +2661,7 @@ function printBIP(){
       g.bips.filter(function(b){return _bipCtxList(b).indexOf(cx)>=0;}).forEach(function(b){
         const logs=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id&&_ctx(x.setting)===cx&&(!F||x.date>=F)&&x.date<=T;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
         body+='<div class="lesson-title">Data · '+_drCtxLabel(cx)+'</div><div class="ldet">'
-          +(logs.length?'<p style="font-size:.8rem;color:#6b7280">'+logs.length+' record'+(logs.length===1?'':'s')+' from '+_drFmtD(logs[0].date)+' to '+_drFmtD(logs[logs.length-1].date)+'</p>'+_drBipCharts(b,logs):'<p style="color:#94a0ae;font-style:italic">No data in this range.</p>')+'</div>';
+          +(logs.length?'<p style="font-size:.8rem;color:#6b7280">'+logs.length+' record'+(logs.length===1?'':'s')+' from '+_drFmtD(logs[0].date)+' to '+_drFmtD(logs[logs.length-1].date)+'</p>'+_drBipCharts(b,logs,{from:F,to:T}):'<p style="color:#94a0ae;font-style:italic">No data in this range.</p>')+'</div>';
       });
     });
   });
