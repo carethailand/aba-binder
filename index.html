@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BM -->
+<!-- BUILD v2026-10-27-BN -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BM</title>
+<title>CARE Client Binder v2026-10-27-BN</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BM';
+const APP_VERSION='v2026-10-27-BN';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BN',date:'27 Oct 2026',added:'First-trial strip: each marker now says what it is \u2014 a short line under the strip (e.g. \u201c\u270E 27.10.26 \u2014 Move to field of 9 items\u201d, \u201cS2 17.10.26 \u2014 Step 2: Random Rotation\u201d), plus a pop-up when you hover or long-press the marker.',improved:'',fixed:''},
   {version:'v2026-10-27-BM',date:'27 Oct 2026',added:'',improved:'Mark plan change: removed the extra explanation line.',fixed:'First-trial strip: a plan change (\u270E), step change or mastered marker dated after the last recorded dot (or before the first) now shows instead of being left out.'},
   {version:'v2026-10-27-BL',date:'27 Oct 2026',added:'School Shadow: supervisors can add, edit and delete notes for each school target (below the daily log) and each NET target (under its SD); therapists see them while recording. Latest 3 shown, \u201cShow all\u201d for older. On hold / Mastered lists for school and NET targets. The \u2713 / \u23F8 / \u21BA buttons are now dated, and target notes and status changes print in the Day report.',improved:'',fixed:'Safer School Shadow saving: a therapist saving the daily log and a supervisor editing targets or notes at the same time no longer overwrite each other \u2014 School Shadow now merges piece by piece (each day\u2019s log, each target, each note).'},
   {version:'v2026-10-27-BK',date:'27 Oct 2026',added:'School Shadow tab: new \u201cSchool checklist\u201d \u2014 school and NET targets down the side, recorded school days across the top (newest on the right), \u2713 where a target was recorded that day. Hover a tick for the C / P / \u2212 counts or NET %.',improved:'',fixed:''},
@@ -3887,8 +3888,8 @@ function _ftDotCell(ft){
     +'<div style="width:32px;height:32px;border-radius:50%;background:'+cc.bg+';color:'+cc.c+';display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700">'+lab+'</div>'
     +'<div style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2;margin-top:2px">'+fmtDateShort(ft.date)+'<br>'+(ft.txName?esc(ft.txName.split(' ')[0]):'')+'</div></div>';
 }
-function _ftMarkerCell(color,label){
-  return '<div style="display:flex;flex-direction:column;align-items:center;width:26px;flex:0 0 auto">'
+function _ftMarkerCell(color,label,title){
+  return '<div style="display:flex;flex-direction:column;align-items:center;width:26px;flex:0 0 auto"'+(title?' title="'+esc(title)+'"':'')+'>'
     +'<div style="margin-top:5px;display:flex;flex-direction:column;align-items:center">'
     +'<div style="width:1.5px;height:15px;background:'+color+';opacity:.55"></div>'
     +'<svg width="15" height="12" viewBox="0 0 16 13" aria-hidden="true"><path d="M8 0 L16 13 L0 13 Z" fill="'+color+'"/></svg>'
@@ -3899,9 +3900,9 @@ function _ftStrip(lesson,target,points,label,sd){
   points=(points||[]).slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   if(!points.length)return '';
   const marks=[];
-  (target.dtStepChanges||[]).filter(function(c){return c.date;}).forEach(function(c){marks.push({date:c.date,color:'#EF9F27',label:'S'+((c.to||0)+1)});});
-  if(target.masteredDate)marks.push({date:target.masteredDate,color:'#4fa14a',label:'M'});
-  if(sd&&sd.modHistory)sd.modHistory.forEach(function(m){if(m.date)marks.push({date:m.date,color:'#8b5cf6',label:'✎'});});
+  (target.dtStepChanges||[]).filter(function(c){return c.date;}).forEach(function(c){var st=(target.teachingSteps&&target.teachingSteps.length)?target.teachingSteps:((sd&&sd.teachingSteps)||[]);var nm=st[c.to||0];marks.push({date:c.date,color:'#EF9F27',label:'S'+((c.to||0)+1),text:'Step '+((c.to||0)+1)+(nm?': '+nm:'')});});
+  if(target.masteredDate)marks.push({date:target.masteredDate,color:'#4fa14a',label:'M',text:'Mastered'});
+  if(sd&&sd.modHistory)sd.modHistory.forEach(function(m){if(m.date)marks.push({date:m.date,color:'#8b5cf6',label:'✎',text:m.label||'Plan change'});});
   const byGap={};
   marks.forEach(function(m){
     var idx=points.findIndex(function(p){return p.date>=m.date;});
@@ -3910,12 +3911,15 @@ function _ftStrip(lesson,target,points,label,sd){
   });
   var cells='';
   points.forEach(function(ft,i){
-    if(byGap[i])byGap[i].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label);});
+    if(byGap[i])byGap[i].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label,_drFmtD(m.date)+' \u2014 '+m.text);});
     cells+=_ftDotCell(ft);
   });
-  if(byGap[points.length])byGap[points.length].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label);});
+  if(byGap[points.length])byGap[points.length].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label,_drFmtD(m.date)+' \u2014 '+m.text);});
+  // What each marker means, always visible (hover isn't possible on iPad / phone)
+  var legend=marks.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(m){return '<div><span style="font-weight:700;color:'+(m.color==='#4fa14a'?'#2f6b2c':m.color==='#8b5cf6'?'#6d28d9':'#a35f0a')+'">'+esc(m.label)+'</span> '+_drFmtD(m.date)+' \u2014 '+esc(m.text)+'</div>';}).join('');
   return '<div style="font-size:.72rem;color:var(--muted);margin:6px 0 3px">'+label+'</div>'
-    +'<div class="scroll-newest" style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>';
+    +'<div class="scroll-newest" style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>'
+    +(legend?'<div style="font-size:.74rem;color:#4b5563;line-height:1.5;margin:3px 0 4px">'+legend+'</div>':'');
 }
 function renderTargetSessionEntry(lesson,sd,target){
   // On-hold targets: no data input — the yellow renderHoldSection shows them below
