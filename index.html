@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BL -->
+<!-- BUILD v2026-10-27-BM -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BL</title>
+<title>CARE Client Binder v2026-10-27-BM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BL';
+const APP_VERSION='v2026-10-27-BM';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BM',date:'27 Oct 2026',added:'',improved:'Mark plan change: removed the extra explanation line.',fixed:'First-trial strip: a plan change (\u270E), step change or mastered marker dated after the last recorded dot (or before the first) now shows instead of being left out.'},
   {version:'v2026-10-27-BL',date:'27 Oct 2026',added:'School Shadow: supervisors can add, edit and delete notes for each school target (below the daily log) and each NET target (under its SD); therapists see them while recording. Latest 3 shown, \u201cShow all\u201d for older. On hold / Mastered lists for school and NET targets. The \u2713 / \u23F8 / \u21BA buttons are now dated, and target notes and status changes print in the Day report.',improved:'',fixed:'Safer School Shadow saving: a therapist saving the daily log and a supervisor editing targets or notes at the same time no longer overwrite each other \u2014 School Shadow now merges piece by piece (each day\u2019s log, each target, each note).'},
   {version:'v2026-10-27-BK',date:'27 Oct 2026',added:'School Shadow tab: new \u201cSchool checklist\u201d \u2014 school and NET targets down the side, recorded school days across the top (newest on the right), \u2713 where a target was recorded that day. Hover a tick for the C / P / \u2212 counts or NET %.',improved:'',fixed:''},
   {version:'v2026-10-26-BJ',date:'26 Oct 2026',added:'Day report / Finish & Preview: School Shadow notes are now included, and newly added lessons, SDs and targets show as \u201cNew lesson\u201d, \u201cNew SD: \u2026\u201d and \u201cNew target: \u2026\u201d on the day they were added.',improved:'',fixed:'Targets added with + Target (and new SDs) were missing from the Day report because the date they were added was never recorded.'},
@@ -3904,13 +3905,15 @@ function _ftStrip(lesson,target,points,label,sd){
   const byGap={};
   marks.forEach(function(m){
     var idx=points.findIndex(function(p){return p.date>=m.date;});
-    if(idx>0){(byGap[idx]=byGap[idx]||[]).push(m);}
+    if(idx<0)idx=points.length; // marker after the last dot -> show it at the end (was silently dropped)
+    (byGap[idx]=byGap[idx]||[]).push(m);
   });
   var cells='';
   points.forEach(function(ft,i){
     if(byGap[i])byGap[i].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label);});
     cells+=_ftDotCell(ft);
   });
+  if(byGap[points.length])byGap[points.length].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label);});
   return '<div style="font-size:.72rem;color:var(--muted);margin:6px 0 3px">'+label+'</div>'
     +'<div class="scroll-newest" style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>';
 }
@@ -6151,7 +6154,7 @@ function markSDChange(lid,sdid){
   var l=DB.lessons.find(function(x){return x.id===lid;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===sdid;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
   sd.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
   var existing=sd.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-l="'+lid+'" data-sd="'+sdid+'" data-id="'+m.id+'" onclick="delSDChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
-  modal('<h3 style="margin-bottom:8px">Mark plan change</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the % graph and a ✎ marker on the first-trial strip.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. faded prompt, added SD-R" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-l="'+lid+'" data-sd="'+sdid+'" onclick="addSDChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+  modal('<h3 style="margin-bottom:8px">Mark plan change</h3><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. faded prompt, added SD-R" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-l="'+lid+'" data-sd="'+sdid+'" onclick="addSDChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
 }
 function addSDChange(btn){
   var l=DB.lessons.find(function(x){return x.id===btn.dataset.l;});if(!l)return;var sd=(l.sds||[]).find(function(x){return x.id===btn.dataset.sd;});if(!sd)return;if(!Array.isArray(sd.modHistory))sd.modHistory=[];
@@ -6170,7 +6173,7 @@ function markBIPChange(bipId){
   var bip=(DB.bips||[]).find(function(x){return x.id===bipId;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
   bip.modHistory.forEach(function(m){if(!m.id)m.id=uid();});
   var existing=bip.modHistory.slice().sort(function(a,b){return (''+a.date).localeCompare(''+b.date);}).map(function(m){return '<div style="display:flex;align-items:center;gap:8px;font-size:.82rem;margin-bottom:4px"><span style="flex:1">'+esc(m.date)+' — '+esc(m.label||'plan change')+'</span><button class="btn btn-xs" style="color:#a3392b;border:1px solid #e6b3aa;background:#fff" data-bip="'+bipId+'" data-id="'+m.id+'" onclick="delBIPChange(this)">✕</button></div>';}).join('')||'<p style="font-size:.8rem;color:var(--muted)">No plan changes marked.</p>';
-  modal('<h3 style="margin-bottom:8px">Mark plan change — '+esc(bip.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:8px">Adds a labelled line on the BIP graph.</p><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. changed extinction, new reinforcer" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
+  modal('<h3 style="margin-bottom:8px">Mark plan change — '+esc(bip.name)+'</h3><div style="margin-bottom:10px">'+existing+'</div><div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap"><label style="font-size:.8rem">Date<input id="chg-date" type="date" value="'+_workDate()+'" style="display:block"></label><label style="font-size:.8rem;flex:1;min-width:160px">Label<input id="chg-label" type="text" placeholder="e.g. changed extinction, new reinforcer" style="display:block;width:100%"></label></div><div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end"><button class="btn btn-primary" data-bip="'+bipId+'" onclick="addBIPChange(this)">Add change</button><button class="btn btn-outline" onclick="closeModal()">Close</button></div>');
 }
 function addBIPChange(btn){
   var bip=(DB.bips||[]).find(function(x){return x.id===btn.dataset.bip;});if(!bip)return;if(!Array.isArray(bip.modHistory))bip.modHistory=[];
