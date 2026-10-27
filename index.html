@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BO -->
+<!-- BUILD v2026-10-27-BP -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BO</title>
+<title>CARE Client Binder v2026-10-27-BP</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BO';
+const APP_VERSION='v2026-10-27-BP';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BP',date:'27 Oct 2026',added:'',improved:'',fixed:'BIP graph breaks (Sick / Away / Other, and the automatic \u22654-week gap) now stop the line at the dotted break, instead of the line running straight through it.'},
   {version:'v2026-10-27-BO',date:'27 Oct 2026',added:'',improved:'',fixed:'Saving is more reliable: a change made while a previous save was still in progress (e.g. + Target then Hold straight away) could be marked as saved without being sent, and a save that failed because of the connection was not retried. Both now save correctly; a failed save stays pending and is retried automatically.'},
   {version:'v2026-10-27-BN',date:'27 Oct 2026',added:'First-trial strip: each marker now says what it is \u2014 a short line under the strip (e.g. \u201c\u270E 27.10.26 \u2014 Move to field of 9 items\u201d, \u201cS2 17.10.26 \u2014 Step 2: Random Rotation\u201d), plus a pop-up when you hover or long-press the marker.',improved:'',fixed:''},
   {version:'v2026-10-27-BM',date:'27 Oct 2026',added:'',improved:'Mark plan change: removed the extra explanation line.',fixed:'First-trial strip: a plan change (\u270E), step change or mastered marker dated after the last recorded dot (or before the first) now shows instead of being left out.'},
@@ -6260,7 +6261,8 @@ function drawBIPChart(bip,_cxOv,_idSfx){
   });
   var _breakIdx=[];_cols.forEach(function(c,i){if(c.type==='break')_breakIdx.push(i);});
   var _breakCells=_breakIdx.map(function(i){return {idx:i};});
-  var _spansBreak=function(a,b){var lo=Math.min(a,b),hi=Math.max(a,b);for(var i=0;i<_breakIdx.length;i++){if(_breakIdx[i]>lo&&_breakIdx[i]<hi)return true;}return false;};
+  // The line must stop at a break. Chart.js treats the empty break column as a segment end-point (spanGaps), so include the ends (v-BP fix).
+  var _spansBreak=function(a,b){var lo=Math.min(a,b),hi=Math.max(a,b);for(var i=0;i<_breakIdx.length;i++){if(_breakIdx[i]>=lo&&_breakIdx[i]<=hi)return true;}return false;};
   const bipModLines=((bip.modHistory)||[]).map(function(m){
     if(!m.date)return null;
     var ci=-1;for(var i=0;i<_cols.length;i++){if(_cols[i].type==='session'&&_cols[i].date>=m.date){ci=i;break;}}
