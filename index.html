@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BN -->
+<!-- BUILD v2026-10-27-BO -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BN</title>
+<title>CARE Client Binder v2026-10-27-BO</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BN';
+const APP_VERSION='v2026-10-27-BO';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BO',date:'27 Oct 2026',added:'',improved:'',fixed:'Saving is more reliable: a change made while a previous save was still in progress (e.g. + Target then Hold straight away) could be marked as saved without being sent, and a save that failed because of the connection was not retried. Both now save correctly; a failed save stays pending and is retried automatically.'},
   {version:'v2026-10-27-BN',date:'27 Oct 2026',added:'First-trial strip: each marker now says what it is \u2014 a short line under the strip (e.g. \u201c\u270E 27.10.26 \u2014 Move to field of 9 items\u201d, \u201cS2 17.10.26 \u2014 Step 2: Random Rotation\u201d), plus a pop-up when you hover or long-press the marker.',improved:'',fixed:''},
   {version:'v2026-10-27-BM',date:'27 Oct 2026',added:'',improved:'Mark plan change: removed the extra explanation line.',fixed:'First-trial strip: a plan change (\u270E), step change or mastered marker dated after the last recorded dot (or before the first) now shows instead of being left out.'},
   {version:'v2026-10-27-BL',date:'27 Oct 2026',added:'School Shadow: supervisors can add, edit and delete notes for each school target (below the daily log) and each NET target (under its SD); therapists see them while recording. Latest 3 shown, \u201cShow all\u201d for older. On hold / Mastered lists for school and NET targets. The \u2713 / \u23F8 / \u21BA buttons are now dated, and target notes and status changes print in the Day report.',improved:'',fixed:'Safer School Shadow saving: a therapist saving the daily log and a supervisor editing targets or notes at the same time no longer overwrite each other \u2014 School Shadow now merges piece by piece (each day\u2019s log, each target, each note).'},
@@ -967,21 +968,32 @@ async function sbSaveClient(cObj){
     try{toast('\u26A0 Could not save - check your connection and try again.','error',6000);}catch(e){}
     return false;
   }
-  await sbUpsert('clients',_row);
+  // Snapshot exactly what is sent BEFORE waiting, and only mark it saved if the server confirms (v-BO).
+  // (Before: the baseline was re-read from live objects after the wait, so an edit made during the save was
+  //  marked saved without being sent; and a failed save was marked saved too, so it was never retried.)
+  var _sentJs=JSON.stringify(_row);
+  var _up=await sbUpsert('clients',_row);
+  if(_up===null){
+    try{showSaveStatus('error','Save failed - check connection and try again');}catch(e){}
+    return false; // baseline untouched -> the change stays pending and flushSave retries it
+  }
   try{var _mc=rowToClient(_row);var _c=DB.clients.find(function(x){return x.id===cObj.id;});if(_c)Object.assign(_c,_mc);}catch(e){}
-  _recBaseline['clients:'+cObj.id]=JSON.stringify(_row);
+  _recBaseline['clients:'+cObj.id]=_sentJs;
   hideSyncStatus();
   return true;
 }
+// Snapshot what is sent BEFORE the network wait; mark saved only on success (v-BO) — see sbSaveClient.
 async function sbSaveLesson(lObj){
-  var _row=lessonToRow(lObj);
-  await sbUpsert('lessons',_row);
-  _recBaseline['lessons:'+lObj.id]=JSON.stringify(_row);
+  var _row=lessonToRow(lObj),_js=JSON.stringify(_row);
+  var _r=await sbUpsert('lessons',JSON.parse(_js));
+  if(_r!==null)_recBaseline['lessons:'+lObj.id]=_js;
+  return _r;
 }
 async function sbSaveBIP(bObj){
-  var _row=bipToRow(bObj);
-  await sbUpsert('bips',_row);
-  _recBaseline['bips:'+bObj.id]=JSON.stringify(_row);
+  var _row=bipToRow(bObj),_js=JSON.stringify(_row);
+  var _r=await sbUpsert('bips',JSON.parse(_js));
+  if(_r!==null)_recBaseline['bips:'+bObj.id]=_js;
+  return _r;
 }
 async function sbSaveSession(rowObj){
   // Retry up to 3 times (helps on flaky mobile/iPad connections)
@@ -1004,9 +1016,10 @@ async function sbSaveUser(uObj){
   return await sbUpsert('users',userToRow(uObj));
 }
 async function sbSaveABC(aObj){
-  var _row=abcToRow(aObj);
-  await sbUpsert('abc_data',_row);
-  _recBaseline['abc_data:'+aObj.id]=JSON.stringify(_row);
+  var _row=abcToRow(aObj),_js=JSON.stringify(_row);
+  var _r=await sbUpsert('abc_data',JSON.parse(_js));
+  if(_r!==null)_recBaseline['abc_data:'+aObj.id]=_js;
+  return _r;
 }
 async function deleteRecord(table,id){
   await sbFetch(table,'DELETE',null,'id=eq.'+id);
