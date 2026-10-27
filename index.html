@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-26-BJ -->
+<!-- BUILD v2026-10-27-BK -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-26-BJ</title>
+<title>CARE Client Binder v2026-10-27-BK</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-26-BJ';
+const APP_VERSION='v2026-10-27-BK';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-27-BK',date:'27 Oct 2026',added:'School Shadow tab: new \u201cSchool checklist\u201d \u2014 school and NET targets down the side, recorded school days across the top (newest on the right), \u2713 where a target was recorded that day. Hover a tick for the C / P / \u2212 counts or NET %.',improved:'',fixed:''},
   {version:'v2026-10-26-BJ',date:'26 Oct 2026',added:'Day report / Finish & Preview: School Shadow notes are now included, and newly added lessons, SDs and targets show as \u201cNew lesson\u201d, \u201cNew SD: \u2026\u201d and \u201cNew target: \u2026\u201d on the day they were added.',improved:'',fixed:'Targets added with + Target (and new SDs) were missing from the Day report because the date they were added was never recorded.'},
   {version:'v2026-10-20-BI',date:'20 Oct 2026',added:'Clinic and Overlap visits on the same day now print separately: everything a supervisor saves during a visit is labelled with the visit type, and the Day report / Finish & Preview show only that type\u2019s updates. Session data and behavior still show for the whole day. New Type option \u201cAll visits (whole day)\u201d.',improved:'',fixed:''},
   {version:'v2026-10-20-BH',date:'20 Oct 2026',added:'A notice shows when you are recording for a day other than today.',improved:'',fixed:'Notes and changes from one visit now all land on the visit\u2019s date. Before, if a visit was started for an earlier clinic/overlap day, general notes went to that day but program notes, SD notes, behavior notes, mastered / on-hold / step changes went to the day they were typed \u2014 so the Day report for the visit missed some of them.'},
@@ -3517,6 +3518,28 @@ function _ssReportSummary(ss,fromD,toD,graphsOn){
   if(netHtml)out+='<p style="margin:10px 0 2px;font-weight:700;color:#234b63">NET targets (% correct)</p>'+netHtml;
   return out;
 }
+// School Shadow checklist (v-BK): school + NET targets × recorded school days (last 30, newest on the right). Read-only.
+function _ssChecklist(ss){
+  var log=ss.log||{},nlog=ss.netLog||{},dates={};
+  Object.keys(log).forEach(function(d){var cl=(log[d]||{}).cells||{};if(Object.keys(cl).some(function(k){var v=cl[k];return v==='C'||v==='P'||v==='-';}))dates[d]=1;});
+  Object.keys(nlog).forEach(function(d){var dt=(nlog[d]||{}).data||{};if(Object.keys(dt).length)dates[d]=1;});
+  var cols=Object.keys(dates).sort().slice(-30);
+  var cnt=function(t,d){var cl=(log[d]||{}).cells||{},n={C:0,P:0,'-':0};Object.keys(cl).forEach(function(k){if(k.indexOf(t.id+'_')===0&&n[cl[k]]!=null)n[cl[k]]++;});return n;};
+  var hasT=function(t){return cols.some(function(d){var n=cnt(t,d);return n.C+n.P+n['-']>0;});};
+  var hasN=function(nt){return cols.some(function(d){return !!(((nlog[d]||{}).data||{})[nt.id]);});};
+  var tg=(ss.targets||[]).filter(function(t){return (t.status||'active')==='active'||hasT(t);});
+  var net=(ss.net||[]).filter(function(t){return (t.status||'active')==='active'||hasN(t);});
+  var head='<div class="section-title">📋 School checklist</div>';
+  if(!cols.length||(!tg.length&&!net.length))return '<div class="card">'+head+'<p style="font-size:.82rem;color:var(--muted);margin:0">No school days recorded yet.</p></div>';
+  var hdr='<tr><td style="background:#e2f0f7;font-weight:700;min-width:150px;padding:7px 10px;position:sticky;left:0;z-index:3">Target</td>'+cols.map(function(d){var tx=((log[d]||{}).tx)||((nlog[d]||{}).tx)||'';return '<td style="text-align:center;background:#e2f0f7;padding:4px 6px;min-width:52px;vertical-align:middle"><div style="white-space:nowrap;font-size:.72rem;font-weight:600;line-height:1.5">'+_drFmtD(d)+'<br>'+esc(tx.split(' ')[0])+'</div></td>';}).join('')+'</tr>';
+  var cell=function(on,title,bg){return '<td style="text-align:center;background:'+bg+';padding:6px"'+(title?' title="'+esc(title)+'"':'')+'>'+(on?'<div style="width:22px;height:22px;background:#4fa14a;border-radius:4px;display:flex;align-items:center;justify-content:center;margin:0 auto;color:#fff;font-size:.8rem">✓</div>':'<div style="width:22px;height:22px;border:2px solid #d5dae1;border-radius:4px;margin:0 auto"></div>')+'</td>';};
+  var sec=function(label){return '<tr><td style="background:#eef1f4;font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;padding:5px 10px;position:sticky;left:0;z-index:2">'+label+'</td><td colspan="'+cols.length+'" style="background:#eef1f4"></td></tr>';};
+  var name=function(t,bg){return '<td style="padding:7px 10px;font-size:.87rem;background:'+bg+';border-right:2px solid #b8dcef;position:sticky;left:0;z-index:2;min-width:150px">'+esc(t.name)+((t.status||'active')!=='active'?' <span style="font-size:.72rem;color:var(--muted)">(retired)</span>':'')+'</td>';};
+  var rows='';
+  if(tg.length){rows+=sec('School targets');tg.forEach(function(t,i){var bg=i%2?'#ffffff':'#f0faed';rows+='<tr>'+name(t,bg)+cols.map(function(d){var n=cnt(t,d),tot=n.C+n.P+n['-'];return cell(tot>0,tot?('C '+n.C+' · P '+n.P+' · − '+n['-']):'',bg);}).join('')+'</tr>';});}
+  if(net.length){rows+=sec('NET targets');net.forEach(function(nt,i){var bg=i%2?'#ffffff':'#f0faed';rows+='<tr>'+name(nt,bg)+cols.map(function(d){var v=((nlog[d]||{}).data||{})[nt.id];return cell(!!v,v?(v.pct+'% ('+v.c+'/'+v.t+')'):'',bg);}).join('')+'</tr>';});}
+  return '<div class="card">'+head+'<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+hdr+rows+'</table></div><p style="font-size:.72rem;color:var(--muted);margin:6px 0 0">✓ = recorded that day (hover or long-press a tick for C / P / − counts or NET %). Last 30 school days, newest on the right.</p></div>';
+}
 function _ssMonthlyOverview(ss){
   if(!_ssMonth)_ssMonth=_todayLocal().slice(0,7);
   var mon=_ssMonth;
@@ -3622,6 +3645,7 @@ function renderSchoolShadowTab(){
   }
   h+='</div>';
   if(active)h+='<div class="card"><div class="section-title">📝 Session note (for the team)</div><p style="font-size:.76rem;color:var(--muted);margin:0 0 6px">A note about today’s shadow — saved to Team Notes when you End &amp; Save.</p><textarea id="ss-sess-notes" rows="3" placeholder="How today went, anything the team should know..." style="font-size:.84rem" oninput="var _st=getSessState();_st._ssNote=this.value;setSessState(_st);">'+esc((getSessState()._ssNote)||'')+'</textarea></div>';
+  h+=_ssChecklist(ss);
   h+=_ssMonthlyOverview(ss);
   h+='</div>';
   return h;
