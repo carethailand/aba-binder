@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-29-BR -->
+<!-- BUILD v2026-10-29-BS -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-29-BR</title>
+<title>CARE Client Binder v2026-10-29-BS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-29-BR';
+const APP_VERSION='v2026-10-29-BS';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-29-BS',date:'29 Oct 2026',added:'',improved:'',fixed:'BIP rate logged by a supervisor during a visit is now divided by the hours watched. A visit has no hours box in the top bar, so the app used 1 hour and graphed the raw count (13 times in 2 hours showed as 13/hr instead of 6.5/hr). Supervisors now type the hours next to the count; it is remembered for the rest of the visit.'},
   {version:'v2026-10-29-BR',date:'29 Oct 2026',added:'',improved:'The BIP tab says which data each graph shows (🧩 1:1 or 🏫 School Shadow).',fixed:'Starting a session now always opens the BIP tab on that session\'s setting. Before, if the 1:1 / School Shadow switch had been tapped earlier, a School Shadow session could keep showing the 1:1 graph, and data logged there went to the School graph so it seemed not to show up. If you look at the other setting during a session, the Log box is replaced by a button to switch back.'},
   {version:'v2026-10-27-BQ',date:'27 Oct 2026',added:'Printed BIP graphs (Day report, Finish & Preview, Print BIP) now show breaks like the screen: a dotted line with its label (\u27CB away, \u27CB sick, \u27CB 5w for a long gap) and a gap in the line between the last point before the break and the next one.',improved:'',fixed:''},
   {version:'v2026-10-27-BP',date:'27 Oct 2026',added:'',improved:'',fixed:'BIP graph breaks (Sick / Away / Other, and the automatic \u22654-week gap) now stop the line at the dotted break, instead of the line running straight through it.'},
@@ -6004,7 +6005,9 @@ function renderBehaviorTab(){
       :'';
     const freqField='<div class="fg-sm"><label>Count</label><input type="number" id="bxfreq_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
     const durField='<div class="fg-sm"><label>Duration</label><input type="text" id="bxdur_'+bip.id+'" min="0" placeholder="e.g. 1:15" style="width:90px"><div style="font-size:.7rem;color:var(--muted);margin-top:2px">0:05 = 5 sec · 1:15 = 1 min 15 sec</div></div>';
-    const rateField='<div class="fg-sm"><label>Count (for rate)</label><input type="number" id="bxcnt_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>';
+    const rateField='<div class="fg-sm"><label>Count (for rate)</label><input type="number" id="bxcnt_'+bip.id+'" min="0" placeholder="0" style="width:70px"></div>'
+      // No therapist session = a supervision visit: its hours aren't in the top bar, so ask here (v-BS)
+      +(_sessStarted?'':'<div class="fg-sm"><label>Hours watched</label><input type="number" id="bxhrs_'+bip.id+'" step=".25" min=".25" max="12" placeholder="hrs" value="'+esc(String((getSupState().clientId===selectedClientId&&getSupState().bipHrs)||''))+'" style="width:70px"></div>');
     const logFields=allMeas.map(m=>m==='frequency'?freqField:m==='duration'?durField:rateField).join('');
     const logForm='<div style="background:#f5f6f8;border-radius:8px;padding:10px;margin-bottom:12px">'
       +'<div class="form-row" style="margin-bottom:0">'
@@ -6126,7 +6129,12 @@ function logBIP(bipId){
   if(allMeas.includes('frequency')) entry.count=parseInt(freqEl&&freqEl.value)||0;
   if(allMeas.includes('rate')){
     const sessTimeEl=document.getElementById('ss-time');
-    const sessHrs=sessTimeEl?parseFloat(sessTimeEl.value)||1:1;
+    // A therapist session has its hours in the top bar; a supervision visit types them next to the count.
+    // (Before v-BS a visit fell back to 1 hour, so the raw count was graphed as the rate.)
+    const hrsEl=sessTimeEl?null:document.getElementById('bxhrs_'+bipId);
+    const sessHrs=sessTimeEl?parseFloat(sessTimeEl.value)||1:(hrsEl?parseFloat(hrsEl.value)||0:1);
+    if(hrsEl&&!(sessHrs>0)){toast('Type the hours you watched, so the rate per hour is right');try{hrsEl.focus();}catch(e){}return;}
+    if(hrsEl)updateSupState('bipHrs',sessHrs);
     const cnt=parseInt(cntEl&&cntEl.value)||0;
     entry.count=(entry.count||0)+cnt;
     entry.rate=sessHrs>0?Math.round(cnt/sessHrs*10)/10:null;
