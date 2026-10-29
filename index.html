@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-27-BQ -->
+<!-- BUILD v2026-10-29-BR -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-27-BQ</title>
+<title>CARE Client Binder v2026-10-29-BR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-27-BQ';
+const APP_VERSION='v2026-10-29-BR';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-29-BR',date:'29 Oct 2026',added:'',improved:'The BIP tab says which data each graph shows (🧩 1:1 or 🏫 School Shadow).',fixed:'Starting a session now always opens the BIP tab on that session\'s setting. Before, if the 1:1 / School Shadow switch had been tapped earlier, a School Shadow session could keep showing the 1:1 graph, and data logged there went to the School graph so it seemed not to show up. If you look at the other setting during a session, the Log box is replaced by a button to switch back.'},
   {version:'v2026-10-27-BQ',date:'27 Oct 2026',added:'Printed BIP graphs (Day report, Finish & Preview, Print BIP) now show breaks like the screen: a dotted line with its label (\u27CB away, \u27CB sick, \u27CB 5w for a long gap) and a gap in the line between the last point before the break and the next one.',improved:'',fixed:''},
   {version:'v2026-10-27-BP',date:'27 Oct 2026',added:'',improved:'',fixed:'BIP graph breaks (Sick / Away / Other, and the automatic \u22654-week gap) now stop the line at the dotted break, instead of the line running straight through it.'},
   {version:'v2026-10-27-BO',date:'27 Oct 2026',added:'',improved:'',fixed:'Saving is more reliable: a change made while a previous save was still in progress (e.g. + Target then Hold straight away) could be marked as saved without being sent, and a save that failed because of the connection was not retried. Both now save correctly; a failed save stays pending and is retried automatically.'},
@@ -1456,7 +1457,7 @@ function startSession(){
   const d=(document.getElementById('pre-date')||{}).value||_todayLocal();
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
-  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
+  const _set=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
   render();
 }
 function startSessionFromBar(){
@@ -1464,7 +1465,7 @@ function startSessionFromBar(){
   const d=(document.getElementById('ss-date')||{}).value||_todayLocal();
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'individual';
-  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
+  const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
   render();
 }
 function confirmEndSession(){
@@ -2105,14 +2106,14 @@ function startSupervision(){
   const snap=snapshotClient();
   const _supSet=(document.getElementById('sv-setting')||{}).value||'therapy';
   try{sessionStorage.setItem('sup_snap',JSON.stringify(snap));}catch(e){console.warn('Snap too large for sessionStorage',e);}
-  setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true});
+  _behViewCtx=null;setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true});
   render();
 }
 function startSessionAsSup(){
   if(typeof hideUnsavedBanner==='function')hideUnsavedBanner();
   const d=(document.getElementById('sv-date')||{}).value||_todayLocal();
   const _set=(document.getElementById('sv-setting')||{}).value||'therapy';
-  _ssViewDate='';setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
+  _ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
   selectedTab='session';
   render();
 }
@@ -5918,6 +5919,9 @@ function renderBehaviorTab(){
   const behCtx=_currentBehCtx();
   const _bhSessCtx=_behSessCtx();
   const _canLog=(_bhSessCtx!=null)&&(_bhSessCtx===behCtx);
+  // Viewing one setting during a session in the other: a log would land on the other graph, so offer a switch instead (v-BR)
+  const _ctxNm=function(c){return c==='shadow'?'🏫 School Shadow':'🧩 1:1';};
+  const _switchMsg=(_bhSessCtx!=null&&_bhSessCtx!==behCtx)?'<div class="no-print" style="font-size:.8rem;color:#6b4e0c;background:#fdf6e3;border:1px solid #f0dca8;border-radius:8px;padding:10px;margin-bottom:12px;line-height:1.5">You are looking at the <strong>'+_ctxNm(behCtx)+'</strong> graph, but this is a <strong>'+_ctxNm(_bhSessCtx)+'</strong> session. <button class="btn btn-xs btn-primary" style="margin-left:4px" onclick="_setBehCtx(\''+_bhSessCtx+'\')">Switch to '+_ctxNm(_bhSessCtx)+' to log</button></div>':'';
   const _ctxToggle='<div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-right:8px">'
     +'<button class="btn btn-xs no-print" style="border:none;border-radius:0;'+(behCtx==='1:1'?'background:#1f8ec4;color:#fff':'background:#fff;color:#234b63')+'" onclick="_setBehCtx(\'1:1\')">🧩 1:1</button>'
     +'<button class="btn btn-xs no-print" style="border:none;border-radius:0;'+(behCtx==='shadow'?'background:#c98a12;color:#fff':'background:#fff;color:#8a6410')+'" onclick="_setBehCtx(\'shadow\')">🏫 School Shadow</button></div>';
@@ -6010,12 +6014,12 @@ function renderBehaviorTab(){
       +'<div style="display:flex;align-items:flex-end"><button class="btn btn-primary btn-sm" onclick="logBIP(\''+bip.id+'\')">Log</button></div>'
       +'</div></div>';
     // Graph canvases — one per measurement, stacked
-    const graphHtml=((bip.functions&&bip.functions.length>1)?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Each colored line = one behavior function (see legend).</div>':'')+allMeas.map(m=>'<div style="margin-bottom:16px">'
+    const graphHtml='<div style="font-size:.74rem;color:var(--muted);margin-bottom:6px">Showing '+_ctxNm(behCtx)+' data</div>'+((bip.functions&&bip.functions.length>1)?'<div style="font-size:.72rem;color:var(--muted);margin-bottom:6px">Each colored line = one behavior function (see legend).</div>':'')+allMeas.map(m=>'<div style="margin-bottom:16px">'
       +'<div style="font-size:.78rem;font-weight:600;color:'+measColors[m]+';margin-bottom:4px">'+measLabels[m]+'</div>'
       +(logs.length>=1?'<div style="height:180px"><canvas id="bxch_'+bip.id+'_'+m+'"></canvas></div>'
         :'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>')
       +'</div>').join('');
-    const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+(_canLog?logForm:'<div style="font-size:.8rem;color:var(--muted);background:#f5f6f8;border-radius:8px;padding:10px;margin-bottom:12px">Start a '+(behCtx==='shadow'?'School Shadow':'1:1')+' session to log here.</div>')+graphHtml+'</div>';
+    const tab5='<div class="bip-tab-pane hidden" data-pane="data">'+(_canLog?logForm:_switchMsg||'<div style="font-size:.8rem;color:var(--muted);background:#f5f6f8;border-radius:8px;padding:10px;margin-bottom:12px">Start a '+(behCtx==='shadow'?'School Shadow':'1:1')+' session to log here.</div>')+graphHtml+'</div>';
 
     // ── Tab nav ──
     const tabNav='<div class="bip-tab-nav">'
@@ -6077,7 +6081,7 @@ function renderBehaviorTab(){
       +_txSec('Prevention','🛡','#4fa14a',txBlock('Environment Setup',bip.competing)+txBlock('Antecedent Modification',bip.antecedent),false)
       +_txSec('Teaching','📚','#7c3aed',txBlock('Replacement Behavior',bip.replacement),false)
       +_txSec('Response','⚡','#d84a3a',txBlock('Consequence Manipulation',bip.consequence)+txBlock('Safety Plan',bip.safety),false)
-      +_txSec('Data','📊','#0369a1',logForm+(logs.length>=1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">No data recorded yet.</p>'),true);
+      +_txSec('Data','📊','#0369a1',(_switchMsg||logForm)+(logs.length>=1?graphHtml:'<p style="font-size:.78rem;color:var(--muted)">No '+_ctxNm(behCtx)+' data recorded yet.</p>'),true);
 
     const bodyContent=['supervisor','director'].includes(currentUser.role)
       ? tabNav+tab1+tab2+tab3+tab4+tab5
