@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-30-BT -->
+<!-- BUILD v2026-10-30-BU -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-30-BT</title>
+<title>CARE Client Binder v2026-10-30-BU</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-30-BT';
+const APP_VERSION='v2026-10-30-BU';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-30-BU',date:'30 Oct 2026',added:'',improved:'Printed BIP is easier to read: each strategy under Prevention, Teaching and Response starts on its own line with a dash, with a little space between.',fixed:''},
   {version:'v2026-10-30-BT',date:'30 Oct 2026',added:'',improved:'Keep active on a “Criteria met!” target now keeps it quiet for a week. Before, the banner came back at the very next session because the criteria were still met. After 7 days the app checks again as normal.',fixed:''},
   {version:'v2026-10-29-BS',date:'29 Oct 2026',added:'',improved:'',fixed:'BIP rate logged by a supervisor during a visit is now divided by the hours watched. A visit has no hours box in the top bar, so the app used 1 hour and graphed the raw count (13 times in 2 hours showed as 13/hr instead of 6.5/hr). Supervisors now type the hours next to the count; it is remembered for the rest of the visit.'},
   {version:'v2026-10-29-BR',date:'29 Oct 2026',added:'',improved:'The BIP tab says which data each graph shows (🧩 1:1 or 🏫 School Shadow).',fixed:'Starting a session now always opens the BIP tab on that session\'s setting. Before, if the 1:1 / School Shadow switch had been tapped earlier, a School Shadow session could keep showing the 1:1 graph, and data logged there went to the School graph so it seemed not to show up. If you look at the other setting during a session, the Log box is replaced by a button to switch back.'},
@@ -2416,6 +2417,8 @@ function _reportShell(pdfTitle,subtitle,metaRowsHtml,bodyHtml){
 }
 // ── Day report + Print BIP (v-AQ). READ-ONLY: these functions only read DB and print — they never save anything. ──
 function _drDaysBefore(d,n){var t=new Date(d+'T00:00');t.setDate(t.getDate()-n);return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);}
+// Printed BIP strategies: one dash line per strategy, spaced apart (v-BU)
+function _drDashes(txt){return String(txt||'').split(/\n+/).map(function(x){return x.trim().replace(/^[-–—•*·]\s*/,'');}).filter(function(x){return x;}).map(function(p){return '<p style="margin:0 0 7px;padding-left:1em;text-indent:-1em">– '+esc(p)+'</p>';}).join('');}
 function _drParas(txt){return String(txt||'').split(/\n+/).filter(function(x){return x.trim();}).map(function(p){return '<p>'+esc(p)+'</p>';}).join('');}
 function _drWho(n){return n?' <span style="color:#6b7280;font-size:.85em">— '+esc(n)+'</span>':'';}
 function _drUserName(id){var u=(DB.users||[]).find(function(x){return x.id===id;});return u?u.name:'';}
@@ -2639,7 +2642,7 @@ function printBIP(){
   const only=gv('pb-bip'),F=gv('pb-from'),T=gv('pb-to')||_todayLocal();
   const all=(DB.bips||[]).filter(function(b){return b.clientId===selectedClientId;});
   const groups=_pbGroups(all).filter(function(g){return !only||g.name.trim().toLowerCase()===only;});
-  const blk=function(label,txt){return txt&&String(txt).trim()?'<p style="margin:6px 0 1px"><strong>'+label+'</strong></p>'+_drParas(txt):'';};
+  const blk=function(label,txt,dash){return txt&&String(txt).trim()?'<p style="margin:6px 0 1px"><strong>'+label+'</strong></p>'+(dash?_drDashes(txt):_drParas(txt)):'';};
   let body='';
   groups.forEach(function(g){
     // Plan text: first non-empty value, 1:1 version first
@@ -2652,9 +2655,9 @@ function printBIP(){
     let ov=blk('Definition',pick('description'))+(fns?'<p style="margin:6px 0 1px"><strong>Functions:</strong> '+esc(fns)+'</p>':'')
       +(goal?'<p style="margin:6px 0 1px"><strong>Goal:</strong> '+esc(goal)+(gd?' (by '+esc(gd)+')':'')+'</p>':'')
       +(base?'<p style="margin:6px 0 1px"><strong>Baseline:</strong> '+esc(base)+'</p>':'');
-    const prev=blk('Environment Setup',pick('competing'))+blk('Antecedent Modification',pick('antecedent'));
-    const teach=blk('Replacement Behavior',pick('replacement'))+blk('Teaching Strategy',pick('teachingStrategy'));
-    const resp=blk('Consequence Manipulation',pick('consequence'))+blk('Extinction',pick('extinction'))+blk('Safety Plan',pick('safety'));
+    const prev=blk('Environment Setup',pick('competing'),1)+blk('Antecedent Modification',pick('antecedent'),1);
+    const teach=blk('Replacement Behavior',pick('replacement'),1)+blk('Teaching Strategy',pick('teachingStrategy'),1);
+    const resp=blk('Consequence Manipulation',pick('consequence'),1)+blk('Extinction',pick('extinction'),1)+blk('Safety Plan',pick('safety'),1);
     if(ov)body+='<div class="lesson-title">Overview</div><div class="ldet">'+ov+'</div>';
     if(prev)body+='<div class="lesson-title">Prevention</div><div class="ldet">'+prev+'</div>';
     if(teach)body+='<div class="lesson-title">Teaching</div><div class="ldet">'+teach+'</div>';
