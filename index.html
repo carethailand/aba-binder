@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-29-BS -->
+<!-- BUILD v2026-10-30-BT -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-29-BS</title>
+<title>CARE Client Binder v2026-10-30-BT</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-29-BS';
+const APP_VERSION='v2026-10-30-BT';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-10-30-BT',date:'30 Oct 2026',added:'',improved:'Keep active on a “Criteria met!” target now keeps it quiet for a week. Before, the banner came back at the very next session because the criteria were still met. After 7 days the app checks again as normal.',fixed:''},
   {version:'v2026-10-29-BS',date:'29 Oct 2026',added:'',improved:'',fixed:'BIP rate logged by a supervisor during a visit is now divided by the hours watched. A visit has no hours box in the top bar, so the app used 1 hour and graphed the raw count (13 times in 2 hours showed as 13/hr instead of 6.5/hr). Supervisors now type the hours next to the count; it is remembered for the rest of the visit.'},
   {version:'v2026-10-29-BR',date:'29 Oct 2026',added:'',improved:'The BIP tab says which data each graph shows (🧩 1:1 or 🏫 School Shadow).',fixed:'Starting a session now always opens the BIP tab on that session\'s setting. Before, if the 1:1 / School Shadow switch had been tapped earlier, a School Shadow session could keep showing the 1:1 graph, and data logged there went to the School graph so it seemed not to show up. If you look at the other setting during a session, the Log box is replaced by a button to switch back.'},
   {version:'v2026-10-27-BQ',date:'27 Oct 2026',added:'Printed BIP graphs (Day report, Finish & Preview, Print BIP) now show breaks like the screen: a dotted line with its label (\u27CB away, \u27CB sick, \u27CB 5w for a long gap) and a gap in the line between the last point before the break and the next one.',improved:'',fixed:''},
@@ -592,6 +593,8 @@ function _maybeAutoUpdate(){
   setTimeout(_forceUpdate,1200);
   return true;
 }
+// “Keep active” on a Criteria met! target: no new mastery flag for 7 days (v-BT)
+function _keepActiveHold(t){return !!(t&&t.keepActiveUntil&&_todayLocal()<t.keepActiveUntil);}
 function _todayLocal(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
 function _stampLoginDay(){try{localStorage.setItem('care_login_day',_todayLocal());}catch(e){}}
 function _checkDailyLogout(){try{if(typeof currentUser==='undefined'||!currentUser)return;var d=null;try{d=localStorage.getItem('care_login_day');}catch(e){}if(d&&d!==_todayLocal()&&!_isBusy()){try{localStorage.removeItem('care_login_day');}catch(e){}try{toast('Signed out for the day - please log in again for privacy.','info',5000);}catch(e){}doLogout();}}catch(e){}}
@@ -4500,7 +4503,7 @@ async function saveSession(){
                 target.stepMasteryRecords[teachIdx].push({txId:currentUser.id,date,result:'+'});
                 if(isStepMastered(target,teachIdx)){
                   const allDone=target.taSteps.every((_,i)=>isStepMastered(target,i));
-                  if(allDone)target.status='flagged';
+                  if(allDone&&!_keepActiveHold(target))target.status='flagged';
                 }
               }
             }
@@ -4648,7 +4651,7 @@ async function saveSession(){
 }
 
 function checkMastery(lesson,target,date,pct){
-  if(target.status==='mastered'||target.status==='flagged')return;
+  if(target.status==='mastered'||target.status==='flagged'||_keepActiveHold(target))return;
   const rule=lesson.masteryRule||{pct:80,sessions:3,therapists:2};
   const scores=[];
   DB.sessions.filter(s=>s.clientId===selectedClientId).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,rule.sessions*3).forEach(s=>{
@@ -4681,7 +4684,7 @@ function _backtrackFirstTrial(){
   (DB.lessons||[]).filter(function(l){return l.clientId===selectedClientId;}).forEach(function(lesson){
     (lesson.sds||[]).forEach(function(sd){
       (sd.targets||[]).forEach(function(t){
-        if(t.dataType!=='checklist'||t.status==='mastered'||t.status==='flagged')return;
+        if(t.dataType!=='checklist'||t.status==='mastered'||t.status==='flagged'||_keepActiveHold(t))return;
         var e=_ftStepEval(lesson,t);
         if(e.met&&e.isLast){t.status='flagged';changed++;}
       });
@@ -4714,7 +4717,7 @@ function _ftStepEval(lesson,target){
 }
 function checkFirstTrialCriteria(lesson,target){
   if(!target||target.dataType!=='checklist')return;
-  if(target.status==='mastered'||target.status==='flagged')return;
+  if(target.status==='mastered'||target.status==='flagged'||_keepActiveHold(target))return;
   const e=_ftStepEval(lesson,target);
   if(!e.met||!e.isLast)return;
   target.status='flagged';
@@ -5219,7 +5222,7 @@ function confirmMastery(lId,sId,tId){if(!requireActiveSession())return;
   const allMastered=l.sds.every(s=>s.targets.every(x=>x.status==='mastered'));
   saveData();toast(allMastered?'🎉 All targets mastered! Consider advancing phase.':'✓ Target mastered',allMastered?4000:2500);render();
 }
-function rejectMastery(lId,sId,tId){if(!requireActiveSession())return;const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';saveData();toast('Kept as in-progress');render();}
+function rejectMastery(lId,sId,tId){if(!requireActiveSession())return;const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);t.status='in_progress';var _ka=new Date();_ka.setDate(_ka.getDate()+7);t.keepActiveUntil=_ka.getFullYear()+'-'+('0'+(_ka.getMonth()+1)).slice(-2)+'-'+('0'+_ka.getDate()).slice(-2);saveData();toast('Kept active — no Criteria met banner for 7 days');render();}
 function showReintroduceModal(lId){if(!requireActiveSession())return;
   const lesson=DB.lessons.find(x=>x.id===lId);
   if(!lesson)return;
