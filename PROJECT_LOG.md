@@ -99,6 +99,27 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 
 ---
 
+## TO DO — next work session (added 9 Nov 2026)
+_Wish-list from Songg, 2–9 Nov 2026. Nothing built yet. Answer the ❓ first, then build one at a time._
+- [ ] **Bug: Print "Include lesson data & graphs" shows nothing for non-% targets** (reported 9 Nov). Rating / tally / TA / First-Trial-only targets print no data or graph, % targets do. Day report code (`_dayReportHtml` → `_drTdVal` + `_drTargetChart`) does have branches for each type, so the cause is still unknown. Test with fake data on port 8767 first. ❓ Which print: Report → Day report, or Finish & Preview? Which target type did you see it on?
+- [ ] **BIP summary in every Day report** (9 Nov). Today's BIP data for that day (count / rate / duration per behavior, 1:1 and School), not only in Print BIP.
+- [ ] **BIP text: always bold the "Name:" part**, even when nothing follows the colon. App and print (shared `_bipBlock`).
+- [ ] **BIP edit boxes too small; can't scroll on iPad.** Idea: boxes grow as you type, and the form scrolls (maybe full-screen on iPad). ❓ Is it the supervisor's Edit BIP form?
+- [ ] **Phase-change line for sick/absent, "click all, draw all".** ❓ Guess: one button draws a labelled line on every graph for that date. Gap too?
+- [ ] **Trial count = hard minimum.** Today the Total trials box has a fixed `min="5"` that isn't enforced (3 still saves) and clashes with a supervisor setting of 3. Plan: the supervisor's number is the minimum, block saving below it with a clear message, remove the fixed 5. ❓ Can a TX type MORE than the set number?
+- [ ] **Maintenance criteria?** Today maintenance targets have none: +/P/− per date, they stay until Reintroduce/Archive, nothing auto-removes them (the team thought otherwise). ❓ Want e.g. "3 + in a row → ask the supervisor to archive"?
+- [ ] **Checklist: where do notes go + show SD/R on the target card.** ❓ Which checklist: First-Trial (C/P/I/N/A) target, Program Checklist tab, or School Shadow checklist?
+
+### Idea under evaluation — Parent view / parent accounts (3 Nov 2026)
+Risk first, nothing to build yet. The biggest risk is a parent seeing another child's data, because every table would need a per-child rule. Also: the app loads all clients at start, staff-only notes, custody/who approves access, PDPA consent. Suggested stages:
+1. Staff send a parent summary (no login).
+2. A read-only parent page fed by a narrow server function (one child, approved fields only).
+3. Full parent accounts, only after the "therapists see only assigned clients" database rule.
+
+❓ What should parents see, and who approves and removes access?
+
+---
+
 ## FUTURE / IDEAS (discussed, not built)
 - **Discharged case management** — *requested 17 Oct 2026, design proposed.* Supervisor/director marks a client "Discharged" (date + optional reason) → client moves to a collapsed "Discharged" section, read-only, hidden from therapists' lists; "Export full record" (Archive printout + data file); "Reactivate" if they return. Permanent removal is never an app button — SQL for Songg to run only after the export is checked (check clinical-record retention rules first). Open question: can therapists still view discharged clients read-only?
 - **Storage & loading (measured 17 Oct 2026):** database ≈ 2.9 MB of 500 MB (327 sessions since 12 Jun 2026; 141 in the last 30 days) with only ~10% of clients on the app. Space is fine even at full rollout (~50–100 MB/yr). **URGENT before adding more clients:** the app loads only the latest 500 sessions across ALL clients → passes the limit ~late Nov 2026 at today's pace, and at full rollout (~1,400 sessions/month) would show only ~10 days of history; it also downloads everyone's data at every login/reload, which at full rollout could exceed the free plan's monthly download allowance (~5 GB — check Supabase Usage). Fix = per-client loading — **built in v2026-10-17-BD**. Next: Discharged case management; then database rule so therapists can only fetch their assigned clients.
