@@ -103,7 +103,7 @@ Through ~v-L (full details in the in-app CHANGELOG): edit session time (BIP rate
 _Wish-list from Songg, 2–9 Nov 2026. Nothing built yet. Answer the ❓ first, then build one at a time._
 - [ ] **Bug: Print "Include lesson data & graphs" shows nothing for non-% targets** (reported 9 Nov). Rating / tally / TA / First-Trial-only targets print no data or graph, % targets do. Day report code (`_dayReportHtml` → `_drTdVal` + `_drTargetChart`) does have branches for each type, so the cause is still unknown. Test with fake data on port 8767 first. ❓ Which print: Report → Day report, or Finish & Preview? Which target type did you see it on?
 - [ ] **BIP summary in every Day report** (9 Nov). Today's BIP data for that day (count / rate / duration per behavior, 1:1 and School), not only in Print BIP.
-- [ ] **BIP text: always bold the "Name:" part**, even when nothing follows the colon. App and print (shared `_bipBlock`).
+- [x] **BIP text: always bold the "Name:" part** — done in v2026-11-11-BW, even when nothing follows the colon. App and print (shared `_bipBlock`).
 - [ ] **BIP edit boxes too small; can't scroll on iPad.** Idea: boxes grow as you type, and the form scrolls (maybe full-screen on iPad). ❓ Is it the supervisor's Edit BIP form?
 - [ ] **Phase-change line for sick/absent, "click all, draw all".** ❓ Guess: one button draws a labelled line on every graph for that date. Gap too?
 - [ ] **Trial count = hard minimum.** Today the Total trials box has a fixed `min="5"` that isn't enforced (3 still saves) and clashes with a supervisor setting of 3. Plan: the supervisor's number is the minimum, block saving below it with a clear message, remove the fixed 5. ❓ Can a TX type MORE than the set number?

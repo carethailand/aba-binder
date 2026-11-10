@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-10-30-BV -->
+<!-- BUILD v2026-11-11-BW -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-10-30-BV</title>
+<title>CARE Client Binder v2026-11-11-BW</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-10-30-BV';
+const APP_VERSION='v2026-11-11-BW';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-11-BW',date:'11 Nov 2026',added:'',improved:'BIP plan text: a strategy name ending in a colon (e.g. “Response effort:”) is now bold even when its text starts on the next line — in the app and on the printed BIP.',fixed:''},
   {version:'v2026-10-30-BV',date:'30 Oct 2026',added:'',improved:'Printed BIP now uses the same layout therapists see in the app: each part in its own box with a blue line, bold strategy names, and ▸ bullets.',fixed:''},
   {version:'v2026-10-30-BU',date:'30 Oct 2026',added:'',improved:'Printed BIP is easier to read: each strategy under Prevention, Teaching and Response starts on its own line with a dash, with a little space between.',fixed:''},
   {version:'v2026-10-30-BT',date:'30 Oct 2026',added:'',improved:'Keep active on a “Criteria met!” target now keeps it quiet for a week. Before, the banner came back at the very next session because the criteria were still met. After 7 days the app checks again as normal.',fixed:''},
@@ -2432,8 +2433,8 @@ function _bipBlock(label,val){
         +'<span style="color:#1f8ec4;flex-shrink:0;margin-top:2px">▸</span>'
         +'<span>'+esc(txt)+'</span></div>';
     } else {
-      const _lbM=line.match(/^([A-Za-z][^:]{1,50}?):\s+(.+)$/);
-      if(_lbM){bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;color:#374151"><strong style="color:#1f2733">'+esc(_lbM[1])+':</strong> '+esc(_lbM[2])+'</p>';}
+      const _lbM=line.match(/^([A-Za-z][^:]{1,50}?):(?:\s+(.+))?\s*$/);
+      if(_lbM){bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;color:#374151"><strong style="color:#1f2733">'+esc(_lbM[1])+':</strong>'+(_lbM[2]?' '+esc(_lbM[2]):'')+'</p>';}
       else{bodyHtml+='<p style="font-size:.84rem;margin:0 0 7px 0;line-height:1.6;font-weight:500;color:#374151">'+esc(line)+'</p>';}
     }
   });
