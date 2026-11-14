@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-CC -->
+<!-- BUILD v2026-11-14-CD -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-CC</title>
+<title>CARE Client Binder v2026-11-14-CD</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-CC';
+const APP_VERSION='v2026-11-14-CD';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-CD',date:'14 Nov 2026',added:'School Shadow tab: \u201cObservation notes by subject\u201d \u2014 one card per subject (from the timetable, plus + Add subject), each opens and closes; supervisors write notes during a School observation visit, newest first. New \u201cRecommendations\u201d box. Both print in the School observation Day report and Finish & Preview (that day only): recommendations after the school notes, subject notes at the end, grouped by subject. Formatting: \u201cName:\u201d in bold, \u201c- \u201d bullets, \u201cRec:\u201d lines in italics.',improved:'Supervisor observation notes now show in one scrolling box (newest on top, all open) instead of a closed card per visit. Deleting a school note now asks first. Finish & Preview now counts School Shadow changes made in the visit too (school notes, subject notes, recommendations, target notes, targets added / mastered / on hold / resumed), so therapists are told about them.',fixed:''},
   {version:'v2026-11-14-CC',date:'14 Nov 2026',added:'Day report (School Shadow ticked): a \u201cSchool targets\u201d summary \u2014 current targets, plus what was mastered, added, put on hold or resumed since the last school observation (with dates). New school and NET targets now remember the day they were added.',improved:'School Shadow graphs and the monthly overview in the Day report now cover the time since the last school observation (up to 3 months). If no earlier observation is found they cover the last 4 weeks.',fixed:''},
   {version:'v2026-11-14-CB',date:'14 Nov 2026',added:'',improved:'Day report: BIPs now follow the visit type \u2014 School observation shows School Shadow BIPs only, Overlap shows 1:1 BIPs only, Clinic and All visits show both. Ticking \u201cInclude School Shadow data & graphs\u201d also adds School Shadow BIPs and ALL of that day\u2019s school notes (whichever visit they were written in, e.g. school updates made during a Clinic visit). On a School observation report the Lessons section is left out when it is empty.',fixed:''},
   {version:'v2026-11-14-CA',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude maintenance probes & stimuli checklist\u201d \u2014 the last 3 probes (+ / P / \u2212) of every maintenance target, and that day\u2019s stimuli checklist marks (these moved here from lesson data). Lesson data now also prints DT-phase lessons (step, First Trial, correct of total, 4-week graph, last 4 First Trials) and shows which teaching step a target is on (e.g. Red (Step 2: \u2026): 80%).',improved:'',fixed:''},
@@ -2088,6 +2089,33 @@ function dismissSupNotif(){
   saveData();render();
 }
 
+// v-CD: School Shadow part of the supervision snapshot (ids -> text / status), and the changes since it. Read-only.
+function _ssSnap(c){
+  var ss=(c&&c.schoolShadow)||{},o={notes:{},tnotes:{},snotes:{},recs:{},targets:{},net:{}};
+  (ss.notes||[]).forEach(function(n){if(n&&n.id)o.notes[n.id]=n.text||'';});
+  ['tnotes','snotes','recs'].forEach(function(k){_ssMapList(ss[k]).forEach(function(n){o[k][n.id]=n.text||'';});});
+  (ss.targets||[]).forEach(function(t){if(t&&t.id)o.targets[t.id]=t.status||'active';});
+  (ss.net||[]).forEach(function(t){if(t&&t.id)o.net[t.id]=t.status||'active';});
+  return o;
+}
+function _ssSupChanges(a,b,c){
+  var ss=(c&&c.schoolShadow)||{},items=[];a=a||{};b=b||{};
+  var cut=function(t){t=String(t||'');return t.length>200?t.slice(0,200)+'…':t;};
+  var nm=function(list,id){var t=(list||[]).find(function(x){return x&&x.id===id;});return t?t.name:'';};
+  var diff=function(k,lbl){var A=a[k]||{},B=b[k]||{};
+    Object.keys(B).forEach(function(id){if(!(id in A))items.push({label:'New '+lbl(id),value:cut(B[id])});else if(A[id]!==B[id])items.push({label:'Edited '+lbl(id),value:cut(B[id])});});
+    Object.keys(A).forEach(function(id){if(!(id in B))items.push({label:'Deleted '+lbl(id),value:cut(A[id])});});};
+  diff('notes',function(){return 'school note';});
+  diff('recs',function(){return 'recommendation';});
+  diff('snotes',function(id){var n=(ss.snotes||{})[id];return 'subject note'+(n&&n.subj?' — '+n.subj:'');});
+  diff('tnotes',function(id){var n=(ss.tnotes||{})[id];var t=n?nm(n.scope==='net'?ss.net:ss.targets,n.tid):'';return 'target note'+(t?' — '+t:'');});
+  [['targets','School target',ss.targets],['net','NET target',ss.net]].forEach(function(g){var A=a[g[0]]||{},B=b[g[0]]||{};
+    Object.keys(B).forEach(function(id){var n=nm(g[2],id);
+      if(!(id in A))items.push({label:g[1]+' added: '+n,value:''});
+      else if(A[id]!==B[id])items.push({label:g[1]+' '+(B[id]==='mastered'?'mastered':B[id]==='on_hold'?'put on hold':'resumed')+': '+n,value:''});});
+    Object.keys(A).forEach(function(id){if(!(id in B))items.push({label:g[1]+' removed',value:''});});});
+  return items;
+}
 function snapshotClient(){
   // Deep snapshot of everything changeable for this client
   const c=DB.clients.find(x=>x.id===selectedClientId);
@@ -2097,6 +2125,7 @@ function snapshotClient(){
   return JSON.parse(JSON.stringify({
     clientNotes:c.notes||[],
     reinforcers:c.reinforcers||[],
+    school:_ssSnap(c),
     lessons:lessons.map(l=>({
       id:l.id,name:l.name,phase:l.phase,supNotes:l.supNotes||[],
       sds:l.sds.map(sd=>({id:sd.id,notes:JSON.parse(JSON.stringify(sd.notes||[])),targets:sd.targets.map(t=>({
@@ -2194,6 +2223,10 @@ async function finishSupervision(){
   newR.forEach(r=>rItems.push({label:'Added: '+r.name+(r.type?' ('+r.type+')':''),value:r.note||''}));
   delR.forEach(r=>rItems.push({label:'Removed: '+r.name,value:''}));
   if(rItems.length)changes.push({section:'Reinforcer List',items:rItems});
+
+  // ── School Shadow (v-CD): notes, subject notes, recommendations, target notes, target changes ──
+  // Only when the visit's snapshot has a school part (a visit started on an older version is skipped, not miscounted).
+  try{if(snap&&snap.school){const _sc=_ssSupChanges(snap.school,now.school,c);if(_sc.length)changes.push({section:'School Shadow',items:_sc});}}catch(e){console.warn('school changes skipped',e);}
 
   // ── Lessons ──
   const lessons=DB.lessons.filter(l=>l.clientId===selectedClientId);
@@ -2655,7 +2688,8 @@ function _dayReportHtml(o){
   // School Shadow observation notes for this day (section only appears when there are some)
   const _ssc=c.schoolShadow||{};
   const ssNotes=(_ssc.notes||[]).filter(function(n){return n.date===D&&KOs(n.kind);});
-  let ssh=ssNotes.length?'<div class="lesson-title">School notes</div><div class="ldet">'+ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('')+'</div>':'';
+  const _ssNotesH=ssNotes.length?'<div class="lesson-title">School notes</div><div class="ldet">'+ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('')+'</div>':'';
+  let ssh='';
   [['school',_ssc.targets||[],'School target'],['net',_ssc.net||[],'NET']].forEach(function(g){
     g[1].forEach(function(t){
       let ti='';
@@ -2672,6 +2706,10 @@ function _dayReportHtml(o){
     const ssLbl=_lo?'Since last observation ('+_drFmtD(_lo)+')':'Last 4 weeks';
     ssh=_drSsSummary(_ssc,D,ssFrom,ssLbl)+ssh+_drSsData(_ssc,D,ssFrom,ssLbl);
   }catch(e){console.warn('school data skipped',e);}}
+  // v-CD: recommendations + observation notes by subject (that day) on School observation / All reports, or with the School Shadow box ticked
+  let _ssTop=_ssNotesH,_ssEnd='';
+  if(_type==='school'||_type==='all'||o.ssData){try{const _ob=_drSsObs(_ssc,D);_ssTop+=_ob.recs;_ssEnd=_ob.subj;}catch(e){console.warn('observation notes skipped',e);}}
+  ssh=_ssTop+ssh+_ssEnd;
   if(ssh)body+='<div class="sec-title">School Shadow</div>'+ssh;
   // 4. Reinforcer list (optional, whole list)
   if(o.reinf&&(c.reinforcers||[]).length){
@@ -3837,7 +3875,7 @@ function _mergeSS(d,s,b){
   [d,s,b].forEach(function(o){Object.keys(o).forEach(function(k){keys[k]=1;});});
   Object.keys(keys).forEach(function(k){
     var v;
-    if(k==='log'||k==='netLog'||k==='tnotes')v=_ssMergeMap(d[k],s[k],b[k]);
+    if(k==='log'||k==='netLog'||k==='tnotes'||k==='snotes'||k==='recs'||k==='obsSubj')v=_ssMergeMap(d[k],s[k],b[k]); // v-CD: subject notes / recommendations / custom subjects too
     else if((k==='targets'||k==='net'||k==='notes')&&(Array.isArray(d[k])||Array.isArray(s[k])))v=_ssMergeList(d[k],s[k],b[k]);
     else v=_ssM3(d[k],s[k],b[k]);
     if(v!==undefined&&v!==null)out[k]=v;
@@ -3889,6 +3927,136 @@ function _ssDelTNoteAsk(id){
   modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Delete this note?</h3><p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5">“'+esc((n.text||'').slice(0,120))+((n.text||'').length>120?'…':'')+'”</p><div style="display:flex;gap:8px"><button class="btn btn-danger" onclick="_ssDelTNote(\''+id+'\')">Delete note</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
 }
 function _ssDelTNote(id){if(!_ssIsSupRole())return;var ss=_ssGet();if(ss.tnotes&&ss.tnotes[id]){delete ss.tnotes[id];_ssSave();}closeModal();toast('Note deleted');render();}
+// ── School observation notes by subject + Recommendations (v-CD) ──
+// Stored one by one: ss.snotes {id:{id,subj,date,kind,author,authorId,text,createdAt,editedBy,editedDate}},
+// ss.recs {id:{id,date,kind,author,authorId,text,createdAt,…}}, custom subjects ss.obsSubj {id:{id,name,createdAt}}.
+// These maps merge note by note (_mergeSS), so two supervisors saving at once keep both notes.
+// Write: supervisors during a School observation visit only. Edit / delete: admin / supervisor / director.
+var _ssSubjOpen={};
+function _ssObsCanWrite(){return _ssCanSetup()&&_workKind()==='school';}
+function _ssSKey(n){return String(n||'').trim().toLowerCase();}
+function _ssSId(n){var k=_ssSKey(n),h=0;for(var i=0;i<k.length;i++){h=((h<<5)-h+k.charCodeAt(i))|0;}return 'sssn-'+(h>>>0).toString(36);}
+function _ssMapList(m){if(!m||typeof m!=='object'||Array.isArray(m))return [];return Object.keys(m).map(function(k){return m[k];}).filter(function(n){return n&&typeof n==='object'&&n.id;});}
+function _ssNewestFirst(a,b){return (b.date||'').localeCompare(a.date||'')||(_sessSavedAt(b)-_sessSavedAt(a));}
+// subjects: timetable (time order, Mon→Fri), then added subjects, then any subject that only exists in old notes
+function _ssSubjects(ss){
+  var out=[],seen={};var add=function(n){n=String(n||'').trim();var k=_ssSKey(n);if(!k||seen[k])return;seen[k]=1;out.push(n);};
+  _ssSortSlots(ss.slots).forEach(function(sl){_SS_DAYS.forEach(function(d){add(((ss.grid||{})[d]||{})[sl.id]);});});
+  _ssMapList(ss.obsSubj).sort(function(a,b){return _sessSavedAt(a)-_sessSavedAt(b);}).forEach(function(x){add(x.name);});
+  _ssMapList(ss.snotes).sort(_ssNewestFirst).forEach(function(n){add(n.subj);});
+  return out;
+}
+// "Name:" bold, "- " bullets, "Rec:" lines in italics (app and print)
+function _ssFmt(text){
+  return String(text||'').split(/\n+/).filter(function(l){return l.trim();}).map(function(line){
+    line=line.trim();
+    if(/^[-•*]\s+/.test(line))return '<div style="display:flex;gap:7px;margin:0 0 3px;line-height:1.5"><span style="color:#1f8ec4;flex-shrink:0">▸</span><span>'+esc(line.replace(/^[-•*]\s+/,''))+'</span></div>';
+    if(/^rec\s*:/i.test(line))return '<p style="margin:0 0 3px;line-height:1.5;font-style:italic">'+esc(line)+'</p>';
+    var m=line.match(/^([A-Za-z฀-๿][^:]{0,50}?):(?:\s+(.+))?$/);
+    if(m)return '<p style="margin:0 0 3px;line-height:1.5"><strong>'+esc(m[1])+':</strong>'+(m[2]?' '+esc(m[2]):'')+'</p>';
+    return '<p style="margin:0 0 3px;line-height:1.5">'+esc(line)+'</p>';
+  }).join('');
+}
+function _ssScrollBox(inner){return '<div style="max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;border:1px solid #e6e9ee;border-radius:8px;padding:0 12px;background:#fff">'+inner+'</div>';}
+function _ssObsItem(n,store){
+  var can=_ssCanSetup();
+  return '<div style="border-bottom:1px solid #eef1f4;padding:8px 0 6px;font-size:.83rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="flex:1;font-size:.74rem;color:#6b7280"><strong style="color:#1f2733">'+_drFmtD(n.date)+'</strong> · '+esc((n.author||'').split(' ')[0])+(n.editedBy?' <span style="color:#94a0ae">(edited)</span>':'')+'</span>'
+    +(can?'<button type="button" class="no-print" title="Edit" onclick="_ssObsEdit(\''+store+'\',\''+n.id+'\')" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#1f8ec4">✏</button><button type="button" class="no-print" title="Delete" onclick="_ssObsDelAsk(\''+store+'\',\''+n.id+'\')" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#a3392b">🗑</button>':'')
+    +'</div>'+_ssFmt(n.text)+'</div>';
+}
+function _ssRecsCard(ss){
+  var L=_ssMapList(ss.recs).sort(_ssNewestFirst),w=_ssObsCanWrite();
+  if(!L.length&&!_ssCanSetup())return '';
+  var h='<div class="card"><div class="section-title">💡 Recommendations</div>';
+  h+=L.length?_ssScrollBox(L.map(function(n){return _ssObsItem(n,'recs');}).join('')):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No recommendations yet.</p>';
+  if(w)h+='<div class="no-print" style="display:flex;gap:6px;align-items:flex-start;margin-top:8px"><textarea id="ss-rec-in" rows="2" placeholder="Recommendations for the school / team…" style="flex:1;font-size:.83rem"></textarea><button type="button" class="btn btn-sm btn-primary" onclick="_ssAddRec()">Add</button></div>';
+  else if(_ssCanSetup())h+='<p class="no-print" style="font-size:.74rem;color:var(--muted);margin:6px 0 0">Start a School observation visit to add recommendations.</p>';
+  return h+'</div>';
+}
+function _ssSubjCard(ss){
+  var subs=_ssSubjects(ss),all=_ssMapList(ss.snotes),w=_ssObsCanWrite(),can=_ssCanSetup(),cust=_ssMapList(ss.obsSubj);
+  if(!subs.length&&!can)return '';
+  var h='<div class="card"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px"><div class="section-title" style="flex:1;margin:0">📚 Observation notes by subject</div>'
+    +(subs.length?'<button type="button" class="btn btn-xs btn-outline no-print" onclick="_ssSubjAll(true)">Open all</button><button type="button" class="btn btn-xs btn-outline no-print" onclick="_ssSubjAll(false)">Close all</button>':'')
+    +(can?'<button type="button" class="btn btn-xs btn-outline no-print" onclick="_ssAddSubjectModal()">+ Add subject</button>':'')+'</div>';
+  if(can&&!w)h+='<p class="no-print" style="font-size:.74rem;color:var(--muted);margin:0 0 8px">Start a School observation visit to write subject notes.</p>';
+  if(!subs.length)h+='<p style="font-size:.8rem;color:var(--muted);margin:0">No subjects yet — add them to the weekly timetable, or use + Add subject.</p>';
+  subs.forEach(function(nm){
+    var k=_ssSKey(nm),L=all.filter(function(n){return _ssSKey(n.subj)===k;}).sort(_ssNewestFirst),id=_ssSId(nm);
+    var cx=cust.find(function(x){return _ssSKey(x.name)===k;});
+    h+='<details class="ss-subj" data-k="'+esc(k)+'"'+(_ssSubjOpen[k]?' open':'')+' ontoggle="_ssSubjOpen[this.dataset.k]=this.open" style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px">'
+      +'<summary style="cursor:pointer;padding:8px 12px;font-size:.88rem"><strong>'+esc(nm)+'</strong><span style="float:right;font-size:.74rem;color:#6b7280;margin-top:2px">'+(L.length?L.length+' note'+(L.length!==1?'s':'')+' · latest '+_drFmtD(L[0].date):'No notes yet')+'</span></summary><div style="padding:0 12px 10px">';
+    if(w)h+='<div class="no-print" style="display:flex;gap:6px;align-items:flex-start;margin-bottom:8px"><textarea id="'+id+'" rows="2" placeholder="Note for '+esc(nm)+' today…" style="flex:1;font-size:.83rem"></textarea><button type="button" class="btn btn-sm btn-primary" data-s="'+esc(nm)+'" onclick="_ssAddSubjNote(this.dataset.s)">Save note</button></div>';
+    if(L.length)h+=_ssScrollBox(L.map(function(n){return _ssObsItem(n,'snotes');}).join(''));
+    else if(!w)h+='<p style="font-size:.78rem;color:var(--muted);margin:0">No notes yet.</p>';
+    if(can&&cx&&!L.length)h+='<button type="button" class="no-print" data-id="'+cx.id+'" onclick="_ssDelSubject(this.dataset.id)" style="background:none;border:none;color:#a3392b;cursor:pointer;font-size:.74rem;padding:6px 0 0">Remove this subject</button>';
+    h+='</div></details>';
+  });
+  return h+'</div>';
+}
+function _ssSubjAll(open){document.querySelectorAll('details.ss-subj').forEach(function(d){d.open=open;_ssSubjOpen[d.dataset.k]=open;});}
+function _ssObsStamp(text){return {id:uid(),date:_workDate(),kind:_workKind(),author:currentUser.name,authorId:currentUser.id,text:text,createdAt:new Date().toISOString()};}
+function _ssObsMap(ss,store){if(!ss[store]||typeof ss[store]!=='object'||Array.isArray(ss[store]))ss[store]={};return ss[store];}
+function _ssAddSubjNote(nm){
+  if(!_ssObsCanWrite()){toast('Subject notes are written during a School observation visit.');return;}
+  var id=_ssSId(nm),el=document.getElementById(id),t=el?el.value.trim():'';
+  if(!t){toast('Type a note first');return;}
+  var ss=_ssGet(),n=_ssObsStamp(t);n.subj=String(nm||'').trim();_ssObsMap(ss,'snotes')[n.id]=n;_ssSubjOpen[_ssSKey(nm)]=true;
+  _clearFieldDraft(id);_ssSave();toast('Note saved ✓');render();
+}
+function _ssAddRec(){
+  if(!_ssObsCanWrite()){toast('Recommendations are added during a School observation visit.');return;}
+  var el=document.getElementById('ss-rec-in'),t=el?el.value.trim():'';
+  if(!t){toast('Type a recommendation first');return;}
+  var ss=_ssGet(),n=_ssObsStamp(t);_ssObsMap(ss,'recs')[n.id]=n;
+  _clearFieldDraft('ss-rec-in');_ssSave();toast('Recommendation added ✓');render();
+}
+function _ssObsEdit(store,id){
+  if(!_ssCanSetup()||(store!=='snotes'&&store!=='recs'))return;var ss=_ssGet();var n=(ss[store]||{})[id];if(!n)return;
+  modal('<div style="max-width:480px"><h3 style="margin-bottom:6px">Edit '+(store==='recs'?'recommendation':'note')+'</h3><p style="font-size:.8rem;color:var(--muted);margin:0 0 8px">'+(n.subj?esc(n.subj)+' · ':'')+_drFmtD(n.date)+'</p><textarea id="ss-obs-edit" rows="'+_taRows(n.text,4)+'" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="_ssObsSaveEdit(\''+store+'\',\''+id+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _ssObsSaveEdit(store,id){
+  if(!_ssCanSetup()||(store!=='snotes'&&store!=='recs'))return;var ss=_ssGet();var n=(ss[store]||{})[id];if(!n){closeModal();return;}
+  var t=((document.getElementById('ss-obs-edit')||{}).value||'').trim();if(!t){toast('Type a note first');return;}
+  if(t!==n.text){n.text=t;n.editedBy=currentUser.name;n.editedDate=_todayLocal();_ssSave();}
+  closeModal();toast('Saved ✓');render();
+}
+function _ssObsDelAsk(store,id){
+  if(!_ssCanSetup()||(store!=='snotes'&&store!=='recs'))return;var ss=_ssGet();var n=(ss[store]||{})[id];if(!n)return;
+  modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Delete this '+(store==='recs'?'recommendation':'note')+'?</h3><p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5">“'+esc((n.text||'').slice(0,120))+((n.text||'').length>120?'…':'')+'”</p><div style="display:flex;gap:8px"><button class="btn btn-danger" onclick="_ssObsDel(\''+store+'\',\''+id+'\')">Delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _ssObsDel(store,id){if(!_ssCanSetup()||(store!=='snotes'&&store!=='recs'))return;var ss=_ssGet();if(ss[store]&&ss[store][id]){delete ss[store][id];_ssSave();}closeModal();toast('Deleted');render();}
+function _ssDelNoteAsk(id){
+  if(!_ssCanSetup())return;var ss=_ssGet();var n=(ss.notes||[]).find(function(x){return x.id===id;});if(!n)return;
+  modal('<div style="max-width:420px"><h3 style="margin-bottom:8px">Delete this school note?</h3><p style="font-size:.85rem;color:var(--muted);margin-bottom:14px;line-height:1.5">“'+esc((n.text||'').slice(0,120))+((n.text||'').length>120?'…':'')+'”</p><div style="display:flex;gap:8px"><button class="btn btn-danger" data-id="'+id+'" onclick="closeModal();_ssDelNote(this)">Delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _ssAddSubjectModal(){
+  if(!_ssCanSetup())return;
+  modal('<div style="max-width:400px"><h3 style="margin-bottom:10px">Add subject</h3><input id="ss-subj-in" type="text" placeholder="e.g. Library" style="width:100%"><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="_ssAddSubject()">Add</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+  setTimeout(function(){var e=document.getElementById('ss-subj-in');if(e)e.focus();},50);
+}
+function _ssAddSubject(){
+  if(!_ssCanSetup())return;var nm=((document.getElementById('ss-subj-in')||{}).value||'').trim();
+  if(!nm){toast('Enter a subject name');return;}
+  var ss=_ssGet();if(_ssSubjects(ss).some(function(x){return _ssSKey(x)===_ssSKey(nm);})){toast('That subject is already there');return;}
+  var id=uid();_ssObsMap(ss,'obsSubj')[id]={id:id,name:nm,createdAt:new Date().toISOString()};
+  _ssSave();closeModal();toast('Subject added ✓');render();
+}
+function _ssDelSubject(id){
+  if(!_ssCanSetup())return;var ss=_ssGet();var x=(ss.obsSubj||{})[id];if(!x)return;var k=_ssSKey(x.name);
+  if(_ssMapList(ss.snotes).some(function(n){return _ssSKey(n.subj)===k;})){toast('This subject has notes, so it stays.');return;}
+  delete ss.obsSubj[id];_ssSave();toast('Subject removed');render();
+}
+// Day report: that day's recommendations + subject notes (grouped by subject, timetable order). Read-only.
+function _drSsObs(ss,D){
+  var day=function(m){return _ssMapList(m).filter(function(n){return n.date===D;}).sort(function(a,b){return _sessSavedAt(a)-_sessSavedAt(b);});};
+  var recs=day(ss.recs),sn=day(ss.snotes),r={recs:'',subj:''};
+  if(recs.length)r.recs='<div class="lesson-title">Recommendations</div><div class="ldet">'+recs.map(function(n){return '<div style="margin-bottom:6px">'+_ssFmt(n.text)+'</div>';}).join('')+'</div>';
+  if(sn.length){var h='';_ssSubjects(ss).forEach(function(nm){var k=_ssSKey(nm),L=sn.filter(function(n){return _ssSKey(n.subj)===k;});if(!L.length)return;
+      h+='<p style="margin:8px 0 2px;font-weight:700;color:#1a6f94">'+esc(nm)+'</p>'+L.map(function(n){return '<div style="margin:0 0 6px 10px">'+_ssFmt(n.text)+'</div>';}).join('');});
+    if(h)r.subj='<div class="lesson-title">Observation notes by subject</div><div class="ldet">'+h+'</div>';}
+  return r;
+}
 // On hold / Mastered reference lists (collapsed), like the Session tab
 function _ssStatusLists(arr,scope){
   var held=(arr||[]).filter(function(t){return t.status==='on_hold';}),mast=(arr||[]).filter(function(t){return t.status==='mastered';});
@@ -3962,9 +4130,10 @@ function renderSchoolShadowTab(){
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   var _canSSNote=['admin','supervisor','director'].includes(currentUser.role);
   var _ssNotes=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  var _ssNoteCards=_ssNotes.length?_ssNotes.map(function(nn){return '<details style="border:1px solid #e6e9ee;border-radius:8px;margin-bottom:6px"><summary style="cursor:pointer;padding:7px 10px;font-size:.82rem;list-style:none"><strong>'+esc(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+(_canSSNote?' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+nn.id+'" onclick="event.preventDefault();_ssDelNote(this)">✕</button>':'')+'</summary><div style="padding:0 10px 8px;font-size:.83rem;line-height:1.5">'+formatNoteText(nn.text)+'</div></details>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
+  var _ssNoteCards=_ssNotes.length?_ssScrollBox(_ssNotes.map(function(nn){return '<div style="border-bottom:1px solid #eef1f4;padding:8px 0 6px;font-size:.83rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="flex:1;font-size:.74rem;color:#6b7280"><strong style="color:#1f2733">'+_drFmtD(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+'</span>'+(_canSSNote?'<button type="button" class="no-print" title="Delete note" data-id="'+nn.id+'" onclick="_ssDelNoteAsk(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#a3392b">🗑</button>':'')+'</div><div style="line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join('')):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
   var _ssNoteAdd=_canSSNote?'<div style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><textarea id="ssn-note-in" rows="2" placeholder="Overlap overview / recommendations for the team..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="_ssAddNote()">Add</button></div>':'';
   h+='<div class="card"><div class="section-title">📝 Supervisor observation notes</div>'+_ssNoteCards+_ssNoteAdd+'</div>';
+  h+=_ssRecsCard(ss)+_ssSubjCard(ss);
   if(canSetup){
     var ttHead='<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;margin-bottom:6px;font-size:.72rem;font-weight:700;color:#234b63"><span style="text-align:center">Time</span>'+_SS_DAYS.map(function(d){return '<span style="text-align:center">'+_SS_DAYLABEL[d].slice(0,3)+'</span>';}).join('')+'<span></span></div>';
     var rows=slots.map(function(s){var subs=_SS_DAYS.map(function(d){return '<input type="text" data-day="'+d+'" data-slot="'+s.id+'" value="'+esc((ss.grid[d]||{})[s.id]||'')+'" onchange="_ssGridSet(this)" placeholder="—" style="width:100%;font-size:.8rem;padding:4px 6px;box-sizing:border-box">';}).join('');return '<div style="display:grid;grid-template-columns:'+ttGtc+';gap:6px;align-items:center;margin-bottom:6px"><input type="text" data-id="'+s.id+'" value="'+esc(s.time||'')+'" onchange="_ssSlotTime(this)" placeholder="8:00" style="width:100%;font-size:.8rem;padding:4px 6px;text-align:center;box-sizing:border-box">'+subs+'<button type="button" data-id="'+s.id+'" onclick="_ssSlotDel(this)" style="color:#a3392b;background:none;border:none;cursor:pointer;font-size:.9rem">✕</button></div>';}).join('');
