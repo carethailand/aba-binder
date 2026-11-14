@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-BY -->
+<!-- BUILD v2026-11-14-BZ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-BY</title>
+<title>CARE Client Binder v2026-11-14-BZ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-BY';
+const APP_VERSION='v2026-11-14-BZ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-BZ',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude School Shadow data & graphs\u201d (ticked for School observation). Shows each school target\u2019s results for the day by subject (C / P / \u2212), the % independent, a 4-week graph and a 4-week dashboard (by subject, by time of day, hardest) \u2014 plus each NET target\u2019s score and 4-week graph.',improved:'',fixed:''},
   {version:'v2026-11-14-BY',date:'14 Nov 2026',added:'Day report: every BIP is now listed every day (1:1 and School Shadow), even with no data that day — with the last recorded value, a 4-week summary (days, average, highest, goal) and the trend: ↓ Decreasing, ↑ Increasing, → Stable or Variable. The trend needs at least 4 days of data and only uses data after the latest break or plan change. Lesson data in the Day report also shows each target’s last 4 First Trial results (C / P / I).',improved:'',fixed:''},
   {version:'v2026-11-14-BX',date:'14 Nov 2026',added:'',improved:'BIP writing boxes (Prevention, Teaching, Response) now grow to fit what you type, so there is no small box to scroll inside. Add / Edit BIP windows scroll properly on iPad.',fixed:'Day report showed a rating as a % (e.g. 75%) — it now shows the rating (e.g. rating 4/5).'},
   {version:'v2026-11-11-BW',date:'11 Nov 2026',added:'',improved:'BIP plan text: a strategy name ending in a colon (e.g. “Response effort:”) is now bold even when its text starts on the next line — in the app and on the printed BIP.',fixed:''},
@@ -2330,7 +2331,7 @@ async function finishSupervision(){
     +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eef1f4">'+esc(c.name)+' · <strong>'+(sv.supType||'overlap')+'</strong> · '+sv.date+' · '+esc(currentUser.name)+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+'<label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Time (for report):</label>'+'<input id="sup-time-input" type="text" placeholder="e.g. 13:30-15:30" oninput="_supPreviewRefresh()" style="flex:1;max-width:200px;padding:4px 8px;font-size:.82rem">'+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Therapist:</label><input id="sup-tx-input" type="text" placeholder="(optional)" value="'+esc(_drTxNames(sv.date))+'" oninput="_supPreviewRefresh()" style="flex:1;max-width:320px;padding:4px 8px;font-size:.82rem"></div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:.84rem"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-lgraph" style="width:auto"'+((sv.supType||'')==='clinic'?' checked':'')+' onchange="_supPreviewRefresh()"> Include lesson data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-reinf" style="width:auto" onchange="_supPreviewRefresh()"> Add reinforcer list</label></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:.84rem"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-lgraph" style="width:auto"'+((sv.supType||'')==='clinic'?' checked':'')+' onchange="_supPreviewRefresh()"> Include lesson data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-ss" style="width:auto"'+(sv.setting==='school'?' checked':'')+' onchange="_supPreviewRefresh()"> Include School Shadow data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-reinf" style="width:auto" onchange="_supPreviewRefresh()"> Add reinforcer list</label></div>'
     +(changes.length?'':'<div style="font-size:.8rem;color:#8a6410;background:#fbeecb;border-radius:6px;padding:6px 10px;margin-bottom:10px">No new changes in this visit \u2014 the report below shows everything recorded for this day.</div>')
     +'<iframe id="sup-preview" title="Report preview" style="width:100%;height:55vh;border:1px solid #e6e9ee;border-radius:8px;background:#fff"></iframe>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">'
@@ -2345,7 +2346,7 @@ function _supReportOpts(){
   const g=function(id){return document.getElementById(id);};
   const txEl=g('sup-tx-input');
   const tx=txEl?txEl.value:_drTxNames(sv.date);
-  return {date:sv.date,time:(g('sup-time-input')||{}).value||'',tx:tx,type:(sv.setting==='school'?'school':(sv.supType||'overlap')),withData:!!(g('sup-lgraph')&&g('sup-lgraph').checked),reinf:!!(g('sup-reinf')&&g('sup-reinf').checked)};
+  return {date:sv.date,time:(g('sup-time-input')||{}).value||'',tx:tx,type:(sv.setting==='school'?'school':(sv.supType||'overlap')),withData:!!(g('sup-lgraph')&&g('sup-lgraph').checked),ssData:!!(g('sup-ss')&&g('sup-ss').checked),reinf:!!(g('sup-reinf')&&g('sup-reinf').checked)};
 }
 function _supPreviewRefresh(){try{const f=document.getElementById('sup-preview');if(!f)return;const r=_dayReportHtml(_supReportOpts());if(r)f.srcdoc=r.html;}catch(e){console.warn('preview failed',e);}}
 
@@ -2543,9 +2544,10 @@ function openReportBuilder(){
      +'<label style="color:#6b7280">Date</label><input id="rb-date" type="date" value="'+today+'" onchange="_rbDateChanged(this)">'
      +'<label style="color:#6b7280">Time</label><input id="rb-time" type="text" placeholder="e.g. 13:30-15:30">'
      +'<label style="color:#6b7280">Therapist</label><input id="rb-tx" type="text" placeholder="(optional)" data-auto="1" oninput="this.dataset.auto=0" value="'+esc(_drTxNames(today))+'">'
-     +'<label style="color:#6b7280">Type</label><select id="rb-type" onchange="var g=document.getElementById(\'rb-lgraph\');if(g)g.checked=this.value===\'clinic\';"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option><option value="all">All visits (whole day)</option></select>'
+     +'<label style="color:#6b7280">Type</label><select id="rb-type" onchange="var g=document.getElementById(\'rb-lgraph\');if(g)g.checked=this.value===\'clinic\';var q=document.getElementById(\'rb-ss\');if(q)q.checked=this.value===\'school\';"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option><option value="all">All visits (whole day)</option></select>'
    +'</div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lgraph"> Include lesson data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day\u2019s scores + 4 weeks \u2014 e.g. for parents)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-ss"> Include School Shadow data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day + 4 weeks, with dashboard)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Add reinforcer list <span style="font-size:.72rem;color:#94a0ae">(whole list)</span></label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
@@ -2655,6 +2657,7 @@ function _dayReportHtml(o){
       if(ti)ssh+='<div class="lesson-title">'+g[2]+': '+esc(t.name)+'</div><div class="ldet">'+(g[0]==='net'&&t.sd?'<p style="color:#6b7280">SD: '+esc(t.sd)+'</p>':'')+ti+'</div>';
     });
   });
+  if(o.ssData){try{ssh+=_drSsData(_ssc,D,from);}catch(e){console.warn('school data skipped',e);}}
   if(ssh)body+='<div class="sec-title">School Shadow</div>'+ssh;
   // 4. Reinforcer list (optional, whole list)
   if(o.reinf&&(c.reinforcers||[]).length){
@@ -2664,10 +2667,72 @@ function _dayReportHtml(o){
   const pdfName='CARE '+_safe+' day report '+D;
   return {html:_reportShell(pdfName,subtitle,meta,body),pdfName:pdfName};
 }
+// School Shadow data for the Day report (v-BZ). Read-only. ss = client.schoolShadow, D = report day, from = 4 weeks back.
+function _drSsData(ss,D,from){
+  if(!ss)return '';
+  var log=ss.log||{},netLog=ss.netLog||{};
+  var slotById={};(ss.slots||[]).forEach(function(x){slotById[x.id]=x;});
+  var slotOrder={};_ssSortSlots(ss.slots).forEach(function(x,i){slotOrder[x.id]=i;});
+  var COL={C:['#2f6b2c','#dff0d8'],P:['#8a6410','#fbeecb'],'-':['#a32d2d','#f8dcdc']};
+  var badge=function(v){var c=COL[v]||['#374151','#eef1f4'];return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c[0]+';background:'+c[1]+'">'+(v==='-'?'−':esc(v))+'</span>';};
+  // cells for one target on one day -> [{sid,subj,v}] in timetable order
+  var dayCells=function(tid,d){
+    var e=log[d];if(!e)return [];var cells=e.cells||{};var grid=(ss.grid&&ss.grid[_ssWeekday(d)])||{};var out=[];
+    Object.keys(cells).forEach(function(k){var v=cells[k];if(v!=='C'&&v!=='P'&&v!=='-')return;var u=k.indexOf('_');if(u<0||k.slice(0,u)!==tid)return;var sid=k.slice(u+1);var sl=slotById[sid];out.push({sid:sid,subj:grid[sid]||(sl&&sl.time)||'',v:v});});
+    out.sort(function(a,b){return (slotOrder[a.sid]==null?999:slotOrder[a.sid])-(slotOrder[b.sid]==null?999:slotOrder[b.sid]);});
+    return out;
+  };
+  var winDays=Object.keys(log).filter(function(d){return d>=from&&d<=D;}).sort();
+  var html='';
+  (ss.targets||[]).forEach(function(t){
+    var today=dayCells(t.id,D);
+    var agg={c:0,op:0},subj={},bucket={Morning:{c:0,op:0},Lunch:{c:0,op:0},Afternoon:{c:0,op:0}},pts=[];
+    winDays.forEach(function(d){
+      var dc=dayCells(t.id,d);if(!dc.length)return;var dd={c:0,op:0};
+      dc.forEach(function(x){var inc=function(o){o.op++;if(x.v==='C')o.c++;};inc(dd);inc(agg);if(x.subj){if(!subj[x.subj])subj[x.subj]={c:0,op:0};inc(subj[x.subj]);}var sl=slotById[x.sid];if(sl&&sl.time)inc(bucket[_ssBucket(sl.time)]);});
+      pts.push({date:d,y:_ssPctOf(dd)});
+    });
+    if(!today.length&&!pts.length&&(t.status||'active')!=='active')return;
+    var ti='';
+    if(today.length){
+      var tc=today.filter(function(x){return x.v==='C';}).length;
+      ti+='<p><strong>Today:</strong> '+tc+' of '+today.length+' independent ('+Math.round(tc/today.length*100)+'%)'+(log[D]&&log[D].tx?' · recorded by '+esc(log[D].tx):'')+'</p>'
+        +'<p>'+today.map(function(x){return (x.subj?esc(x.subj)+' ':'')+badge(x.v);}).join(' · ')+'</p>';
+    }else{
+      var prev=Object.keys(log).filter(function(d){return d<D&&dayCells(t.id,d).length;}).sort().pop();
+      ti+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(prev?(function(){var pc=dayCells(t.id,prev);var c=pc.filter(function(x){return x.v==='C';}).length;return ' · last recorded '+_drFmtD(prev)+' ('+Math.round(c/pc.length*100)+'%)';})():' · nothing recorded yet')+'</p>';
+    }
+    if(pts.length){
+      ti+='<p style="margin-top:6px"><strong>Last 4 weeks:</strong> '+pts.length+' school day'+(pts.length!==1?'s':'')+' · '+_ssPctOf(agg)+'% independent</p>'
+        +_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
+      var sRows=Object.keys(subj).sort(function(x,y){return _ssPctOf(subj[y])-_ssPctOf(subj[x]);}).map(function(nm){return _ssBar(nm,_ssPctOf(subj[nm]));}).join('');
+      var bRows=['Morning','Lunch','Afternoon'].filter(function(b){return bucket[b].op>0;}).map(function(b){return _ssBar(b,_ssPctOf(bucket[b]));}).join('');
+      var hs=101,hS=null;Object.keys(subj).forEach(function(nm){var p=_ssPctOf(subj[nm]);if(p<hs){hs=p;hS=nm;}});
+      var hb=101,hB=null;['Morning','Lunch','Afternoon'].forEach(function(b){if(bucket[b].op>0){var p=_ssPctOf(bucket[b]);if(p<hb){hb=p;hB=b;}}});
+      if(sRows||bRows)ti+='<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0;page-break-inside:avoid">'
+        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject (4 weeks)</div>'+(sRows||'<p style="color:#94a0ae">—</p>')+'</div>'
+        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day (4 weeks)</div>'+(bRows||'<p style="color:#94a0ae">—</p>')+'</div></div>';
+      if(hS||hB)ti+='<p style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#faeeda;border:1px solid #FAC775;border-radius:6px;padding:4px 10px;color:#633806">Hardest: '+(hS?'<strong>'+esc(hS)+' ('+hs+'%)</strong>':'')+(hS&&hB?' &amp; ':'')+(hB?'<strong>'+hB+' ('+hb+'%)</strong>':'')+'</p>';
+    }
+    html+='<div class="lesson-title">School target data: '+esc(t.name)+'</div><div class="ldet">'+ti+'</div>';
+  });
+  (ss.net||[]).forEach(function(nn){
+    var pts=Object.keys(netLog).filter(function(d){return d>=from&&d<=D;}).sort().map(function(d){var x=(netLog[d].data||{})[nn.id];return (x&&x.pct!=null)?{date:d,y:x.pct}:null;}).filter(Boolean);
+    var td=netLog[D]&&(netLog[D].data||{})[nn.id];
+    if(!td&&!pts.length&&(nn.status||'active')!=='active')return;
+    var ni=nn.sd?'<p style="color:#6b7280">SD: '+esc(nn.sd)+(nn.r?' · R: '+esc(nn.r):'')+'</p>':'';
+    if(td&&td.pct!=null)ni+='<p><strong>Today:</strong> '+td.c+' of '+td.t+' correct ('+td.pct+'%)'+(netLog[D].tx?' · recorded by '+esc(netLog[D].tx):'')+'</p>';
+    else{var pv=Object.keys(netLog).filter(function(d){var x=(netLog[d].data||{})[nn.id];return d<D&&x&&x.pct!=null;}).sort().pop();
+      ni+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(pv?' · last recorded '+_drFmtD(pv)+' ('+netLog[pv].data[nn.id].pct+'%)':' · nothing recorded yet')+'</p>';}
+    if(pts.length)ni+='<p style="margin-top:6px"><strong>Last 4 weeks:</strong> '+pts.length+' day'+(pts.length!==1?'s':'')+' · average '+Math.round(pts.reduce(function(a,p){return a+p.y;},0)/pts.length)+'%</p>'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
+    html+='<div class="lesson-title">NET data: '+esc(nn.name)+'</div><div class="ldet">'+ni+'</div>';
+  });
+  return html;
+}
 function buildAndPrintReport(){
   const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
   const gc=function(id){const e=document.getElementById(id);return e?e.checked:false;};
-  const r=_dayReportHtml({date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),reinf:gc('rb-reinf')});
+  const r=_dayReportHtml({date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),ssData:gc('rb-ss'),reinf:gc('rb-reinf')});
   if(!r)return;
   closeModal();
   _printHtml(r.html,r.pdfName);
