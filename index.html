@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-BX -->
+<!-- BUILD v2026-11-14-BY -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-BX</title>
+<title>CARE Client Binder v2026-11-14-BY</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-BX';
+const APP_VERSION='v2026-11-14-BY';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-BY',date:'14 Nov 2026',added:'Day report: every BIP is now listed every day (1:1 and School Shadow), even with no data that day — with the last recorded value, a 4-week summary (days, average, highest, goal) and the trend: ↓ Decreasing, ↑ Increasing, → Stable or Variable. The trend needs at least 4 days of data and only uses data after the latest break or plan change. Lesson data in the Day report also shows each target’s last 4 First Trial results (C / P / I).',improved:'',fixed:''},
   {version:'v2026-11-14-BX',date:'14 Nov 2026',added:'',improved:'BIP writing boxes (Prevention, Teaching, Response) now grow to fit what you type, so there is no small box to scroll inside. Add / Edit BIP windows scroll properly on iPad.',fixed:'Day report showed a rating as a % (e.g. 75%) — it now shows the rating (e.g. rating 4/5).'},
   {version:'v2026-11-11-BW',date:'11 Nov 2026',added:'',improved:'BIP plan text: a strategy name ending in a colon (e.g. “Response effort:”) is now bold even when its text starts on the next line — in the app and on the printed BIP.',fixed:''},
   {version:'v2026-10-30-BV',date:'30 Oct 2026',added:'',improved:'Printed BIP now uses the same layout therapists see in the app: each part in its own box with a blue line, bold strategy names, and ▸ bullets.',fixed:''},
@@ -2501,6 +2502,36 @@ function _drTxNames(date){return [...new Set((DB.sessions||[]).filter(function(s
 function _rbDateChanged(inp){var t=document.getElementById('rb-tx');if(t&&t.dataset.auto==='1')t.value=_drTxNames(inp.value);}
 // "Step 2: Random Rotation" — uses the target's own teaching steps, else the SD's (same as Edit Target)
 function _drStepLbl(t,sd,i){var st=(t.teachingSteps&&t.teachingSteps.length)?t.teachingSteps:((sd&&sd.teachingSteps)||[]);var n=st[i];return 'Step '+(i+1)+(n?': '+esc(n):'');}
+// BIP 4-week summary + trend for the Day report (v-BY). Daily values as on the graph (frequency = day total, rate/duration = day average).
+// Uses only data after the latest break / plan change. Trend = best-fit line over the days: change start→end vs the average;
+// >20% = Increasing/Decreasing, else Stable; very scattered = Variable; fewer than 4 days = not enough data. Describes the data only.
+function _drBipTrend(b,inCx,D,from){
+  var ms=bipMeasList(b),meas=ms.indexOf('rate')>=0?'rate':ms[0];
+  var suf=meas==='rate'?'/hr':meas==='duration'?' min':'';
+  var cut=from,cutWhy='';
+  (Array.isArray(b.breaks)?b.breaks:[]).forEach(function(k){if(k.date&&k.date>cut&&k.date<=D){cut=k.date;cutWhy='break';}});
+  (b.modHistory||[]).forEach(function(m){if(m.date&&m.date>cut&&m.date<=D){cut=m.date;cutWhy='plan change';}});
+  var byDate={};inCx.forEach(function(x){if(x.date<cut||x.date>D)return;var v=bipValForMeas(x,meas);if(v==null)return;(byDate[x.date]=byDate[x.date]||[]).push(v);});
+  var days=Object.keys(byDate).sort();
+  var pts=days.map(function(d){var a=byDate[d],t=a.reduce(function(p,q){return p+q;},0);return {d:d,y:meas==='frequency'?t:t/a.length};});
+  var r1=function(v){return Math.round(v*10)/10;};
+  var goalTxt=b.goal?esc(b.goal):((b.goalValue!=null&&b.goalValue!=='')?esc(String(b.goalValue))+suf:'');
+  var head='Last 4 weeks'+(cutWhy?' (since '+cutWhy+' '+_drFmtD(cut)+')':'');
+  if(!pts.length)return '<p><strong>'+head+':</strong> no data'+(goalTxt?' · Goal: '+goalTxt:'')+'</p>';
+  var n=pts.length,mean=pts.reduce(function(p,q){return p+q.y;},0)/n,hi=Math.max.apply(null,pts.map(function(p){return p.y;}));
+  var trend='';
+  if(n<4)trend='<span style="color:#6b7280">not enough data for a trend (needs 4 days)</span>';
+  else if(mean===0)trend='→ Stable';
+  else{
+    var t0=new Date(pts[0].d+'T00:00').getTime(),xs=pts.map(function(p){return (new Date(p.d+'T00:00').getTime()-t0)/864e5;});
+    var mx=xs.reduce(function(p,q){return p+q;},0)/n,sxx=0,sxy=0;
+    xs.forEach(function(x,i){sxx+=(x-mx)*(x-mx);sxy+=(x-mx)*(pts[i].y-mean);});
+    var sl=sxx?sxy/sxx:0,a=mean-sl*mx,chg=(sl*(xs[n-1]-xs[0]))/mean;
+    var res=Math.sqrt(xs.reduce(function(p,x,i){var e=pts[i].y-(a+sl*x);return p+e*e;},0)/n)/mean;
+    trend=res>0.75?'〰 Variable':chg>0.2?'↑ Increasing':chg<-0.2?'↓ Decreasing':'→ Stable';
+  }
+  return '<p><strong>'+head+':</strong> '+n+' day'+(n===1?'':'s')+' · average '+r1(mean)+suf+' · highest '+r1(hi)+suf+(goalTxt?' · Goal: '+goalTxt:'')+' · <strong>'+trend+'</strong></p>';
+}
 function _drBehVal(x){return x.count!=null?x.count+'':x.rate!=null?x.rate+'/hr':x.duration!=null?x.duration+' min':'';}
 function openReportBuilder(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c)return;
@@ -2553,15 +2584,16 @@ function _dayReportHtml(o){
     _bipCtxList(b).forEach(function(cx){
       const inCx=allB.filter(function(x){return _ctx(x.setting)===cx;});
       const dayLogs=inCx.filter(function(x){return x.date===D;});
-      if(!dayLogs.length)return;
       bh+='<div class="lesson-title">'+esc(b.name)+' · '+_drCtxLabel(cx)+'</div><div class="ldet">';
       if(!shown&&mods.length)bh+=mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+'</p>';}).join('');
       shown=true;
-      bh+='<p><strong>Today:</strong> '+dayLogs.map(function(x){return esc(_drBehVal(x))+(x.function&&(b.functions||[]).length>1?' ('+esc(bipFnLabel(x.function))+')':'')+(x.txName?' — '+esc(x.txName):'');}).join(', ')+'</p>';
+      if(dayLogs.length)bh+='<p><strong>Today:</strong> '+dayLogs.map(function(x){return esc(_drBehVal(x))+(x.function&&(b.functions||[]).length>1?' ('+esc(bipFnLabel(x.function))+')':'')+(x.txName?' — '+esc(x.txName):'');}).join(', ')+'</p>';
+      else{const prevL=inCx.filter(function(x){return x.date<D;}).sort(function(a,b2){return b2.date.localeCompare(a.date);});
+        bh+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(prevL.length?' · last recorded '+_drFmtD(prevL[0].date)+' ('+esc(_drBehVal(prevL[0]))+')':' · nothing recorded yet')+'</p>';}
+      bh+=_drBipTrend(b,inCx,D,from);
       const win=inCx.filter(function(x){return x.date>=from&&x.date<=D;}).sort(function(a,b2){return a.date.localeCompare(b2.date);});
-      bh+=_drBipCharts(b,win,{from:from,to:D})+'</div>';
+      bh+=(win.length?_drBipCharts(b,win,{from:from,to:D}):'')+'</div>';
     });
-    if(!shown&&mods.length)bh+='<div class="lesson-title">'+esc(b.name)+'</div><div class="ldet">'+mods.map(function(m){return '<p><strong>Plan change:</strong> '+esc(m.label||'')+'</p>';}).join('')+'</div>';
   });
   body+='<div class="sec-title">Behavior</div>'+(bh||none('No behavior notes or data on this day.'));
   // 3. Lessons: anything dated this day + that day's session data (4-week graphs)
@@ -2599,6 +2631,9 @@ function _dayReportHtml(o){
         sessWin.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
         entries.sort(function(a,b){return a.date.localeCompare(b.date);});
         sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
+        // First Trial: the last 4 results up to this day (v-BY)
+        const ftAll=[];cs.filter(function(s){return s.date<=D;}).sort(_sessCmp).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na&&td.firstTrial)ftAll.push({date:s.date,r:normFT(td.firstTrial)});});});
+        if(ftAll.length)sdi+='<p style="margin:2px 0 6px"><strong>First trial (last '+Math.min(4,ftAll.length)+'):</strong> '+ftAll.slice(-4).map(function(f){var c=normFTCol(f.r);return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c.c+';background:'+c.bg+'">'+esc(f.r)+'</span> <span style="color:#6b7280">'+_drFmtD(f.date)+'</span>';}).join(' · ')+'</p>';
       });
       // 2+ SDs: group this SD's updates under an 'SD#:' heading so notes are not mixed up between SDs
       if(sdi)inner+=multiSD?'<div style="margin:8px 0 2px"><strong>SD'+(si+1)+':</strong> '+esc(sd.sd||'')+'</div><div class="ldet">'+sdi+'</div>':sdi;
