@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-BZ -->
+<!-- BUILD v2026-11-14-CA -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-BZ</title>
+<title>CARE Client Binder v2026-11-14-CA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-BZ';
+const APP_VERSION='v2026-11-14-CA';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-CA',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude maintenance probes & stimuli checklist\u201d \u2014 the last 3 probes (+ / P / \u2212) of every maintenance target, and that day\u2019s stimuli checklist marks (these moved here from lesson data). Lesson data now also prints DT-phase lessons (step, First Trial, correct of total, 4-week graph, last 4 First Trials) and shows which teaching step a target is on (e.g. Red (Step 2: \u2026): 80%).',improved:'',fixed:''},
   {version:'v2026-11-14-BZ',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude School Shadow data & graphs\u201d (ticked for School observation). Shows each school target\u2019s results for the day by subject (C / P / \u2212), the % independent, a 4-week graph and a 4-week dashboard (by subject, by time of day, hardest) \u2014 plus each NET target\u2019s score and 4-week graph.',improved:'',fixed:''},
   {version:'v2026-11-14-BY',date:'14 Nov 2026',added:'Day report: every BIP is now listed every day (1:1 and School Shadow), even with no data that day — with the last recorded value, a 4-week summary (days, average, highest, goal) and the trend: ↓ Decreasing, ↑ Increasing, → Stable or Variable. The trend needs at least 4 days of data and only uses data after the latest break or plan change. Lesson data in the Day report also shows each target’s last 4 First Trial results (C / P / I).',improved:'',fixed:''},
   {version:'v2026-11-14-BX',date:'14 Nov 2026',added:'',improved:'BIP writing boxes (Prevention, Teaching, Response) now grow to fit what you type, so there is no small box to scroll inside. Add / Edit BIP windows scroll properly on iPad.',fixed:'Day report showed a rating as a % (e.g. 75%) — it now shows the rating (e.g. rating 4/5).'},
@@ -2331,7 +2332,7 @@ async function finishSupervision(){
     +'<div style="font-size:.8rem;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #eef1f4">'+esc(c.name)+' · <strong>'+(sv.supType||'overlap')+'</strong> · '+sv.date+' · '+esc(currentUser.name)+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'+'<label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Time (for report):</label>'+'<input id="sup-time-input" type="text" placeholder="e.g. 13:30-15:30" oninput="_supPreviewRefresh()" style="flex:1;max-width:200px;padding:4px 8px;font-size:.82rem">'+'</div>'
     +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><label style="font-size:.82rem;color:var(--muted);white-space:nowrap">Therapist:</label><input id="sup-tx-input" type="text" placeholder="(optional)" value="'+esc(_drTxNames(sv.date))+'" oninput="_supPreviewRefresh()" style="flex:1;max-width:320px;padding:4px 8px;font-size:.82rem"></div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:.84rem"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-lgraph" style="width:auto"'+((sv.supType||'')==='clinic'?' checked':'')+' onchange="_supPreviewRefresh()"> Include lesson data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-ss" style="width:auto"'+(sv.setting==='school'?' checked':'')+' onchange="_supPreviewRefresh()"> Include School Shadow data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-reinf" style="width:auto" onchange="_supPreviewRefresh()"> Add reinforcer list</label></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin-bottom:10px;font-size:.84rem"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-lgraph" style="width:auto"'+((sv.supType||'')==='clinic'?' checked':'')+' onchange="_supPreviewRefresh()"> Include lesson data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-ss" style="width:auto"'+(sv.setting==='school'?' checked':'')+' onchange="_supPreviewRefresh()"> Include School Shadow data &amp; graphs</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-maint" style="width:auto" onchange="_supPreviewRefresh()"> Include maintenance probes &amp; stimuli checklist</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="sup-reinf" style="width:auto" onchange="_supPreviewRefresh()"> Add reinforcer list</label></div>'
     +(changes.length?'':'<div style="font-size:.8rem;color:#8a6410;background:#fbeecb;border-radius:6px;padding:6px 10px;margin-bottom:10px">No new changes in this visit \u2014 the report below shows everything recorded for this day.</div>')
     +'<iframe id="sup-preview" title="Report preview" style="width:100%;height:55vh;border:1px solid #e6e9ee;border-radius:8px;background:#fff"></iframe>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap">'
@@ -2346,7 +2347,7 @@ function _supReportOpts(){
   const g=function(id){return document.getElementById(id);};
   const txEl=g('sup-tx-input');
   const tx=txEl?txEl.value:_drTxNames(sv.date);
-  return {date:sv.date,time:(g('sup-time-input')||{}).value||'',tx:tx,type:(sv.setting==='school'?'school':(sv.supType||'overlap')),withData:!!(g('sup-lgraph')&&g('sup-lgraph').checked),ssData:!!(g('sup-ss')&&g('sup-ss').checked),reinf:!!(g('sup-reinf')&&g('sup-reinf').checked)};
+  return {date:sv.date,time:(g('sup-time-input')||{}).value||'',tx:tx,type:(sv.setting==='school'?'school':(sv.supType||'overlap')),withData:!!(g('sup-lgraph')&&g('sup-lgraph').checked),ssData:!!(g('sup-ss')&&g('sup-ss').checked),maint:!!(g('sup-maint')&&g('sup-maint').checked),reinf:!!(g('sup-reinf')&&g('sup-reinf').checked)};
 }
 function _supPreviewRefresh(){try{const f=document.getElementById('sup-preview');if(!f)return;const r=_dayReportHtml(_supReportOpts());if(r)f.srcdoc=r.html;}catch(e){console.warn('preview failed',e);}}
 
@@ -2548,6 +2549,7 @@ function openReportBuilder(){
    +'</div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lgraph"> Include lesson data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day\u2019s scores + 4 weeks \u2014 e.g. for parents)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-ss"> Include School Shadow data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day + 4 weeks, with dashboard)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-maint"> Include maintenance probes &amp; stimuli checklist <span style="font-size:.72rem;color:#94a0ae">(last 3 probes; stimuli that day)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Add reinforcer list <span style="font-size:.72rem;color:#94a0ae">(whole list)</span></label></div>'
    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px"><button class="btn btn-primary" onclick="buildAndPrintReport()">Preview / Print</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>'
    +'</div>');
@@ -2602,7 +2604,7 @@ function _dayReportHtml(o){
   const cs=DB.sessions.filter(function(s){return s.clientId===selectedClientId;});
   const sessD=cs.filter(function(s){return s.date===D;});
   const sessWin=cs.filter(function(s){return s.date>=from&&s.date<=D;});
-  const withData=!!o.withData;
+  const withData=!!o.withData,maintOn=!!o.maint;
   let lh='';
   DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
     let inner='';
@@ -2610,6 +2612,7 @@ function _dayReportHtml(o){
     (l.phaseLog||[]).filter(function(e){return e.date===D&&KO(e.kind);}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D&&KO(n.kind);}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
     sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.note&&String(ld.note).trim())inner+='<div style="margin:4px 0"><strong>Session note'+(s.txName?' ('+esc(s.txName)+')':'')+':</strong>'+_drParas(ld.note)+'</div>';});
+    if(withData){try{inner+=_drDtLesson(l,cs,sessD,from,D);}catch(e){console.warn('DT data skipped',e);}}
     const multiSD=(l.sds||[]).length>1;
     (l.sds||[]).forEach(function(sd,si){
       let sdi='';
@@ -2623,16 +2626,16 @@ function _dayReportHtml(o){
         if(t.heldDate===D&&KO(t.heldKind))sdi+='<p style="color:#8a6410"><strong>On hold:</strong> '+esc(t.name)+'</p>';
         if(t.resumedDate===D&&KO(t.resumedKind))sdi+='<p><strong>Resumed:</strong> '+esc(t.name)+'</p>';
         (t.dtStepChanges||[]).filter(function(ch){return ch.date===D&&KO(ch.kind);}).forEach(function(ch){sdi+='<p><strong>Teaching step:</strong> '+esc(t.name)+' — '+_drStepLbl(t,sd,ch.from||0)+' → '+_drStepLbl(t,sd,ch.to||0)+'</p>';});
-        if(!withData)return;
         const stimDay=[];sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});const m=ld&&ld.stim&&ld.stim[t.id];if(m)Object.keys(m).forEach(function(k){if(m[k])stimDay.push(esc(_stimResolve(t,k))+' '+esc(m[k]));});});
-        if(stimDay.length)sdi+='<p style="margin:6px 0 2px"><strong>'+esc(t.name)+' \u2014 stimuli:</strong> '+stimDay.join(', ')+'</p>';
+        if(maintOn&&stimDay.length)sdi+='<p style="margin:6px 0 2px"><strong>'+esc(t.name)+' \u2014 stimuli checklist:</strong> '+stimDay.join(', ')+'</p>';
+        if(!withData)return;
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
         if(!dayVals.length)return;
         const entries=[];
         sessWin.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
         entries.sort(function(a,b){return a.date.localeCompare(b.date);});
-        sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
+        sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+_drStepAt(t,sd,D)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
         // First Trial: the last 4 results up to this day (v-BY)
         const ftAll=[];cs.filter(function(s){return s.date<=D;}).sort(_sessCmp).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na&&td.firstTrial)ftAll.push({date:s.date,r:normFT(td.firstTrial)});});});
         if(ftAll.length)sdi+='<p style="margin:2px 0 6px"><strong>First trial (last '+Math.min(4,ftAll.length)+'):</strong> '+ftAll.slice(-4).map(function(f){var c=normFTCol(f.r);return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c.c+';background:'+c.bg+'">'+esc(f.r)+'</span> <span style="color:#6b7280">'+_drFmtD(f.date)+'</span>';}).join(' · ')+'</p>';
@@ -2640,6 +2643,7 @@ function _dayReportHtml(o){
       // 2+ SDs: group this SD's updates under an 'SD#:' heading so notes are not mixed up between SDs
       if(sdi)inner+=multiSD?'<div style="margin:8px 0 2px"><strong>SD'+(si+1)+':</strong> '+esc(sd.sd||'')+'</div><div class="ldet">'+sdi+'</div>':sdi;
     });
+    if(maintOn){try{inner+=_drMaint(l,cs,D);}catch(e){console.warn('maintenance skipped',e);}}
     if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><div class="ldet">'+inner+'</div>';
   });
   body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
@@ -2729,10 +2733,53 @@ function _drSsData(ss,D,from){
   });
   return html;
 }
+// v-CA: which teaching step a target was on at date D -> ' (Step 2: name)' or '' if the target has no steps
+function _drStepAt(t,sd,D){
+  var st=(t.teachingSteps&&t.teachingSteps.length)?t.teachingSteps:((sd&&sd.teachingSteps)||[]);
+  if(!st.length)return '';
+  var ch=(t.dtStepChanges||[]).slice().sort(function(a,b){return (a.date||'').localeCompare(b.date||'');});
+  var idx=t.dtStepIndex||0;
+  if(ch.length){var before=ch.filter(function(c){return (c.date||'')<=D;});idx=before.length?(before[before.length-1].to||0):(ch[0].from||0);}
+  return ' ('+_drStepLbl(t,sd,idx)+')';
+}
+// v-CA: DT-phase lesson data for the Day report (lessonData[].dtData). '' when no DT data that day.
+function _drDtLesson(l,cs,sessD,from,D){
+  var today=[];sessD.forEach(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.dtData)today.push({s:s,d:ld.dtData});});
+  if(!today.length)return '';
+  var ftB=function(r){var c=normFTCol(r);return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c.c+';background:'+c.bg+'">'+esc(r==='-'?'−':r)+'</span>';};
+  var out=today.map(function(x){var d=x.d;var bits=[];
+    if(d.stepName)bits.push('Step '+((d.stepIndex||0)+1)+': '+esc(d.stepName));
+    if(d.firstTrial)bits.push('First trial '+ftB(d.firstTrial));
+    if(d.total)bits.push(d.correct+' of '+d.total+' correct ('+d.pct+'%)');
+    if(x.s.txName)bits.push(esc(x.s.txName));
+    return '<p style="margin:8px 0 2px"><strong>DT'+(l.dtType?' · '+esc(l.dtType):'')+':</strong> '+bits.join(' · ')+'</p>';}).join('');
+  var all=cs.filter(function(s){return s.date<=D;}).sort(_sessCmp).map(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return ld&&ld.dtData?{date:s.date,d:ld.dtData}:null;}).filter(Boolean);
+  var pts=all.filter(function(x){return x.date>=from&&x.d.pct!=null;}).map(function(x){return {date:x.date,y:x.d.pct};});
+  if(pts.length)out+=_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
+  var ft=all.filter(function(x){return x.d.firstTrial;}).slice(-4);
+  if(ft.length)out+='<p style="margin:2px 0 6px"><strong>First trial (last '+ft.length+'):</strong> '+ft.map(function(x){return ftB(x.d.firstTrial)+' <span style="color:#6b7280">'+_drFmtD(x.date)+'</span>';}).join(' · ')+'</p>';
+  return out;
+}
+// v-CA: maintenance probes — last 3 (+ / P / -) per mastered target, up to D. Maintenance-phase lessons list every
+// mastered target ("no probes yet" if none); other lessons only list mastered targets that have probes.
+function _drMaint(l,cs,D){
+  var isM=l.phase==='maintenance';
+  var sorted=cs.filter(function(s){return s.date<=D;}).sort(_sessCmp);
+  var col={'+':['#2f6b2c','#e2f2df'],'P':['#8a6410','#fbeecb'],'-':['#b23a2a','#fbe0da']};
+  var rows=[];
+  (l.sds||[]).forEach(function(sd){(sd.targets||[]).forEach(function(t){
+    if(t.status!=='mastered'||_isStimT(t))return;
+    var pr=[];sorted.forEach(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&td.dataType==='maintenance'&&td.result)pr.push({date:s.date,r:td.result});});});
+    if(!pr.length&&!isM)return;
+    rows.push('<p style="margin:2px 0">'+esc(t.name)+': '+(pr.length?pr.slice(-3).map(function(p){var c=col[p.r]||['#374151','#eef1f4'];return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c[0]+';background:'+c[1]+'">'+(p.r==='-'?'−':esc(p.r))+'</span> <span style="color:#6b7280">'+_drFmtD(p.date)+'</span>';}).join(' · '):'<span style="color:#6b7280">no probes yet</span>')+'</p>');
+  });});
+  if(!rows.length)return '';
+  return '<div style="margin:8px 0 4px"><strong>Maintenance probes (last 3):</strong></div>'+rows.join('');
+}
 function buildAndPrintReport(){
   const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
   const gc=function(id){const e=document.getElementById(id);return e?e.checked:false;};
-  const r=_dayReportHtml({date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),ssData:gc('rb-ss'),reinf:gc('rb-reinf')});
+  const r=_dayReportHtml({date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),ssData:gc('rb-ss'),maint:gc('rb-maint'),reinf:gc('rb-reinf')});
   if(!r)return;
   closeModal();
   _printHtml(r.html,r.pdfName);
