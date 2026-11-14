@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-CB -->
+<!-- BUILD v2026-11-14-CC -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-CB</title>
+<title>CARE Client Binder v2026-11-14-CC</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-CB';
+const APP_VERSION='v2026-11-14-CC';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-CC',date:'14 Nov 2026',added:'Day report (School Shadow ticked): a \u201cSchool targets\u201d summary \u2014 current targets, plus what was mastered, added, put on hold or resumed since the last school observation (with dates). New school and NET targets now remember the day they were added.',improved:'School Shadow graphs and the monthly overview in the Day report now cover the time since the last school observation (up to 3 months). If no earlier observation is found they cover the last 4 weeks.',fixed:''},
   {version:'v2026-11-14-CB',date:'14 Nov 2026',added:'',improved:'Day report: BIPs now follow the visit type \u2014 School observation shows School Shadow BIPs only, Overlap shows 1:1 BIPs only, Clinic and All visits show both. Ticking \u201cInclude School Shadow data & graphs\u201d also adds School Shadow BIPs and ALL of that day\u2019s school notes (whichever visit they were written in, e.g. school updates made during a Clinic visit). On a School observation report the Lessons section is left out when it is empty.',fixed:''},
   {version:'v2026-11-14-CA',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude maintenance probes & stimuli checklist\u201d \u2014 the last 3 probes (+ / P / \u2212) of every maintenance target, and that day\u2019s stimuli checklist marks (these moved here from lesson data). Lesson data now also prints DT-phase lessons (step, First Trial, correct of total, 4-week graph, last 4 First Trials) and shows which teaching step a target is on (e.g. Red (Step 2: \u2026): 80%).',improved:'',fixed:''},
   {version:'v2026-11-14-BZ',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude School Shadow data & graphs\u201d (ticked for School observation). Shows each school target\u2019s results for the day by subject (C / P / \u2212), the % independent, a 4-week graph and a 4-week dashboard (by subject, by time of day, hardest) \u2014 plus each NET target\u2019s score and 4-week graph.',improved:'',fixed:''},
@@ -2654,7 +2655,7 @@ function _dayReportHtml(o){
   // School Shadow observation notes for this day (section only appears when there are some)
   const _ssc=c.schoolShadow||{};
   const ssNotes=(_ssc.notes||[]).filter(function(n){return n.date===D&&KOs(n.kind);});
-  let ssh=ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('');
+  let ssh=ssNotes.length?'<div class="lesson-title">School notes</div><div class="ldet">'+ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('')+'</div>':'';
   [['school',_ssc.targets||[],'School target'],['net',_ssc.net||[],'NET']].forEach(function(g){
     g[1].forEach(function(t){
       let ti='';
@@ -2665,7 +2666,12 @@ function _dayReportHtml(o){
       if(ti)ssh+='<div class="lesson-title">'+g[2]+': '+esc(t.name)+'</div><div class="ldet">'+(g[0]==='net'&&t.sd?'<p style="color:#6b7280">SD: '+esc(t.sd)+'</p>':'')+ti+'</div>';
     });
   });
-  if(o.ssData){try{ssh+=_drSsData(_ssc,D,from);}catch(e){console.warn('school data skipped',e);}}
+  if(o.ssData){try{
+    const _lo=_drLastSchoolObs(c,D);
+    const ssFrom=_lo?(function(){var f=_drDaysBefore(_lo,-1),cap=_drDaysBefore(D,92);return f<cap?cap:f;})():from;
+    const ssLbl=_lo?'Since last observation ('+_drFmtD(_lo)+')':'Last 4 weeks';
+    ssh=_drSsSummary(_ssc,D,ssFrom,ssLbl)+ssh+_drSsData(_ssc,D,ssFrom,ssLbl);
+  }catch(e){console.warn('school data skipped',e);}}
   if(ssh)body+='<div class="sec-title">School Shadow</div>'+ssh;
   // 4. Reinforcer list (optional, whole list)
   if(o.reinf&&(c.reinforcers||[]).length){
@@ -2675,8 +2681,44 @@ function _dayReportHtml(o){
   const pdfName='CARE '+_safe+' day report '+D;
   return {html:_reportShell(pdfName,subtitle,meta,body),pdfName:pdfName};
 }
+// v-CC: the latest school-observation date before D = latest date of anything made in a 'school' visit
+// (notes, target changes, mastery, lesson updates…). '' if none found. Read-only.
+function _drLastSchoolObs(c,D){
+  var best='';
+  var walk=function(o,depth){
+    if(!o||typeof o!=='object'||depth>8)return;
+    if(Array.isArray(o)){o.forEach(function(x){walk(x,depth+1);});return;}
+    Object.keys(o).forEach(function(k){
+      var v=o[k];
+      if(v==='school'&&(k==='kind'||/Kind$/.test(k))){
+        var d=k==='kind'?o.date:o[k.replace(/Kind$/,'Date')];
+        if(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&d<D&&d>best)best=d;
+      }else if(v&&typeof v==='object')walk(v,depth+1);
+    });
+  };
+  walk(c,0);
+  (DB.lessons||[]).forEach(function(l){if(l.clientId===c.id)walk(l,0);});
+  (DB.bips||[]).forEach(function(b){if(b.clientId===c.id)walk(b,0);});
+  return best;
+}
+// v-CC: school targets summary — current targets + changes from `from` to D (dates shown)
+function _drSsSummary(ss,D,from,lbl){
+  if(!ss)return '';
+  var all=[];(ss.targets||[]).forEach(function(t){all.push({t:t,net:false});});(ss.net||[]).forEach(function(t){all.push({t:t,net:true});});
+  if(!all.length)return '';
+  var nm=function(x){return esc(x.t.name)+(x.net?' (NET)':'');};
+  var inW=function(d){return d&&d>=from&&d<=D;};
+  var cur=all.filter(function(x){var st=x.t.status||'active';if(x.t.addedDate&&x.t.addedDate>D)return false;if(st==='active')return !(x.t.resumedDate&&x.t.resumedDate>D&&x.t.heldDate&&x.t.heldDate<=D&&x.t.heldDate<x.t.resumedDate);return (st==='mastered'&&x.t.masteredDate&&x.t.masteredDate>D)||(st!=='mastered'&&x.t.heldDate&&x.t.heldDate>D);}); // as of D (a past report must not use today's status)
+  var row=function(label,col,key){var L=all.filter(function(x){return inW(x.t[key]);}).sort(function(a,b){return a.t[key].localeCompare(b.t[key]);});
+    return L.length?'<p><strong style="color:'+col+'">'+label+':</strong> '+L.map(function(x){return nm(x)+' <span style="color:#6b7280">('+_drFmtD(x.t[key])+')</span>';}).join(' · ')+'</p>':'';};
+  var ch=row('Mastered','#2f6b2c','masteredDate')+row('New target','#1a6f94','addedDate')+row('On hold','#8a6410','heldDate')+row('Resumed','#374151','resumedDate');
+  var h='<p><strong>Current targets:</strong></p>'+(cur.length?'<ol style="margin:0 0 6px 22px">'+cur.map(function(x){return '<li>'+nm(x)+'</li>';}).join('')+'</ol>':'<p style="color:#6b7280">none active</p>');
+  h+=ch?'<p style="margin-top:6px;color:#6b7280">'+esc(lbl)+':</p>'+ch:'<p style="color:#6b7280">No target changes — '+esc(lbl.charAt(0).toLowerCase()+lbl.slice(1))+'.</p>';
+  return '<div class="lesson-title">School targets</div><div class="ldet">'+h+'</div>';
+}
 // School Shadow data for the Day report (v-BZ). Read-only. ss = client.schoolShadow, D = report day, from = 4 weeks back.
-function _drSsData(ss,D,from){
+function _drSsData(ss,D,from,lbl){
+  lbl=lbl||'Last 4 weeks';
   if(!ss)return '';
   var log=ss.log||{},netLog=ss.netLog||{};
   var slotById={};(ss.slots||[]).forEach(function(x){slotById[x.id]=x;});
@@ -2711,15 +2753,15 @@ function _drSsData(ss,D,from){
       ti+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(prev?(function(){var pc=dayCells(t.id,prev);var c=pc.filter(function(x){return x.v==='C';}).length;return ' · last recorded '+_drFmtD(prev)+' ('+Math.round(c/pc.length*100)+'%)';})():' · nothing recorded yet')+'</p>';
     }
     if(pts.length){
-      ti+='<p style="margin-top:6px"><strong>Last 4 weeks:</strong> '+pts.length+' school day'+(pts.length!==1?'s':'')+' · '+_ssPctOf(agg)+'% independent</p>'
+      ti+='<p style="margin-top:6px"><strong>'+esc(lbl)+':</strong> '+pts.length+' school day'+(pts.length!==1?'s':'')+' · '+_ssPctOf(agg)+'% independent</p>'
         +_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
       var sRows=Object.keys(subj).sort(function(x,y){return _ssPctOf(subj[y])-_ssPctOf(subj[x]);}).map(function(nm){return _ssBar(nm,_ssPctOf(subj[nm]));}).join('');
       var bRows=['Morning','Lunch','Afternoon'].filter(function(b){return bucket[b].op>0;}).map(function(b){return _ssBar(b,_ssPctOf(bucket[b]));}).join('');
       var hs=101,hS=null;Object.keys(subj).forEach(function(nm){var p=_ssPctOf(subj[nm]);if(p<hs){hs=p;hS=nm;}});
       var hb=101,hB=null;['Morning','Lunch','Afternoon'].forEach(function(b){if(bucket[b].op>0){var p=_ssPctOf(bucket[b]);if(p<hb){hb=p;hB=b;}}});
       if(sRows||bRows)ti+='<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0;page-break-inside:avoid">'
-        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject (4 weeks)</div>'+(sRows||'<p style="color:#94a0ae">—</p>')+'</div>'
-        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day (4 weeks)</div>'+(bRows||'<p style="color:#94a0ae">—</p>')+'</div></div>';
+        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject</div>'+(sRows||'<p style="color:#94a0ae">—</p>')+'</div>'
+        +'<div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day</div>'+(bRows||'<p style="color:#94a0ae">—</p>')+'</div></div>';
       if(hS||hB)ti+='<p style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#faeeda;border:1px solid #FAC775;border-radius:6px;padding:4px 10px;color:#633806">Hardest: '+(hS?'<strong>'+esc(hS)+' ('+hs+'%)</strong>':'')+(hS&&hB?' &amp; ':'')+(hB?'<strong>'+hB+' ('+hb+'%)</strong>':'')+'</p>';
     }
     html+='<div class="lesson-title">School target data: '+esc(t.name)+'</div><div class="ldet">'+ti+'</div>';
@@ -2732,7 +2774,7 @@ function _drSsData(ss,D,from){
     if(td&&td.pct!=null)ni+='<p><strong>Today:</strong> '+td.c+' of '+td.t+' correct ('+td.pct+'%)'+(netLog[D].tx?' · recorded by '+esc(netLog[D].tx):'')+'</p>';
     else{var pv=Object.keys(netLog).filter(function(d){var x=(netLog[d].data||{})[nn.id];return d<D&&x&&x.pct!=null;}).sort().pop();
       ni+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(pv?' · last recorded '+_drFmtD(pv)+' ('+netLog[pv].data[nn.id].pct+'%)':' · nothing recorded yet')+'</p>';}
-    if(pts.length)ni+='<p style="margin-top:6px"><strong>Last 4 weeks:</strong> '+pts.length+' day'+(pts.length!==1?'s':'')+' · average '+Math.round(pts.reduce(function(a,p){return a+p.y;},0)/pts.length)+'%</p>'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
+    if(pts.length)ni+='<p style="margin-top:6px"><strong>'+esc(lbl)+':</strong> '+pts.length+' day'+(pts.length!==1?'s':'')+' · average '+Math.round(pts.reduce(function(a,p){return a+p.y;},0)/pts.length)+'%</p>'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
     html+='<div class="lesson-title">NET data: '+esc(nn.name)+'</div><div class="ldet">'+ni+'</div>';
   });
   return html;
@@ -3660,11 +3702,11 @@ function _ssSlotAdd(){if(!_ssCanSetup())return;var ss=_ssGet();ss.slots.push({id
 function _ssSlotDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();var sid=btn.dataset.id;ss.slots=(ss.slots||[]).filter(function(x){return x.id!==sid;});_SS_DAYS.forEach(function(d){if(ss.grid[d])delete ss.grid[d][sid];});_ssSave();render();}
 var _ssTgtEditId='';var _ssNetEditId='';
 function _ssTargetModal(id){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}_ssTgtEditId=id||'';var ss=_ssGet();var t=id?(ss.targets||[]).find(function(x){return x.id===id;}):null;t=t||{};modal('<h3 style="margin-bottom:10px">'+(id?'Edit':'Add')+' school target (first trial)</h3><label>Target name<input id="sst-n" type="text" value="'+esc(t.name||'')+'"></label><label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2">'+esc(t.sd||'')+'</textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2">'+esc(t.r||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">'+(id?'Save':'Add')+'</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
-function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('sst-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}var sd=((document.getElementById('sst-sd')||{}).value||'').trim();var r=((document.getElementById('sst-r')||{}).value||'').trim();if(_ssTgtEditId){var t=(ss.targets||[]).find(function(x){return x.id===_ssTgtEditId;});if(t){t.name=nm;t.sd=sd;t.r=r;}}else{ss.targets.push({id:uid(),name:nm,sd:sd,r:r,status:'active'});}_ssTgtEditId='';_ssSave();closeModal();render();}
+function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('sst-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}var sd=((document.getElementById('sst-sd')||{}).value||'').trim();var r=((document.getElementById('sst-r')||{}).value||'').trim();if(_ssTgtEditId){var t=(ss.targets||[]).find(function(x){return x.id===_ssTgtEditId;});if(t){t.name=nm;t.sd=sd;t.r=r;}}else{ss.targets.push({id:uid(),name:nm,sd:sd,r:r,status:'active',addedDate:_workDate(),addedKind:_workKind()});}_ssTgtEditId='';_ssSave();closeModal();render();}
 function _ssSetTargetStatus(btn){if(!_ssCanSetup())return;var ss=_ssGet();var t=(ss.targets||[]).find(function(x){return x.id===btn.dataset.id;});if(t){_ssStampStatus(t,btn.dataset.st);t.status=btn.dataset.st;}_ssSave();render();}
 function _ssTargetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.targets=(ss.targets||[]).filter(function(t){return t.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetModal(id){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}_ssNetEditId=id||'';var ss=_ssGet();var n=id?(ss.net||[]).find(function(x){return x.id===id;}):null;n=n||{};modal('<h3 style="margin-bottom:10px">'+(id?'Edit':'Add')+' NET target (% correct)</h3><label>Target name<input id="ssnt-n" type="text" value="'+esc(n.name||'')+'"></label><label style="margin-top:8px">SD<textarea id="ssnt-sd" rows="2">'+esc(n.sd||'')+'</textarea></label><label style="margin-top:8px">R<textarea id="ssnt-r" rows="2">'+esc(n.r||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveNet()">'+(id?'Save':'Add')+'</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
-function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('ssnt-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}var sd=((document.getElementById('ssnt-sd')||{}).value||'').trim();var r=((document.getElementById('ssnt-r')||{}).value||'').trim();if(_ssNetEditId){var n=(ss.net||[]).find(function(x){return x.id===_ssNetEditId;});if(n){n.name=nm;n.sd=sd;n.r=r;}}else{ss.net.push({id:uid(),name:nm,sd:sd,r:r,status:'active'});}_ssNetEditId='';_ssSave();closeModal();render();}
+function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('ssnt-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}var sd=((document.getElementById('ssnt-sd')||{}).value||'').trim();var r=((document.getElementById('ssnt-r')||{}).value||'').trim();if(_ssNetEditId){var n=(ss.net||[]).find(function(x){return x.id===_ssNetEditId;});if(n){n.name=nm;n.sd=sd;n.r=r;}}else{ss.net.push({id:uid(),name:nm,sd:sd,r:r,status:'active',addedDate:_workDate(),addedKind:_workKind()});}_ssNetEditId='';_ssSave();closeModal();render();}
 function _ssSetNetStatus(btn){if(!_ssCanSetup())return;var ss=_ssGet();var n=(ss.net||[]).find(function(x){return x.id===btn.dataset.id;});if(n){_ssStampStatus(n,btn.dataset.st);n.status=btn.dataset.st;}_ssSave();render();}
 function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net||[]).filter(function(x){return x.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
