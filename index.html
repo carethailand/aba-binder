@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-CD -->
+<!-- BUILD v2026-11-14-CE -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-CD</title>
+<title>CARE Client Binder v2026-11-14-CE</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-CD';
+const APP_VERSION='v2026-11-14-CE';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-CE',date:'14 Nov 2026',added:'',improved:'Observation notes by subject: subjects are now read from the timetable one by one. \u201cSnack/Maths\u201d gives two subjects (Snack, Maths). When a box lists two classes (e.g. \u201cMusic 5P / Swimming 5E\u201d), only the child\u2019s own class is used \u2014 taken from Case Info \u2192 Class / Room (e.g. 5E). \u201cboth\u201d is left off (\u201cPE both\u201d \u2192 PE). Each subject appears once. The timetable itself is not changed.',fixed:''},
   {version:'v2026-11-14-CD',date:'14 Nov 2026',added:'School Shadow tab: \u201cObservation notes by subject\u201d \u2014 one card per subject (from the timetable, plus + Add subject), each opens and closes; supervisors write notes during a School observation visit, newest first. New \u201cRecommendations\u201d box. Both print in the School observation Day report and Finish & Preview (that day only): recommendations after the school notes, subject notes at the end, grouped by subject. Formatting: \u201cName:\u201d in bold, \u201c- \u201d bullets, \u201cRec:\u201d lines in italics.',improved:'Supervisor observation notes now show in one scrolling box (newest on top, all open) instead of a closed card per visit. Deleting a school note now asks first. Finish & Preview now counts School Shadow changes made in the visit too (school notes, subject notes, recommendations, target notes, targets added / mastered / on hold / resumed), so therapists are told about them.',fixed:''},
   {version:'v2026-11-14-CC',date:'14 Nov 2026',added:'Day report (School Shadow ticked): a \u201cSchool targets\u201d summary \u2014 current targets, plus what was mastered, added, put on hold or resumed since the last school observation (with dates). New school and NET targets now remember the day they were added.',improved:'School Shadow graphs and the monthly overview in the Day report now cover the time since the last school observation (up to 3 months). If no earlier observation is found they cover the last 4 weeks.',fixed:''},
   {version:'v2026-11-14-CB',date:'14 Nov 2026',added:'',improved:'Day report: BIPs now follow the visit type \u2014 School observation shows School Shadow BIPs only, Overlap shows 1:1 BIPs only, Clinic and All visits show both. Ticking \u201cInclude School Shadow data & graphs\u201d also adds School Shadow BIPs and ALL of that day\u2019s school notes (whichever visit they were written in, e.g. school updates made during a Clinic visit). On a School observation report the Lessons section is left out when it is empty.',fixed:''},
@@ -3939,9 +3940,24 @@ function _ssSId(n){var k=_ssSKey(n),h=0;for(var i=0;i<k.length;i++){h=((h<<5)-h+
 function _ssMapList(m){if(!m||typeof m!=='object'||Array.isArray(m))return [];return Object.keys(m).map(function(k){return m[k];}).filter(function(n){return n&&typeof n==='object'&&n.id;});}
 function _ssNewestFirst(a,b){return (b.date||'').localeCompare(a.date||'')||(_sessSavedAt(b)-_sessSavedAt(a));}
 // subjects: timetable (time order, Mon→Fri), then added subjects, then any subject that only exists in old notes
+// v-CE: the child's class code from Case Info → Class / Room, e.g. "5E" ('' if none)
+function _ssClassCode(c){var m=String(((c&&c.schoolInfo)||{}).className||'').toUpperCase().match(/\b(\d{1,2}[A-Z])\b/);return m?m[1]:'';}
+// v-CE: one timetable box -> its subjects. "Snack/Maths" -> Snack, Maths. Parts naming another class
+// ("Music 5P / Swimming 5E" with class 5E) are left out. Class codes and "both" are removed. Read-only.
+function _ssCellSubjects(cell,cls){
+  var codes=function(p){return p.match(/\b\d{1,2}[A-Z]\b/g)||[];};
+  var parts=String(cell||'').split('/').map(function(p){return p.trim();}).filter(Boolean);
+  if(cls&&parts.some(function(p){return codes(p).length;})){
+    var mine=parts.filter(function(p){var k=codes(p);return !k.length||k.indexOf(cls)>=0;});
+    if(mine.length)parts=mine;
+  }
+  return parts.map(function(p){p=p.replace(/\b\d{1,2}[A-Z]\b/g,' ').replace(/\bboth\b/ig,' ').replace(/\s+/g,' ').trim();return p?p.charAt(0).toUpperCase()+p.slice(1):'';}).filter(Boolean);
+}
+// subjects: timetable (time order, Mon→Fri), then added subjects, then any subject that only exists in old notes
 function _ssSubjects(ss){
   var out=[],seen={};var add=function(n){n=String(n||'').trim();var k=_ssSKey(n);if(!k||seen[k])return;seen[k]=1;out.push(n);};
-  _ssSortSlots(ss.slots).forEach(function(sl){_SS_DAYS.forEach(function(d){add(((ss.grid||{})[d]||{})[sl.id]);});});
+  var cl=(DB.clients||[]).find(function(x){return x&&x.schoolShadow===ss;}),cls=_ssClassCode(cl);
+  _ssSortSlots(ss.slots).forEach(function(sl){_SS_DAYS.forEach(function(d){_ssCellSubjects(((ss.grid||{})[d]||{})[sl.id],cls).forEach(add);});});
   _ssMapList(ss.obsSubj).sort(function(a,b){return _sessSavedAt(a)-_sessSavedAt(b);}).forEach(function(x){add(x.name);});
   _ssMapList(ss.snotes).sort(_ssNewestFirst).forEach(function(n){add(n.subj);});
   return out;
