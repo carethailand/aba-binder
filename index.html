@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-14-CA -->
+<!-- BUILD v2026-11-14-CB -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-14-CA</title>
+<title>CARE Client Binder v2026-11-14-CB</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-14-CA';
+const APP_VERSION='v2026-11-14-CB';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-CB',date:'14 Nov 2026',added:'',improved:'Day report: BIPs now follow the visit type \u2014 School observation shows School Shadow BIPs only, Overlap shows 1:1 BIPs only, Clinic and All visits show both. Ticking \u201cInclude School Shadow data & graphs\u201d also adds School Shadow BIPs and ALL of that day\u2019s school notes (whichever visit they were written in, e.g. school updates made during a Clinic visit). On a School observation report the Lessons section is left out when it is empty.',fixed:''},
   {version:'v2026-11-14-CA',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude maintenance probes & stimuli checklist\u201d \u2014 the last 3 probes (+ / P / \u2212) of every maintenance target, and that day\u2019s stimuli checklist marks (these moved here from lesson data). Lesson data now also prints DT-phase lessons (step, First Trial, correct of total, 4-week graph, last 4 First Trials) and shows which teaching step a target is on (e.g. Red (Step 2: \u2026): 80%).',improved:'',fixed:''},
   {version:'v2026-11-14-BZ',date:'14 Nov 2026',added:'Day report and Finish & Preview: new tick box \u201cInclude School Shadow data & graphs\u201d (ticked for School observation). Shows each school target\u2019s results for the day by subject (C / P / \u2212), the % independent, a 4-week graph and a 4-week dashboard (by subject, by time of day, hardest) \u2014 plus each NET target\u2019s score and 4-week graph.',improved:'',fixed:''},
   {version:'v2026-11-14-BY',date:'14 Nov 2026',added:'Day report: every BIP is now listed every day (1:1 and School Shadow), even with no data that day — with the last recorded value, a 4-week summary (days, average, highest, goal) and the trend: ↓ Decreasing, ↑ Increasing, → Stable or Variable. The trend needs at least 4 days of data and only uses data after the latest break or plan change. Lesson data in the Day report also shows each target’s last 4 First Trial results (C / P / I).',improved:'',fixed:''},
@@ -2566,6 +2567,9 @@ function _dayReportHtml(o){
   // Supervisor updates made in a DIFFERENT visit type that day are left out. Unlabelled items (saved before v-BI) and
   // items made in therapist sessions ('session') always show. Session data and behavior are whole-day.
   const KO=function(k){return !k||k==='session'||_type==='all'||k===_type;};
+  // v-CB: school content. With the School Shadow box ticked, all of the day's school notes/updates print, whatever visit they were made in.
+  const KOs=function(k){return !!o.ssData||KO(k);};
+  const showCx=function(cx){return cx==='shadow'?(_type==='school'||_type==='clinic'||_type==='all'||!!o.ssData):(_type!=='school');};
   let meta='<tr><td>Client:</td><td>'+esc(c.name)+'</td></tr>'
     +'<tr><td>Date:</td><td>'+_drFmtD(D)+'</td></tr>'
     +'<tr><td>Time:</td><td>'+esc(_time)+'</td></tr>'
@@ -2585,7 +2589,7 @@ function _dayReportHtml(o){
     const allB=DB.behaviors.filter(function(x){return x.clientId===selectedClientId&&x.bipId===b.id;});
     const mods=(b.modHistory||[]).filter(function(m){return m.date===D;});
     let shown=false;
-    _bipCtxList(b).forEach(function(cx){
+    _bipCtxList(b).filter(showCx).forEach(function(cx){
       const inCx=allB.filter(function(x){return _ctx(x.setting)===cx;});
       const dayLogs=inCx.filter(function(x){return x.date===D;});
       bh+='<div class="lesson-title">'+esc(b.name)+' · '+_drCtxLabel(cx)+'</div><div class="ldet">';
@@ -2646,18 +2650,18 @@ function _dayReportHtml(o){
     if(maintOn){try{inner+=_drMaint(l,cs,D);}catch(e){console.warn('maintenance skipped',e);}}
     if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><div class="ldet">'+inner+'</div>';
   });
-  body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
+  if(lh||_type!=='school')body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
   // School Shadow observation notes for this day (section only appears when there are some)
   const _ssc=c.schoolShadow||{};
-  const ssNotes=(_ssc.notes||[]).filter(function(n){return n.date===D&&KO(n.kind);});
+  const ssNotes=(_ssc.notes||[]).filter(function(n){return n.date===D&&KOs(n.kind);});
   let ssh=ssNotes.map(function(n){return '<div style="margin-bottom:8px">'+_drParas(n.text)+'</div>';}).join('');
   [['school',_ssc.targets||[],'School target'],['net',_ssc.net||[],'NET']].forEach(function(g){
     g[1].forEach(function(t){
       let ti='';
-      if(t.masteredDate===D&&KO(t.masteredKind))ti+='<p style="color:#2f6b2c"><strong>Mastered</strong></p>';
-      if(t.heldDate===D&&KO(t.heldKind))ti+='<p style="color:#8a6410"><strong>On hold</strong></p>';
-      if(t.resumedDate===D&&KO(t.resumedKind))ti+='<p><strong>Resumed</strong></p>';
-      _ssTNotes(_ssc,t.id,g[0]).filter(function(n){return n.date===D&&KO(n.kind);}).reverse().forEach(function(n){ti+='<div style="margin:4px 0"><strong>Note:</strong>'+_drParas(n.text)+'</div>';});
+      if(t.masteredDate===D&&KOs(t.masteredKind))ti+='<p style="color:#2f6b2c"><strong>Mastered</strong></p>';
+      if(t.heldDate===D&&KOs(t.heldKind))ti+='<p style="color:#8a6410"><strong>On hold</strong></p>';
+      if(t.resumedDate===D&&KOs(t.resumedKind))ti+='<p><strong>Resumed</strong></p>';
+      _ssTNotes(_ssc,t.id,g[0]).filter(function(n){return n.date===D&&KOs(n.kind);}).reverse().forEach(function(n){ti+='<div style="margin:4px 0"><strong>Note:</strong>'+_drParas(n.text)+'</div>';});
       if(ti)ssh+='<div class="lesson-title">'+g[2]+': '+esc(t.name)+'</div><div class="ldet">'+(g[0]==='net'&&t.sd?'<p style="color:#6b7280">SD: '+esc(t.sd)+'</p>':'')+ti+'</div>';
     });
   });
