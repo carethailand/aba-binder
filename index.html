@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-11-BW -->
+<!-- BUILD v2026-11-14-BX -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-11-BW</title>
+<title>CARE Client Binder v2026-11-14-BX</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-11-BW';
+const APP_VERSION='v2026-11-14-BX';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-14-BX',date:'14 Nov 2026',added:'',improved:'BIP writing boxes (Prevention, Teaching, Response) now grow to fit what you type, so there is no small box to scroll inside. Add / Edit BIP windows scroll properly on iPad.',fixed:'Day report showed a rating as a % (e.g. 75%) — it now shows the rating (e.g. rating 4/5).'},
   {version:'v2026-11-11-BW',date:'11 Nov 2026',added:'',improved:'BIP plan text: a strategy name ending in a colon (e.g. “Response effort:”) is now bold even when its text starts on the next line — in the app and on the printed BIP.',fixed:''},
   {version:'v2026-10-30-BV',date:'30 Oct 2026',added:'',improved:'Printed BIP now uses the same layout therapists see in the app: each part in its own box with a blue line, bold strategy names, and ▸ bullets.',fixed:''},
   {version:'v2026-10-30-BU',date:'30 Oct 2026',added:'',improved:'Printed BIP is easier to read: each strategy under Prevention, Teaching and Response starts on its own line with a dash, with a little space between.',fixed:''},
@@ -2446,7 +2447,7 @@ function _drParas(txt){return String(txt||'').split(/\n+/).filter(function(x){re
 function _drWho(n){return n?' <span style="color:#6b7280;font-size:.85em">— '+esc(n)+'</span>':'';}
 function _drUserName(id){var u=(DB.users||[]).find(function(x){return x.id===id;});return u?u.name:'';}
 function _drFmtD(d){if(!d)return'';var p=d.split('-');return parseInt(p[2])+'.'+parseInt(p[1])+'.'+p[0].slice(2);}
-function _drTdVal(t,td){if(td.pct!=null)return Math.round(td.pct)+'%';if(td.rating!=null)return 'rating '+td.rating+'/'+((t.ratingScale&&t.ratingScale.max)||5);if(td.firstTrial)return normFT(td.firstTrial);if(td.count!=null)return td.count+'';return '';}
+function _drTdVal(t,td){if(td.rating!=null)return 'rating '+td.rating+'/'+((t.ratingScale&&t.ratingScale.max)||5);if(td.pct!=null)return Math.round(td.pct)+'%';if(td.firstTrial)return normFT(td.firstTrial);if(td.count!=null)return td.count+'';return '';}
 function _drCtxLabel(cx){return cx==='shadow'?'School Shadow':'1:1';}
 // One target's graph from session entries [{date,sessTime,td}] (already limited to the date window)
 function _drTargetChart(l,t,entries){
@@ -5993,7 +5994,7 @@ function renderBehaviorTab(){
       if(['supervisor','director'].includes(currentUser.role)){
         return '<div style="'+boxStyle+'">'
           +'<div style="'+hdrStyle+'">'+label+'</div>'
-          +'<textarea id="bip_'+key+'_'+bip.id+'" rows="4" style="margin:0;border:none;border-radius:0;font-size:.84rem;resize:vertical;width:100%;box-sizing:border-box;padding:10px 12px;background:#fff" placeholder="'+placeholder+'" onchange="saveBIPField(\''+bip.id+'\',\''+key+'\',this.value)">'+esc(val)+'</textarea>'
+          +'<textarea id="bip_'+key+'_'+bip.id+'" rows="'+_taRows(val,5)+'" oninput="_autoGrow(this)" onfocus="_autoGrow(this)" style="margin:0;border:none;border-radius:0;font-size:.9rem;line-height:1.55;resize:vertical;width:100%;box-sizing:border-box;padding:10px 12px;background:#fff" placeholder="'+placeholder+'" onchange="saveBIPField(\''+bip.id+'\',\''+key+'\',this.value)">'+esc(val)+'</textarea>'
           +'</div>';
       }
       if(!val)return'';
@@ -6357,7 +6358,7 @@ function showAddBIP(){if(!requireActiveSession())return;
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="nb-fn-'+f.id+'" value="'+f.id+'"> '+f.label+'</label>').join('');
   modal('<h3 style="margin-bottom:14px">Add Behavior (BIP)</h3>'
     +'<label>Behavior name<input id="nb-n" type="text" placeholder="e.g. Tantrum"></label>'
-    +'<label style="margin-top:10px">Operational Definition<textarea id="nb-d" rows="3" placeholder="Define topography, onset/offset, separation rule..."></textarea></label>'
+    +'<label style="margin-top:10px">Operational Definition<textarea id="nb-d" rows="4" oninput="_autoGrow(this)" placeholder="Define topography, onset/offset, separation rule..."></textarea></label>'
     +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem">Functions (select all that apply)</label>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+fnChecks+'</div></div>'
     +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem">Measurement (select all that apply)</label>'
@@ -6373,7 +6374,7 @@ function showAddBIP(){if(!requireActiveSession())return;
     +'<label style="margin-top:8px">Baseline<input id="nb-base" type="text" placeholder="e.g. 3/hr, 10 min avg"></label>'
     +'<label style="margin-top:8px">Goal value (for graph line, numeric)<input id="nb-gval" type="number" step="0.1" placeholder="e.g. 1"></label>'
     +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Appears in</label><div style="display:flex;gap:16px;margin-top:6px"><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="nb-ctx-1" '+(_addCtx!=='shadow'?'checked':'')+'> 🧩 1:1</label><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="nb-ctx-s" '+(_addCtx==='shadow'?'checked':'')+'> 🏫 School Shadow</label></div>'
-    +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveBIP()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+    +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveBIP()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>',{tall:true});
 }
 
 function saveBIP(){if(!requireActiveSession())return;
@@ -6409,7 +6410,7 @@ function editBIP(bipId){if(!requireActiveSession())return;
   const fnChecks=BIP_FUNCTIONS.map(f=>'<label style="font-weight:400;display:flex;align-items:center;gap:4px"><input type="checkbox" id="eb-fn-'+f.id+'" value="'+f.id+'"'+(fns.includes(f.id)?' checked':'')+'>'+f.label+'</label>').join('');
   modal('<h3 style="margin-bottom:14px">Edit BIP — '+esc(bip.name)+'</h3>'
     +'<label>Behavior name<input id="eb-n" type="text" value="'+esc(bip.name)+'"></label>'
-    +'<label style="margin-top:10px">Operational Definition<textarea id="eb-d" rows="3">'+esc(bip.description||'')+'</textarea></label>'
+    +'<label style="margin-top:10px">Operational Definition<textarea id="eb-d" rows="'+_taRows(bip.description,4)+'" oninput="_autoGrow(this)" onfocus="_autoGrow(this)">'+esc(bip.description||'')+'</textarea></label>'
     +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem">Functions</label>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+fnChecks+'</div></div>'
     +'<div style="margin-top:10px"><label style="font-weight:600;font-size:.85rem">Measurement</label>'
@@ -6425,7 +6426,7 @@ function editBIP(bipId){if(!requireActiveSession())return;
     +'<label style="margin-top:8px">Baseline<input id="eb-base" type="text" value="'+esc(bip.baseline||'')+'"></label>'
     +'<label style="margin-top:8px">Goal value (numeric, for graph line)<input id="eb-gval" type="number" step="0.1" value="'+(bip.goalValue!=null?bip.goalValue:'')+'"></label>'
     +'<label style="margin-top:8px;font-weight:600;font-size:.85rem">Appears in</label><div style="display:flex;gap:16px;margin-top:6px"><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="eb-ctx-1" '+(_ecx.indexOf('1:1')>=0?'checked':'')+'> 🧩 1:1</label><label style="font-weight:400;display:flex;align-items:center;gap:5px"><input type="checkbox" id="eb-ctx-s" '+(_ecx.indexOf('shadow')>=0?'checked':'')+'> 🏫 School Shadow</label></div>'
-    +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveEditBIP(\''+bipId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
+    +'<div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-green" onclick="saveEditBIP(\''+bipId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>',{tall:true});
 }
 
 function saveEditBIP(bipId){if(!requireActiveSession())return;
@@ -6973,7 +6974,11 @@ function formatNoteText(text){
     return'<p style="margin:0 0 6px 0;line-height:1.55">'+esc(line)+'</p>';
   }).join('');
 }
-function modal(html){var m=document.getElementById('modal-area');if(!m){m=document.createElement('div');m.id='modal-area';document.body.appendChild(m);}m.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:999;overflow-y:auto;padding:20px"><div class="unlock-exempt" style="background:#fff;padding:26px;border-radius:14px;width:520px;max-height:90vh;overflow-y:auto">'+html+'</div></div>';}
+// opts.tall: long forms (Add/Edit BIP) — the whole window scrolls from the top instead of a small inner box, so it works on iPad (v-BX)
+function modal(html,opts){var m=document.getElementById('modal-area');if(!m){m=document.createElement('div');m.id='modal-area';document.body.appendChild(m);}var tall=opts&&opts.tall;m.innerHTML='<div style="position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:'+(tall?'flex-start':'center')+';justify-content:center;z-index:999;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:20px"><div class="unlock-exempt" style="background:#fff;padding:26px;border-radius:14px;width:520px;max-width:100%;'+(tall?'margin-bottom:40vh':'max-height:90vh;overflow-y:auto')+'">'+html+'</div></div>';}
+// Writing boxes that grow with their text (no tiny inner scroll box)
+function _autoGrow(el){if(!el||!el.offsetParent)return;el.style.height='auto';el.style.height=(el.scrollHeight+4)+'px';}
+function _taRows(v,min){v=String(v||'');var r=0;v.split('\n').forEach(function(l){r+=Math.max(1,Math.ceil(l.length/70));});return Math.max(min||4,Math.min(r+1,40));}
 function closeModal(){const m=document.getElementById('modal-area');if(m)m.innerHTML='';}
 function toast(msg,typeOrDur,dur){
   // Accepts: toast(msg) | toast(msg,dur) | toast(msg,type) | toast(msg,type,dur)
