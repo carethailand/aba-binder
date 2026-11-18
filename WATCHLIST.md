@@ -32,7 +32,7 @@
 ---
 
 ## BUGS FOUND (log here, then fix in a new chat)
-- [22 Sep 2026] **URGENT #2 — School Shadow wiped AGAIN after SQL restore.** Cause: (a) merge fix gap — a device that opened the app BEFORE shadow existed auto-creates an EMPTY shadow in memory; the merge treated that empty as a real change and overwrote the good server data; (b) devices on OLD cached versions have no merge fix at all. FIX: v2026-09-22-Z adds a phantom-empty guard (an empty/auto-created section can never overwrite real server data; genuine edits/deletes still work). Unit-tested. STILL REQUIRED: deploy Z to GitHub + every device hard-refresh; re-run the JAA timetable SQL after everyone is on Z.
+- [22 Sep 2026] **URGENT #2 — School Shadow wiped AGAIN after SQL restore.** Cause: (a) merge fix gap — a device that opened the app BEFORE shadow existed auto-creates an EMPTY shadow in memory; the merge treated that empty as a real change and overwrote the good server data; (b) devices on OLD cached versions have no merge fix at all. FIX: v2026-09-22-Z adds a phantom-empty guard (an empty/auto-created section can never overwrite real server data; genuine edits/deletes still work). Unit-tested. STILL REQUIRED: deploy Z to GitHub + every device hard-refresh; re-run the client's timetable SQL after everyone is on Z.
 
 _Format: [date] area — what you did → what happened → who/role, which client if relevant._
 
@@ -40,7 +40,7 @@ _Format: [date] area — what you did → what happened → who/role, which clie
 
 
 
-- [17 Sep 2026] **URGENT — School Shadow data wiped by concurrent save.** Director added School Shadow content; a therapist with an older copy of the client loaded then saved during a 1:1, and her stale whole-record write overwrote the School Shadow section (incl. supervisor observation notes). 1:1 data unaffected (separate tables). ROOT CAUSE: entire client stored as one record; `sbSaveClient` blindly overwrites the whole record from in-memory state (no merge, no re-read). FIX: make client save re-read latest row and merge only changed sections. STATUS: FIX BUILT + 2-device test PASSED (v2026-09-17-O, section-level merge in sbSaveClient). Wiped JAA data will NOT be restored in-app — team re-enters YTD + today into Google Sheet and starts fresh in the app tomorrow. TODO before rollout: deploy v-O to GitHub. NET targets (Listening Comprehension, Transition) SQL ready if wanted.
+- [17 Sep 2026] **URGENT — School Shadow data wiped by concurrent save.** Director added School Shadow content; a therapist with an older copy of the client loaded then saved during a 1:1, and her stale whole-record write overwrote the School Shadow section (incl. supervisor observation notes). 1:1 data unaffected (separate tables). ROOT CAUSE: entire client stored as one record; `sbSaveClient` blindly overwrites the whole record from in-memory state (no merge, no re-read). FIX: make client save re-read latest row and merge only changed sections. STATUS: FIX BUILT + 2-device test PASSED (v2026-09-17-O, section-level merge in sbSaveClient). The wiped client data will NOT be restored in-app — team re-enters YTD + today into Google Sheet and starts fresh in the app tomorrow. TODO before rollout: deploy v-O to GitHub. NET targets SQL ready if wanted.
 
 ---
 
