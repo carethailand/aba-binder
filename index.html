@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-16-CF -->
+<!-- BUILD v2026-11-19-CG -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-16-CF</title>
+<title>CARE Client Binder v2026-11-19-CG</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-16-CF';
+const APP_VERSION='v2026-11-19-CG';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-19-CG',date:'19 Nov 2026',added:'',improved:'Day report and Finish & Preview with \u201cInclude lesson data & graphs\u201d: every target with data in the period now prints its graph, even when there is no session data on the report day (it then shows the last result and its date). On Clinic and All-visits reports the graphs go back at least to the last clinic visit (up to 3 months). Before printing, the report also fetches any sessions saved on other devices since the client was opened.',fixed:'Lesson graphs were missing from the report when there was no session data on that exact day.'},
   {version:'v2026-11-16-CF',date:'16 Nov 2026',added:'',improved:'Update notes reworded to describe features in general terms only.',fixed:''},
   {version:'v2026-11-14-CE',date:'14 Nov 2026',added:'',improved:'Observation notes by subject: each timetable box is read one subject at a time. A box with two options separated by a slash gives two subjects. When a box lists more than one class, only the child\u2019s own class (from Case Info \u2192 Class / Room) is used. Each subject appears once. The timetable itself is not changed.',fixed:''},
   {version:'v2026-11-14-CD',date:'14 Nov 2026',added:'School Shadow tab: \u201cObservation notes by subject\u201d \u2014 one card per subject (from the timetable, plus + Add subject), each opens and closes; supervisors write notes during a School observation visit, newest first. New \u201cRecommendations\u201d box. Both print in the School observation Day report and Finish & Preview (that day only): recommendations after the school notes, subject notes at the end, grouped by subject. Formatting: \u201cName:\u201d in bold, \u201c- \u201d bullets, \u201cRec:\u201d lines in italics.',improved:'Supervisor observation notes now show in one scrolling box (newest on top, all open) instead of a closed card per visit. Deleting a school note now asks first. Finish & Preview now counts School Shadow changes made in the visit too (school notes, subject notes, recommendations, target notes, targets added / mastered / on hold / resumed), so therapists are told about them.',fixed:''},
@@ -2358,6 +2359,7 @@ async function finishSupervision(){
 
   // Store changes (for the therapist notification count) — the preview/PDF itself is the Day report for sv.date
   window._supChanges={changes,sv,clientName:c.name};
+  _drFetchNewSessions(selectedClientId).then(function(n){if(n)_supPreviewRefresh();}); // v-CG: sessions saved on other devices
 
   // ── Preview modal: the Day report for this date, same as Report \u2192 Day report ──
   const totalChanges=changes.reduce((a,s)=>a+s.items.length,0);
@@ -2584,7 +2586,7 @@ function openReportBuilder(){
      +'<label style="color:#6b7280">Therapist</label><input id="rb-tx" type="text" placeholder="(optional)" data-auto="1" oninput="this.dataset.auto=0" value="'+esc(_drTxNames(today))+'">'
      +'<label style="color:#6b7280">Type</label><select id="rb-type" onchange="var g=document.getElementById(\'rb-lgraph\');if(g)g.checked=this.value===\'clinic\';var q=document.getElementById(\'rb-ss\');if(q)q.checked=this.value===\'school\';"><option value="overlap">Overlap</option><option value="clinic">Clinic</option><option value="school">School observation</option><option value="all">All visits (whole day)</option></select>'
    +'</div>'
-   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lgraph"> Include lesson data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day\u2019s scores + 4 weeks \u2014 e.g. for parents)</span></label></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-lgraph"> Include lesson data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day\u2019s scores + graphs: 4 weeks, or since the last clinic visit)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-ss"> Include School Shadow data &amp; graphs <span style="font-size:.72rem;color:#94a0ae">(that day + 4 weeks, with dashboard)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-maint"> Include maintenance probes &amp; stimuli checklist <span style="font-size:.72rem;color:#94a0ae">(last 3 probes; stimuli that day)</span></label></div>'
    +'<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4"><label style="flex:1;display:flex;align-items:center;gap:8px;font-size:.88rem;cursor:pointer"><input type="checkbox" id="rb-reinf"> Add reinforcer list <span style="font-size:.72rem;color:#94a0ae">(whole list)</span></label></div>'
@@ -2643,7 +2645,10 @@ function _dayReportHtml(o){
   // 3. Lessons: anything dated this day + that day's session data (4-week graphs)
   const cs=DB.sessions.filter(function(s){return s.clientId===selectedClientId;});
   const sessD=cs.filter(function(s){return s.date===D;});
-  const sessWin=cs.filter(function(s){return s.date>=from&&s.date<=D;});
+  // v-CG: lesson graphs cover the last 4 weeks, or back to the last clinic visit if that is earlier (Clinic / All reports, max 3 months)
+  let lfrom=from,_lastClinic='';
+  if(o.withData&&(_type==='clinic'||_type==='all')){_lastClinic=_drLastObs(c,D,'clinic');if(_lastClinic){const _cap=_drDaysBefore(D,92);const _f=_lastClinic<_cap?_cap:_lastClinic;if(_f<lfrom)lfrom=_f;}}
+  const sessWin=cs.filter(function(s){return s.date>=lfrom&&s.date<=D;});
   const withData=!!o.withData,maintOn=!!o.maint;
   let lh='';
   DB.lessons.filter(function(l){return l.clientId===selectedClientId;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).forEach(function(l){
@@ -2652,7 +2657,7 @@ function _dayReportHtml(o){
     (l.phaseLog||[]).filter(function(e){return e.date===D&&KO(e.kind);}).forEach(function(e){inner+='<p style="color:'+(e.to==='hold'?'#8a6410':'#1a6f94')+'"><strong>'+_drPhaseLabel(e)+'</strong></p>';});
     (l.supNotes||[]).filter(function(n){return n.date===D&&KO(n.kind);}).forEach(function(n){inner+='<div style="margin:4px 0"><strong>Program note:</strong>'+_drParas(n.text)+'</div>';});
     sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.note&&String(ld.note).trim())inner+='<div style="margin:4px 0"><strong>Session note'+(s.txName?' ('+esc(s.txName)+')':'')+':</strong>'+_drParas(ld.note)+'</div>';});
-    if(withData){try{inner+=_drDtLesson(l,cs,sessD,from,D);}catch(e){console.warn('DT data skipped',e);}}
+    if(withData){try{inner+=_drDtLesson(l,cs,sessD,lfrom,D);}catch(e){console.warn('DT data skipped',e);}}
     const multiSD=(l.sds||[]).length>1;
     (l.sds||[]).forEach(function(sd,si){
       let sdi='';
@@ -2671,11 +2676,12 @@ function _dayReportHtml(o){
         if(!withData)return;
         const dayVals=[];
         sessD.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na){const v=_drTdVal(t,td);if(v)dayVals.push(esc(v)+(s.txName?' — '+esc(s.txName):''));}});});
-        if(!dayVals.length)return;
         const entries=[];
         sessWin.forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na)entries.push({date:s.date,sessTime:s.sessTime,td:td});});});
+        if(!dayVals.length&&!entries.length)return; // v-CG: no data that day AND none in the period -> skip
         entries.sort(function(a,b){return a.date.localeCompare(b.date);});
-        sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+_drStepAt(t,sd,D)+':</strong> '+dayVals.join(', ')+'</p>'+_drTargetChart(l,t,entries);
+        const _dv=dayVals.length?dayVals.join(', '):(function(){var e=entries[entries.length-1],v=_drTdVal(t,e.td);return '<span style="color:#6b7280">no data on this day · last '+_drFmtD(e.date)+(v?': '+esc(v):'')+'</span>';})();
+        sdi+='<p style="margin:8px 0 2px"><strong>'+esc(t.name)+_drStepAt(t,sd,D)+':</strong> '+_dv+'</p>'+_drTargetChart(l,t,entries);
         // First Trial: the last 4 results up to this day (v-BY)
         const ftAll=[];cs.filter(function(s){return s.date<=D;}).sort(_sessCmp).forEach(function(s){const ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(!ld)return;(ld.targets||[]).forEach(function(td){if(td.targetId===t.id&&!td.na&&td.firstTrial)ftAll.push({date:s.date,r:normFT(td.firstTrial)});});});
         if(ftAll.length)sdi+='<p style="margin:2px 0 6px"><strong>First trial (last '+Math.min(4,ftAll.length)+'):</strong> '+ftAll.slice(-4).map(function(f){var c=normFTCol(f.r);return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c.c+';background:'+c.bg+'">'+esc(f.r)+'</span> <span style="color:#6b7280">'+_drFmtD(f.date)+'</span>';}).join(' · ')+'</p>';
@@ -2686,6 +2692,7 @@ function _dayReportHtml(o){
     if(maintOn){try{inner+=_drMaint(l,cs,D);}catch(e){console.warn('maintenance skipped',e);}}
     if(inner)lh+='<div class="lesson-title">'+esc(l.name)+'</div><div class="ldet">'+inner+'</div>';
   });
+  if(lh&&withData)lh='<p style="color:#6b7280;margin:0 0 6px">Graphs: '+(lfrom<from&&_lastClinic?'since the last clinic visit ('+_drFmtD(_lastClinic)+')':'last 4 weeks')+'</p>'+lh;
   if(lh||_type!=='school')body+='<div class="sec-title">Lessons</div>'+(lh||none('No lesson updates or session data on this day.'));
   // School Shadow observation notes for this day (section only appears when there are some)
   const _ssc=c.schoolShadow||{};
@@ -2723,14 +2730,16 @@ function _dayReportHtml(o){
 }
 // v-CC: the latest school-observation date before D = latest date of anything made in a 'school' visit
 // (notes, target changes, mastery, lesson updates…). '' if none found. Read-only.
-function _drLastSchoolObs(c,D){
+function _drLastSchoolObs(c,D){return _drLastObs(c,D,'school');}
+// v-CG: latest date before D of anything made in a visit of this kind ('school' / 'clinic' / 'overlap'). Read-only.
+function _drLastObs(c,D,kind){
   var best='';
   var walk=function(o,depth){
     if(!o||typeof o!=='object'||depth>8)return;
     if(Array.isArray(o)){o.forEach(function(x){walk(x,depth+1);});return;}
     Object.keys(o).forEach(function(k){
       var v=o[k];
-      if(v==='school'&&(k==='kind'||/Kind$/.test(k))){
+      if(v===kind&&(k==='kind'||/Kind$/.test(k))){
         var d=k==='kind'?o.date:o[k.replace(/Kind$/,'Date')];
         if(typeof d==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(d)&&d<D&&d>best)best=d;
       }else if(v&&typeof v==='object')walk(v,depth+1);
@@ -2831,7 +2840,8 @@ function _drStepAt(t,sd,D){
 // v-CA: DT-phase lesson data for the Day report (lessonData[].dtData). '' when no DT data that day.
 function _drDtLesson(l,cs,sessD,from,D){
   var today=[];sessD.forEach(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});if(ld&&ld.dtData)today.push({s:s,d:ld.dtData});});
-  if(!today.length)return '';
+  var anyWin=cs.some(function(s){return s.date>=from&&s.date<=D&&(s.lessonData||[]).some(function(x){return x.lessonId===l.id&&x.dtData;});});
+  if(!today.length&&!anyWin)return ''; // v-CG: graph still shows when the period has DT data
   var ftB=function(r){var c=normFTCol(r);return '<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:'+c.c+';background:'+c.bg+'">'+esc(r==='-'?'−':r)+'</span>';};
   var out=today.map(function(x){var d=x.d;var bits=[];
     if(d.stepName)bits.push('Step '+((d.stepIndex||0)+1)+': '+esc(d.stepName));
@@ -2839,6 +2849,7 @@ function _drDtLesson(l,cs,sessD,from,D){
     if(d.total)bits.push(d.correct+' of '+d.total+' correct ('+d.pct+'%)');
     if(x.s.txName)bits.push(esc(x.s.txName));
     return '<p style="margin:8px 0 2px"><strong>DT'+(l.dtType?' · '+esc(l.dtType):'')+':</strong> '+bits.join(' · ')+'</p>';}).join('');
+  if(!out)out='<p style="margin:8px 0 2px"><strong>DT'+(l.dtType?' · '+esc(l.dtType):'')+':</strong> <span style="color:#6b7280">no data on this day</span></p>';
   var all=cs.filter(function(s){return s.date<=D;}).sort(_sessCmp).map(function(s){var ld=(s.lessonData||[]).find(function(x){return x.lessonId===l.id;});return ld&&ld.dtData?{date:s.date,d:ld.dtData}:null;}).filter(Boolean);
   var pts=all.filter(function(x){return x.date>=from&&x.d.pct!=null;}).map(function(x){return {date:x.date,y:x.d.pct};});
   if(pts.length)out+=_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'});
@@ -2862,10 +2873,25 @@ function _drMaint(l,cs,D){
   if(!rows.length)return '';
   return '<div style="margin:8px 0 4px"><strong>Maintenance probes (last 3):</strong></div>'+rows.join('');
 }
-function buildAndPrintReport(){
+// v-CG: before printing, add sessions saved on other devices since this client was opened. ADDS ONLY sessions this
+// device doesn't have — never replaces or removes one, so nothing on this device can be overwritten. Read-only on the server.
+async function _drFetchNewSessions(cid){
+  if(!cid||!_clientLoaded[cid])return 0;
+  try{
+    var rows=await Promise.race([_sbFetchAll('sessions','select=*&client_id=eq.'+encodeURIComponent(cid)+'&order=date.asc,id.asc'),new Promise(function(r){setTimeout(function(){r(null);},8000);})]);
+    if(!rows||!Array.isArray(rows))return 0;
+    var have={};(DB.sessions||[]).forEach(function(x){if(x&&x.id)have[x.id]=1;});
+    var add=rows.map(rowToSession).filter(function(x){return x&&x.id&&x.clientId===cid&&!have[x.id];});
+    if(add.length)DB.sessions=(DB.sessions||[]).concat(add);
+    return add.length;
+  }catch(e){console.warn('session refresh skipped',e);return 0;}
+}
+async function buildAndPrintReport(){
   const gv=function(id){const e=document.getElementById(id);return e?e.value:'';};
   const gc=function(id){const e=document.getElementById(id);return e?e.checked:false;};
-  const r=_dayReportHtml({date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),ssData:gc('rb-ss'),maint:gc('rb-maint'),reinf:gc('rb-reinf')});
+  const opts={date:gv('rb-date')||_todayLocal(),time:gv('rb-time'),tx:gv('rb-tx'),type:gv('rb-type')||'overlap',withData:gc('rb-lgraph'),ssData:gc('rb-ss'),maint:gc('rb-maint'),reinf:gc('rb-reinf')};
+  if(opts.withData){toast('Getting the latest sessions…');await _drFetchNewSessions(selectedClientId);}
+  const r=_dayReportHtml(opts);
   if(!r)return;
   closeModal();
   _printHtml(r.html,r.pdfName);
