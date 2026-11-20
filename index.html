@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-20-CH -->
+<!-- BUILD v2026-11-20-CJ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-20-CH</title>
+<title>CARE Client Binder v2026-11-20-CJ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-20-CH';
+const APP_VERSION='v2026-11-20-CJ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-20-CJ',date:'20 Nov 2026',added:'',improved:'Removed the admin \u201cReset\u201d button, an old leftover that could wipe all records with two clicks. Records can no longer be erased from the app in one step.',fixed:''},
+  {version:'v2026-11-20-CI',date:'20 Nov 2026',added:'',improved:'Deleting now only changes the screen after the database has confirmed it. If a delete does not go through, the item stays where it is and a message says so, instead of disappearing and coming back later. This covers sessions, BIPs, BIP log entries, ABC entries, lessons and the end-of-year archive (which now also reports honestly if any records could not be removed).',fixed:'A failed delete could look successful on screen while the record stayed in the database.'},
   {version:'v2026-11-20-CH',date:'20 Nov 2026',added:'',improved:'When a save or delete does not go through, the message now says so in plain words and tells you what to do next, instead of showing technical codes. Technical details written to the browser console no longer include the database reply.',fixed:''},
   {version:'v2026-11-19-CG',date:'19 Nov 2026',added:'',improved:'Day report and Finish & Preview with \u201cInclude lesson data & graphs\u201d: every target with data in the period now prints its graph, even when there is no session data on the report day (it then shows the last result and its date). On Clinic and All-visits reports the graphs go back at least to the last clinic visit (up to 3 months). Before printing, the report also fetches any sessions saved on other devices since the client was opened.',fixed:'Lesson graphs were missing from the report when there was no session data on that exact day.'},
   {version:'v2026-11-16-CF',date:'16 Nov 2026',added:'',improved:'Update notes reworded to describe features in general terms only.',fixed:''},
@@ -1045,6 +1047,8 @@ async function sbSaveABC(aObj){
 async function deleteRecord(table,id){
   await sbFetch(table,'DELETE',null,'id=eq.'+id);
 }
+// v-CI: delete one row. Returns true ONLY when the database confirmed; never throws. Callers change the screen only after true.
+async function _sbDel(table,id){try{return (await sbFetch(table,'DELETE',null,'id=eq.'+id))===true;}catch(e){console.error('delete failed',table);return false;}}
 
 // ── saveData: push ALL dirty records (called on any change) ──
 // We keep DB in memory and push to Supabase on every mutation
@@ -1160,14 +1164,17 @@ async function runArchive(){
     if(confirm('Archive file downloaded!\n\nDelete these '+archSessions.length+' sessions and '+archBehaviors.length+' behavior records from the database?\n\nClick OK to delete, Cancel to keep them.')){
       (async()=>{
         toast('Deleting archived records from database…');
-        for(const s of archSessions) await sbFetch('sessions','DELETE',null,'id=eq.'+s.id);
-        for(const bx of archBehaviors) await sbFetch('behaviors','DELETE',null,'id=eq.'+bx.id);
+        // v-CI: remove from the screen ONLY what the database confirmed; report honestly if anything could not be removed
+        var _kS={},_kB={},_kA={},_bad=0;
+        for(const s of archSessions){if(await _sbDel('sessions',s.id))_kS[s.id]=1;else _bad++;}
+        for(const bx of archBehaviors){if(await _sbDel('behaviors',bx.id))_kB[bx.id]=1;else _bad++;}
         const archABC=(DB.abcData||[]).filter(a=>a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate);
-        for(const ax of archABC) await sbFetch('abc_data','DELETE',null,'id=eq.'+ax.id);
-        DB.sessions=DB.sessions.filter(s=>!(s.clientId===clientId&&s.date>=fromDate&&s.date<=toDate));
-        DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.clientId===clientId&&b.date>=fromDate&&b.date<=toDate));
-        DB.abcData=(DB.abcData||[]).filter(a=>!(a.clientId===clientId&&a.date>=fromDate&&a.date<=toDate));
-        toast('✓ Archive complete — '+archSessions.length+' sessions, '+archBehaviors.length+' behavior records, and '+archABC.length+' ABC entries removed from database.');
+        for(const ax of archABC){if(await _sbDel('abc_data',ax.id))_kA[ax.id]=1;else _bad++;}
+        DB.sessions=DB.sessions.filter(s=>!_kS[s.id]);
+        DB.behaviors=(DB.behaviors||[]).filter(b=>!_kB[b.id]);
+        DB.abcData=(DB.abcData||[]).filter(a=>!_kA[a.id]);
+        if(_bad)toast('⚠ Archive only partly done: '+_bad+' record'+(_bad>1?'s':'')+' could not be removed from the database and were kept. Your archive file is safe. Please check your connection and run the archive again for the same dates.','error',12000);
+        else toast('✓ Archive complete — '+archSessions.length+' sessions, '+archBehaviors.length+' behavior records, and '+archABC.length+' ABC entries removed from database.');
         render();
       })();
     } else {
@@ -1664,12 +1671,12 @@ async function seAddBIPLog(sessDate){
   toast('BIP entry added ✓');
   if(_cont&&_sess)_cont.innerHTML=buildBIPRows(_sess);
 }
-function seDeleteBIPLog(logId){
+async function seDeleteBIPLog(logId){
   if(!confirm('Delete this BIP log entry?'))return;
   const isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');
   if(!isSup){toast('Only supervisors can delete BIP logs.','error');return;}
+  if(!(await _sbDel('behaviors',logId))){toast('⚠ Could not delete this BIP log. Nothing was changed — please check your connection and try again.','error',6000);return;}
   DB.behaviors=(DB.behaviors||[]).filter(function(b){return b.id!==logId;});
-  sbFetch('behaviors','DELETE',null,'id=eq.'+logId);
   const cont=document.getElementById('se-bip-section');
   if(cont){
     const sess=(DB.sessions||[]).find(function(s){return s.id===cont.dataset.sessId;});
@@ -2033,6 +2040,8 @@ function _sessionHasData(sess){
 }
 async function _reallyDeleteSession(sess){
   if(!sess)return;
+  // v-CI: the database must confirm the session is gone BEFORE anything changes on screen
+  if(!(await _sbDel('sessions',sess.id))){toast('⚠ Could not delete this session. Nothing was changed — please check your connection and try again.','error',6000);return;}
   DB.sessions=DB.sessions.filter(function(s){return s.id!==sess.id;});
   _undoSessionFirstTrials(sess);
   // Scope ABC + BIP deletion to THIS session only (same date + therapist + context)
@@ -2041,16 +2050,20 @@ async function _reallyDeleteSession(sess){
   var _mB=function(x){return x.clientId===sess.clientId&&x.date===sess.date&&(x.txId||'')===(sess.txId||'')&&(x.setting||'therapy')===(sess.setting||'therapy');};
   var abcsToDelete=(DB.abcData||[]).filter(_mA);
   var behaviorsToDelete=(DB.behaviors||[]).filter(_mB);
-  DB.abcData=(DB.abcData||[]).filter(function(a){return !_mA(a);});
-  DB.behaviors=(DB.behaviors||[]).filter(function(b){return !_mB(b);});
-  await sbFetch('sessions','DELETE',null,'id=eq.'+sess.id);
-  await Promise.all([].concat(
-    abcsToDelete.map(function(a){return sbFetch('abc_data','DELETE',null,'id=eq.'+a.id);}),
-    behaviorsToDelete.map(function(b){return sbFetch('behaviors','DELETE',null,'id=eq.'+b.id);})
-  ));
+  var _rA=await Promise.all(abcsToDelete.map(function(a){return _sbDel('abc_data',a.id);}));
+  var _rB=await Promise.all(behaviorsToDelete.map(function(b){return _sbDel('behaviors',b.id);}));
+  // only what the database confirmed is removed from the screen; anything else stays so it is not silently lost or duplicated
+  var _gA={},_gB={},_left=0;
+  abcsToDelete.forEach(function(a,i){if(_rA[i])_gA[a.id]=1;else _left++;});
+  behaviorsToDelete.forEach(function(b,i){if(_rB[i])_gB[b.id]=1;else _left++;});
+  DB.abcData=(DB.abcData||[]).filter(function(a){return !_gA[a.id];});
+  DB.behaviors=(DB.behaviors||[]).filter(function(b){return !_gB[b.id];});
+  var _nB=behaviorsToDelete.length-behaviorsToDelete.filter(function(b){return !_gB[b.id];}).length;
+  var _nA=abcsToDelete.length-abcsToDelete.filter(function(a){return !_gA[a.id];}).length;
   window._pendingDelSess=null;
   closeModal();
-  toast('Session deleted ✓'+(behaviorsToDelete.length?' ('+behaviorsToDelete.length+' BIP log'+(behaviorsToDelete.length>1?'s':'')+' removed)':'')+(abcsToDelete.length?' ('+abcsToDelete.length+' ABC removed)':''));
+  if(_left)toast('⚠ Session deleted, but '+_left+' linked BIP/ABC record(s) could not be removed and remain saved. Please tell your supervisor.','error',9000);
+  else toast('Session deleted ✓'+(_nB?' ('+_nB+' BIP log'+(_nB>1?'s':'')+' removed)':'')+(_nA?' ('+_nA+' ABC removed)':''));
   render();
 }
 function _confirmDeleteSessionTyped(){
@@ -5986,11 +5999,11 @@ function deleteLesson(lId){if(!requireActiveSession())return;
     '<button class="btn" style="background:#d84a3a;color:#fff;border:none" onclick="confirmDeleteLesson(\''+lId+'\')">Delete permanently</button>'+
     '<button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function confirmDeleteLesson(lId){
+async function confirmDeleteLesson(lId){
   const inp=document.getElementById('dellsn-confirm');
   if(!inp||inp.value.trim().toUpperCase()!=='DELETE'){toast('Type DELETE to confirm.');return;}
+  if(!(await _sbDel('lessons',lId))){toast('⚠ Could not delete this lesson. Nothing was changed — please check your connection and try again.','error',6000);return;}
   DB.lessons=DB.lessons.filter(function(x){return x.id!==lId;});
-  sbFetch('lessons','DELETE',null,'id=eq.'+lId).catch(function(e){console.error('lesson delete',e);});
   saveData();closeModal();render();toast('Lesson deleted.');
 }
 function deleteSD(lId,sId){if(!requireActiveSession())return;
@@ -6859,19 +6872,18 @@ function deleteBIP(bipId){
   modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Delete BIP?</h3><p style="color:var(--muted);margin-bottom:16px">This deletes the BIP and all logged data. Cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();_doDeleteBIP(\''+bipId+'\')">Delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
   return;
 }
-function _doDeleteBIP(bipId){if(!requireActiveSession())return;
+async function _doDeleteBIP(bipId){if(!requireActiveSession())return;
   if(!DB.bips)DB.bips=[];
-  // Delete behavior logs for this BIP from Supabase first
+  // v-CI: the database must confirm the BIP is gone BEFORE anything changes on screen
   const logsToDelete=(DB.behaviors||[]).filter(b=>b.bipId===bipId);
-  sbFetch('bips','DELETE',null,'id=eq.'+bipId).then(r=>{
-    if(r===null){toast('⚠ Could not delete this BIP. Nothing was changed — please try again, or tell your supervisor if it keeps happening.','error',6000);}
-    else{
-      Promise.all(logsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)));
-      toast('BIP deleted ✓');
-    }
-  }).catch(e=>toast('Could not delete. Nothing was changed — please try again.','error'));
+  if(!(await _sbDel('bips',bipId))){toast('⚠ Could not delete this BIP. Nothing was changed — please check your connection and try again.','error',6000);return;}
+  const _rl=await Promise.all(logsToDelete.map(b=>_sbDel('behaviors',b.id)));
+  const _gone={};let _left=0;
+  logsToDelete.forEach(function(b,i){if(_rl[i])_gone[b.id]=1;else _left++;});
   DB.bips=DB.bips.filter(b=>b.id!==bipId);
-  DB.behaviors=DB.behaviors.filter(b=>b.bipId!==bipId);
+  DB.behaviors=(DB.behaviors||[]).filter(b=>!(b.bipId===bipId&&_gone[b.id]));
+  if(_left)toast('⚠ BIP deleted, but '+_left+' of its log entries could not be removed and remain saved. Please tell your supervisor.','error',9000);
+  else toast('BIP deleted ✓');
   render();
 }
 
@@ -6922,10 +6934,10 @@ function logABC(){
   if(dur!=='')entry.duration=Math.round(parseFloat(dur));
   DB.abcData.push(entry);sbSaveABC(entry);toast('ABC entry saved ✓');render();
 }
-function deleteABCEntry(id){
+async function deleteABCEntry(id){
   if(!['supervisor','director'].includes(currentUser.role)){toast('⚠ No permission');return;}
   if(!confirm('Delete this ABC entry?'))return;
-  sbFetch('abc_data','DELETE',null,'id=eq.'+id);
+  if(!(await _sbDel('abc_data',id))){toast('⚠ Could not delete this ABC entry. Nothing was changed — please check your connection and try again.','error',6000);return;}
   DB.abcData=DB.abcData.filter(a=>a.id!==id);
   toast('Deleted ✓');render();
 }
@@ -7113,7 +7125,6 @@ function renderAdmin(){
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +'<button class="unlock-exempt btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
     +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
-    +'<button class="unlock-exempt btn btn-danger btn-sm" onclick="confirmReset()">⚠ Reset</button>'
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Client Data</h4>'
@@ -7299,10 +7310,6 @@ function deleteUser(id){
   window._pendingDeleteId=id;
   modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">⚠️</div><h3 style="margin-bottom:8px">Remove '+esc(name)+'?</h3><p style="color:var(--muted);margin-bottom:16px">This cannot be undone.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();sbDeleteUser(window._pendingDeleteId)">Yes, Remove</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
 }
-function confirmReset(){
-  modal('<div style="text-align:center;padding:10px"><div style="font-size:2rem;margin-bottom:8px">🚨</div><h3 style="margin-bottom:8px">Reset ALL Data?</h3><p style="color:var(--muted);margin-bottom:16px">This permanently deletes every client, session, and BIP. Export a backup first.</p><div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-danger" onclick="closeModal();resetData()">Yes, Reset Everything</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
-}
-
 function defaultData(){
   const cid1=uid();
   const lid1=uid();
@@ -7341,19 +7348,6 @@ function defaultData(){
   };
 }
 
-async function resetData(){
-  showSyncStatus('saving');
-  // Delete all clinical data from Supabase (keep users)
-  const tables=['sessions','behaviors','abc_data','lessons','bips','clients'];
-  for(const t of tables){
-    const rows=await sbFetch(t,'GET',null,'select=id');
-    if(rows&&rows.length) await Promise.all(rows.map(r=>sbFetch(t,'DELETE',null,'id=eq.'+r.id)));
-  }
-  DB=defaultData();
-  await flushSave();
-  toast('Reset complete ✓');
-  render();
-}
 
 // ════════════════════════════════════════════════
 // UTILS

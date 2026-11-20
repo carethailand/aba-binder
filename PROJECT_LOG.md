@@ -149,10 +149,14 @@ _Last updated: 10 Oct 2026 — current app v2026-10-10-AO. Security: AN (app sen
 ## Health check plan (started 20 Nov 2026)
 Ranked findings from the full health check, worked one at a time (each its own version, tested, then pushed by Songg):
 - [x] Plain-language save/delete error messages; console no longer logs database replies (v2026-11-20-CH).
-- [ ] Deletes: show "deleted" only after the database confirms (ABC entries, behaviour log entries, session delete, archive).
+- [x] Deletes: "deleted" shows only after the database confirms (sessions, BIPs, BIP log entries, ABC entries, lessons, archive) (v2026-11-20-CI).
+- [x] Removed the admin "Reset ALL data" button and its code (v2026-11-20-CJ).
+- [ ] Review the admin "Import" button: it replaces everything in memory with any chosen file after no confirmation, then syncs. Remove or guard.
+- [ ] Full function audit: review every button/feature left from the early builds — is it still needed, is the logic safe, is there a better way? (Songg agreed 20 Nov.)
 - [ ] Client names out of download file names and print titles (use initials/ID).
 - [ ] Clearer "new version available" banner.
 - [ ] Old local drafts: decide whether to clear on logout / after a set number of days.
 - [ ] Backups: 4-monthly archive + export of all cases; plan an extra routine export. Check Supabase plan/backups page.
 - [ ] Access: therapists see only assigned clients (cover sessions / team rotation need a temporary-access design); supervisors see all but edit only their own cases (may cover as therapist); admin sees admin pages only. Needs design before building.
 - [ ] Split index.html into separate files (styles, reports, lessons/BIP/School Shadow, saving last). Planned for the long holiday break, after archive. Model layout: the therapist portal (css/, js/ one file per area). Tag files with the version so old caches cannot mix.
+- [ ] Admin page (Staff & Access) redesign — noted 20 Nov: role drop-down is too narrow (shows only its arrow); one chip per client on every staff row makes a very long page; old unused/legacy and test accounts clutter the list; no way to give temporary cover access (team rotation). Ideas: wider role box, search/filter by staff or client, assignment grid, cover access with an end date, a tidy-up for legacy/test accounts. Design with Songg first.
