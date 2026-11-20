@@ -151,7 +151,8 @@ Ranked findings from the full health check, worked one at a time (each its own v
 - [x] Plain-language save/delete error messages; console no longer logs database replies (v2026-11-20-CH).
 - [x] Deletes: "deleted" shows only after the database confirms (sessions, BIPs, BIP log entries, ABC entries, lessons, archive) (v2026-11-20-CI).
 - [x] Removed the admin "Reset ALL data" button and its code (v2026-11-20-CJ).
-- [ ] Review the admin "Import" button: it replaces everything in memory with any chosen file after no confirmation, then syncs. Remove or guard.
+- [x] Removed the admin "Import" button and its code (v2026-11-21-CM). Full Export + Archive/Restore Archive stay; review Restore Archive in the full audit.
+- [x] Add-Client full-name warning: not wanted (Songg 21 Nov). Note: supervisors sometimes enter full names as client names, so print titles / archive file names can contain them — revisit during the access/privacy design.
 - [ ] Full function audit: review every button/feature left from the early builds — is it still needed, is the logic safe, is there a better way? (Songg agreed 20 Nov.)
 - [x] Client names in file names / print titles: checked 20 Nov — the app's client names are already short codes, so nothing to change. Optional idea: a gentle warning in Add Client if the name looks like a full name.
 - [x] Clearer "new version available" banner under the top bar; never reloads by itself, asks first if typing/in a session (v2026-11-20-CK).

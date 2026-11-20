@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CL -->
+<!-- BUILD v2026-11-21-CM -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CL</title>
+<title>CARE Client Binder v2026-11-21-CM</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CL';
+const APP_VERSION='v2026-11-21-CM';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-21-CM',date:'21 Nov 2026',added:'',improved:'Removed the admin \u201cImport\u201d button, an old leftover that could replace all records in the app with any chosen file. Full Export and the archive tools are unchanged.',fixed:''},
   {version:'v2026-11-21-CL',date:'21 Nov 2026',added:'',improved:'Privacy on shared devices: note text that was typed but never saved is now erased from the device after 3 days, and when you log out yourself (the app asks first if there is unsaved note text). The automatic end-of-day sign-out keeps it, so late work is never lost. Unsaved session and BIP data is never cleared automatically.',fixed:''},
   {version:'v2026-11-20-CK',date:'20 Nov 2026',added:'A clear banner under the top bar when a new version is ready, with an Update now button. It never reloads the page by itself, and asks first if you seem to be in the middle of typing or a session.',improved:'',fixed:''},
   {version:'v2026-11-20-CJ',date:'20 Nov 2026',added:'',improved:'Removed the admin \u201cReset\u201d button, an old leftover that could wipe all records with two clicks. Records can no longer be erased from the app in one step.',fixed:''},
@@ -1479,7 +1480,6 @@ async function restoreArchive(file){
   r.readAsText(file);
 }
 async function exportDB(){toast('Preparing full export\u2026');const _all=await Promise.all([_sbFetchAll('sessions','select=*&order=date.asc,id.asc'),_sbFetchAll('behaviors','select=*&order=date.asc,id.asc'),_sbFetchAll('abc_data','select=*&order=date.asc,id.asc')]);if(_all.some(function(x){return x===null;})){toast('\u26A0 Full export failed \u2014 check connection and try again','error',6000);return;}const _exp=Object.assign({},DB,{sessions:_all[0].map(rowToSession),behaviors:_all[1].map(rowToBehavior),abcData:_all[2].map(rowToABC)});delete _exp.sessSummary;const b=new Blob([JSON.stringify(_exp,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='aba_backup_'+_todayLocal()+'.json';a.click();}
-function importDB(file){const r=new FileReader();r.onload=async e=>{try{const imp=JSON.parse(e.target.result);DB=imp;await flushSave();toast('Imported & synced!');render();}catch(x){toast('Invalid file.','error');}};r.readAsText(file);}
 
 let DB={users:[],clients:[],lessons:[],bips:[],sessions:[],behaviors:[],abcData:[]};
 let currentUser=null;
@@ -7156,7 +7156,6 @@ function renderAdmin(){
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
     +'<button class="unlock-exempt btn btn-outline" onclick="exportDB()">⬇ Full Export</button>'
-    +'<label class="btn btn-outline unlock-exempt" style="cursor:pointer">⬆ Import<input type="file" accept=".json" style="display:none" onchange="importDB(this.files[0])"></label>'
     +'</div>'
     +'<hr style="margin:14px 0;border:none;border-top:1px solid var(--border)">'
     +'<h4 style="margin-bottom:8px;font-size:.9rem">📦 Archive Client Data</h4>'
