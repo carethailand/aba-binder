@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CO -->
+<!-- BUILD v2026-11-21-CP -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CO</title>
+<title>CARE Client Binder v2026-11-21-CP</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CO';
+const APP_VERSION='v2026-11-21-CP';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-21-CP',date:'21 Nov 2026',added:'Admin page, Staff & Access: a tidier list with search and a role filter, assigned cases shown as small tags with an Edit cases button (tick the cases, then Save), a By case view showing who has each case, and a collapsed Former staff section. The role box is wide enough to read.',improved:'Changing a role, deactivating, reactivating or editing someone\u2019s cases now saves only that one thing, confirms with the database before the screen changes, and no longer overwrites other changes made at the same time.',fixed:''},
   {version:'v2026-11-21-CO',date:'21 Nov 2026',added:'A Cover tab on the admin page: every planned cover day from today on, listed by date with the case and the person, a + Add cover button that starts from choosing the case, an \u00d7 to remove a day, and a Refresh button. Directors and admins can set up and review cover without opening each case.',improved:'',fixed:''},
   {version:'v2026-11-21-CN',date:'21 Nov 2026',added:'Cover days. On a case screen, the case supervisor, a director or an admin can press Cover, choose who is covering and tap the days (any days, not only in a row). The covering person sees the case in their list tagged \u201cCovering today\u201d and can record on those days; before the first cover day they can read it (read-only) from a date you choose, 3 days ahead by default. A supervisor covering another supervisor\u2019s case can run a session but cannot change the program.',improved:'',fixed:''},
   {version:'v2026-11-21-CM',date:'21 Nov 2026',added:'',improved:'Removed the admin \u201cImport\u201d button, an old leftover that could replace all records in the app with any chosen file. Full Export and the archive tools are unchanged.',fixed:''},
@@ -7237,37 +7238,12 @@ function showAddUserModal(){
     +'</div>');
 }
 function renderAdmin(){
-  const _roleRank={director:0,admin:1,supervisor:2,qcd:3,senior:4,junior:5};
-  const _sortedUsers=DB.users.slice().sort(function(a,b){
-    const ai=a.active===false?1:0,bi=b.active===false?1:0;
-    if(ai!==bi)return ai-bi;
-    const ar=_roleRank[a.role]!=null?_roleRank[a.role]:99,br=_roleRank[b.role]!=null?_roleRank[b.role]:99;
-    if(ar!==br)return ar-br;
-    return (a.name||'').localeCompare(b.name||'');
-  });
-  const userRows=_sortedUsers.map(u=>{
-    const ac=u.assignedClients||[];
-    const inactive=u.active===false;
-    const chips=['junior','senior','qcd','supervisor'].includes(u.role)
-      ?DB.clients.map(c=>{
-          const on=ac.includes(c.id);
-          return '<span style="cursor:pointer;padding:2px 10px;border-radius:12px;font-size:.73rem;border:1px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary)':'transparent')+';color:'+(on?'#fff':'var(--muted)')+';white-space:nowrap" data-uid="'+u.id+'" data-cid="'+c.id+'" onclick="toggleAssign(this)">'+esc(c.name)+'</span>';
-        }).join(' ')
-      :'<span style="font-size:.78rem;color:var(--muted);font-style:italic">All</span>';
-    const roleSelect='<select class="role-select unlock-exempt" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+['junior','senior','qcd','supervisor','director','admin'].map(r=>'<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+{junior:'Junior TX',senior:'Senior TX',qcd:'QCD',supervisor:'Supervisor',director:'Director',admin:'Admin'}[r]+'</option>').join('')+'</select>';
-    const statusBtn=inactive
-      ?'<button class="btn btn-sm" class="unlock-exempt" style="font-size:.72rem;background:#4fa14a;color:#fff;border:none;padding:3px 10px;border-radius:6px;cursor:pointer;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
-      :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#d84a3a;border-color:#eba99d;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
-    return '<tr style="opacity:'+(inactive?'.5':'1')+';background:'+(inactive?'#fdeae4':'')+'">'+'<td style="font-weight:500">'+esc(u.name)+(inactive?' <span style="font-size:.68rem;background:#fbe0da;color:#d84a3a;padding:1px 5px;border-radius:4px;font-weight:600">inactive</span>':'')+'</td>'+'<td style="color:var(--muted);font-size:.8rem">'+esc(u.email||u.username||'—')+'</td>'+'<td>'+(u.authId?'<span style="font-size:.72rem;background:#e2f2df;color:#2f6b2c;padding:2px 8px;border-radius:10px;font-weight:600">✓ Secure</span>':('<span style="font-size:.72rem;background:#fbeecb;color:#8a6410;padding:2px 8px;border-radius:10px;font-weight:600">⚠ Legacy</span> '+'<button style="font-size:.7rem;background:#e6a71f;color:#fff;border:none;padding:2px 8px;border-radius:5px;cursor:pointer" data-uid="'+u.id+'" onclick="showSetupAuthModal(this.dataset.uid)">Upgrade</button>'))+'</td>'+'<td>'+roleSelect+'</td>'+'<td><div style="display:flex;flex-wrap:wrap;gap:3px;align-items:center">'+chips+'</div></td>'+'<td>'+statusBtn+'</td>'+'</tr>';
-  }).join('');
   const _asNav='<div class="tabs" style="margin-bottom:16px">'
     +'<button class="tab '+(adminSection==='staff'?'active':'')+'" onclick="setAdminSection(\'staff\')">👥 Staff &amp; Access</button>'
     +'<button class="tab '+(adminSection==='cover'?'active':'')+'" onclick="setAdminSection(\'cover\')">🗓 Cover</button>'
     +'<button class="tab '+(adminSection==='data'?'active':'')+'" onclick="setAdminSection(\'data\')">💾 Data &amp; Storage</button>'
     +'</div>';
-  const _asStaff='<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="flex:1;margin:0">Users &amp; Client Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
-    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Junior/Senior TX only see assigned clients. Click chips to assign/unassign.</p>'
-    +'<div style="overflow-x:auto"><table><thead><tr><th>Name</th><th>Email / Username</th><th>Auth Status</th><th>Role</th><th>Assigned Clients</th><th></th></tr></thead><tbody>'+userRows+'</tbody></table></div></div>';
+  const _asStaff=_asStaffHtml();
   const _asData='<div class="card"><h3 style="margin-bottom:10px">Data &amp; Storage</h3>'
     +'<div id="storage-bar" style="margin-bottom:12px"></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap">'
@@ -7280,28 +7256,100 @@ function renderAdmin(){
     +'</div>';
   return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+_asNav+(adminSection==='data'?_asData:adminSection==='cover'?_cvAdminHtml():_asStaff)+'<div id="modal-area"></div>';
 }
-function changeRole(userId, newRole){
-  const u=DB.users.find(x=>x.id===userId);
-  if(!u)return;
-  u.role=newRole;
-  sbSaveUser(u);
-  toast('Role updated ✓');
-  render();
+// ── ADMIN: Staff & Access (v-CP) ──
+// Every change here saves ONE column with PATCH (role / active / assigned_clients) and the screen only changes after the
+// database confirms. Case lists are merged with the latest server copy first, so two admins editing at once don't overwrite each other.
+var _asView='staff',_asQuery='',_asRole='',_asFormerOpen=false,_ac=null;
+var _asRoleLabel={junior:'Junior TX',senior:'Senior TX',qcd:'QCD',supervisor:'Supervisor',director:'Director',admin:'Admin'};
+function _asParseAc(v){return Array.isArray(v)?v:(typeof v==='string'&&v?v.replace(/[{}]/g,'').split(',').map(function(x){return x.trim();}).filter(Boolean):[]);}
+async function _asPatchUser(id,cols){var r=await sbFetch('users','PATCH',cols,'id=eq.'+encodeURIComponent(id));return Array.isArray(r)&&r.length===1;}
+function _asCanAssign(u){return ['junior','senior','qcd','supervisor'].includes(u.role);}
+function _asRank(u){var m={director:0,admin:1,supervisor:2,qcd:3,senior:4,junior:5};return m[u.role]!=null?m[u.role]:99;}
+function _asSorted(list){return list.slice().sort(function(a,b){return _asRank(a)-_asRank(b)||(a.name||'').localeCompare(b.name||'');});}
+function _asMatch(u){var q=_asQuery.trim().toLowerCase();if(_asRole&&u.role!==_asRole)return false;if(!q)return true;return ((u.name||'')+' '+(u.email||'')+' '+(u.username||'')).toLowerCase().indexOf(q)>=0;}
+function _asUserRow(u,former){
+  var ac=u.assignedClients||[];
+  var tags=_asCanAssign(u)?(ac.length?ac.map(function(id){var c=DB.clients.find(function(x){return x.id===id;});return c?'<span style="font-size:.73rem;padding:2px 9px;border-radius:10px;background:var(--primary-light);color:#234b63">'+esc(c.name)+'</span>':'';}).join(' '):'<span style="font-size:.78rem;color:var(--muted)">none yet</span>'):'<span style="font-size:.78rem;color:var(--muted);font-style:italic">all cases</span>';
+  var roleSel='<select class="role-select unlock-exempt" style="width:150px;flex:none" data-uid="'+u.id+'" onchange="changeRole(this.dataset.uid,this.value)">'+Object.keys(_asRoleLabel).map(function(r){return '<option value="'+r+'"'+(u.role===r?' selected':'')+'>'+_asRoleLabel[r]+'</option>';}).join('')+'</select>';
+  var auth=u.authId?'<span style="font-size:.7rem;background:#e2f2df;color:#2f6b2c;padding:1px 7px;border-radius:9px;font-weight:600">✓ Secure login</span>':(former?'<span style="font-size:.7rem;background:#eef0f3;color:#6b7280;padding:1px 7px;border-radius:9px">old login</span>':'<span style="font-size:.7rem;background:#fbeecb;color:#8a6410;padding:1px 7px;border-radius:9px;font-weight:600">⚠ Legacy</span> <button style="font-size:.68rem;background:#e6a71f;color:#fff;border:none;padding:1px 8px;border-radius:5px;cursor:pointer" data-uid="'+u.id+'" onclick="showSetupAuthModal(this.dataset.uid)">Upgrade</button>');
+  var btn=former?'<button class="btn btn-sm unlock-exempt" style="font-size:.72rem;background:#4fa14a;color:#fff;border:none;padding:3px 10px;border-radius:6px;white-space:nowrap" data-uid="'+u.id+'" onclick="reactivateUser(this.dataset.uid)">▶ Reactivate</button>'
+    :'<button class="btn btn-sm btn-outline unlock-exempt" style="font-size:.72rem;color:#d84a3a;border-color:#eba99d;white-space:nowrap" data-uid="'+u.id+'" onclick="deactivateUser(this.dataset.uid)">Deactivate</button>';
+  return '<div style="padding:10px 0;border-top:1px solid var(--border)'+(former?';opacity:.8':'')+'"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:170px"><div style="font-weight:600">'+esc(u.name)+'</div><div style="font-size:.76rem;color:var(--muted)">'+esc(u.email||u.username||'—')+' &nbsp;'+auth+'</div></div>'+roleSel+btn+'</div>'
+    +(former?'':'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px"><span style="font-size:.76rem;color:var(--muted)">Cases'+(_asCanAssign(u)?' ('+ac.length+')':'')+':</span>'+tags+(_asCanAssign(u)?'<button class="btn btn-outline btn-sm unlock-exempt" style="font-size:.72rem;padding:2px 10px" data-uid="'+u.id+'" onclick="_asEditCases(this.dataset.uid)">Edit cases</button>':'')+'</div>')+'</div>';
 }
-function toggleAssign(chip){
-  const userId=chip.dataset.uid;
-  const clientId=chip.dataset.cid;
-  const u=DB.users.find(x=>x.id===userId);
-  if(!u)return;
-  const ac=u.assignedClients||[];
-  const on=ac.includes(clientId);
-  u.assignedClients=on?ac.filter(id=>id!==clientId):[...ac,clientId];
-  // update chip style immediately
-  chip.style.background=on?'transparent':'var(--primary)';
-  chip.style.color=on?'var(--muted)':'#fff';
-  chip.style.borderColor=on?'var(--border)':'var(--primary)';
-  sbSaveUser(u);
-  toast(on?'Unassigned ✓':'Assigned ✓');
+function _asListHtml(){
+  if(_asView==='case')return _asCaseHtml();
+  var all=_asSorted(DB.users.filter(_asMatch)),act=all.filter(function(u){return u.active!==false;}),form=all.filter(function(u){return u.active===false;});
+  var h=act.length?act.map(function(u){return _asUserRow(u,false);}).join(''):'<p style="color:var(--muted);padding:14px 0">No staff match.</p>';
+  if(form.length)h+='<details'+(_asFormerOpen?' open':'')+' ontoggle="_asFormerOpen=this.open" style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px"><summary style="cursor:pointer;font-size:.9rem;padding:4px 0">Former staff ('+form.length+') <span style="font-size:.76rem;color:var(--muted)">inactive accounts and old logins. Their names stay on past sessions.</span></summary>'+form.map(function(u){return _asUserRow(u,true);}).join('')+'</details>';
+  return h;
+}
+function _asCaseHtml(){
+  var q=_asQuery.trim().toLowerCase(),t=_todayLocal();
+  var cs=(DB.clients||[]).filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  if(!cs.length)return '<p style="color:var(--muted);padding:14px 0">No cases match.</p>';
+  return cs.map(function(c){
+    var sup=(DB.users||[]).find(function(u){return u.id===c.supervisor;});
+    var txs=_asSorted((DB.users||[]).filter(function(u){return u.active!==false&&['junior','senior','qcd'].includes(u.role)&&(u.assignedClients||[]).includes(c.id);}));
+    var cov=(DB.cover||[]).filter(function(r){return r.clientId===c.id&&r.date===t;}).map(function(r){return (DB.users||[]).find(function(u){return u.id===r.userId;});}).filter(Boolean);
+    var chips=txs.map(function(u){return '<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#eef2f7;color:#374151">'+esc(u.name)+'</span>';}).join(' ')
+      +cov.map(function(u){return ' <span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#e3f3df;color:#2f6b2c">Cover today: '+esc(u.name)+'</span>';}).join('')
+      +(!txs.length&&!cov.length?'<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#fbeecb;color:#8a6410">No therapist assigned</span>':'');
+    return '<div style="padding:9px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:600;min-width:90px">'+esc(c.name)+'</div><div style="font-size:.78rem;color:var(--muted);min-width:110px">'+(sup?esc(sup.name):'No supervisor')+'</div><div style="flex:1;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div></div>';
+  }).join('');
+}
+function _asStaffHtml(){
+  var nAct=DB.users.filter(function(u){return u.active!==false;}).length;
+  var bs=function(v,l){return '<button class="btn btn-sm '+(_asView===v?'btn-primary':'btn-outline')+' unlock-exempt" onclick="_asSetView(\''+v+'\')">'+l+'</button>';};
+  var roleOpts='<option value="">All roles</option>'+Object.keys(_asRoleLabel).map(function(r){return '<option value="'+r+'"'+(_asRole===r?' selected':'')+'>'+_asRoleLabel[r]+'</option>';}).join('');
+  return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="flex:1;margin:0;min-width:140px">Staff &amp; Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input type="text" id="as-q" class="unlock-exempt" placeholder="'+(_asView==='case'?'Search a case':'Search a name or email')+'" value="'+esc(_asQuery)+'" oninput="_asQ(this.value)" style="flex:1;min-width:160px">'
+    +(_asView==='case'?'':'<select class="unlock-exempt" onchange="_asRoleF(this.value)" style="width:140px">'+roleOpts+'</select>')+'</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+bs('staff','By staff')+bs('case','By case')+'<span style="margin-left:auto;font-size:.76rem;color:var(--muted)">'+nAct+' active staff</span></div>'
+    +'<p style="font-size:.78rem;color:var(--muted);margin:4px 0 2px">'+(_asView==='case'?'Who has each case. Change assignments from By staff → Edit cases.':'Junior/Senior TX only see assigned cases. Use Edit cases to change them.')+'</p>'
+    +'<div id="as-list">'+_asListHtml()+'</div></div>';
+}
+function _asRefreshList(){var e=document.getElementById('as-list');if(e)e.innerHTML=_asListHtml();}
+function _asQ(v){_asQuery=v;_asRefreshList();}
+function _asRoleF(v){_asRole=v;_asRefreshList();}
+function _asSetView(v){_asView=v;_asQuery='';render();}
+// role / active: one column, confirmed before the screen changes
+async function changeRole(userId,newRole){
+  const u=DB.users.find(x=>x.id===userId);if(!u)return;
+  if(userId===(currentUser&&currentUser.id)&&!['director','admin'].includes(newRole)){toast("You can't lower your own role.",'error');render();return;}
+  if(!(await _asPatchUser(userId,{role:newRole}))){toast('⚠ Could not change the role. Nothing was changed — please check your connection and try again.','error',6000);render();return;}
+  u.role=newRole;toast('Role updated ✓');render();
+}
+// edit cases: tick-list + Save
+function _asEditCases(uid){
+  const u=DB.users.find(x=>x.id===uid);if(!u)return;
+  const cur=(u.assignedClients||[]).slice();
+  _ac={uid:uid,sel:{},orig:{},q:''};cur.forEach(function(id){_ac.sel[id]=1;_ac.orig[id]=1;});
+  modal('<div id="ac-box" style="width:100%;max-width:440px">'+_acHtml()+'</div>');
+}
+function _acHtml(){
+  const u=DB.users.find(x=>x.id===_ac.uid)||{name:''};const q=_ac.q.trim().toLowerCase();
+  const cs=(DB.clients||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)>=0||_ac.sel[c.id];});
+  const n=Object.keys(_ac.sel).length;
+  return '<h3 style="margin-bottom:8px">Cases for '+esc(u.name)+'</h3><input type="text" id="ac-q" class="unlock-exempt" placeholder="Search a case" value="'+esc(_ac.q)+'" oninput="_acQ(this.value)" style="width:100%;margin-bottom:8px">'
+    +'<div style="max-height:46vh;overflow-y:auto;display:flex;flex-wrap:wrap;gap:6px">'+cs.map(function(c){const on=!!_ac.sel[c.id];return '<button type="button" class="unlock-exempt" onclick="_acTog(\''+c.id+'\')" style="cursor:pointer;padding:5px 11px;border-radius:9px;font-size:.82rem;border:1.5px solid '+(on?'var(--primary)':'var(--border)')+';background:'+(on?'var(--primary-light)':'#fff')+';color:'+(on?'#0f4c6b':'var(--text)')+';font-weight:'+(on?'700':'400')+'">'+(on?'✓ ':'')+esc(c.name)+'</button>';}).join('')+'</div>'
+    +'<div style="font-size:.8rem;color:var(--muted);margin-top:8px">'+n+' case'+(n===1?'':'s')+' ticked.</div>'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="_acSave()">Save</button></div>';
+}
+function _acDraw(){const b=document.getElementById('ac-box');if(!b)return;const f=document.activeElement&&document.activeElement.id==='ac-q';const pos=f?document.activeElement.selectionStart:0;b.innerHTML=_acHtml();if(f){const i=document.getElementById('ac-q');if(i){i.focus();try{i.setSelectionRange(pos,pos);}catch(e){}}}}
+function _acQ(v){_ac.q=v;_acDraw();}
+function _acTog(id){if(_ac.sel[id])delete _ac.sel[id];else _ac.sel[id]=1;_acDraw();}
+async function _acSave(){
+  const u=DB.users.find(x=>x.id===_ac.uid);if(!u)return;
+  const added=Object.keys(_ac.sel).filter(function(id){return !_ac.orig[id];}),removed=Object.keys(_ac.orig).filter(function(id){return !_ac.sel[id];});
+  if(!added.length&&!removed.length){closeModal();return;}
+  // read the latest list first, apply only this change on top of it
+  let latest=null;
+  try{const rows=await sbFetch('users','GET',null,'select=assigned_clients&id=eq.'+encodeURIComponent(u.id));if(Array.isArray(rows)&&rows.length===1)latest=_asParseAc(rows[0].assigned_clients);}catch(e){}
+  if(latest===null){toast('⚠ Could not read the latest list. Nothing was changed — please check your connection and try again.','error',6000);return;}
+  let merged=latest.filter(function(id){return removed.indexOf(id)<0;});added.forEach(function(id){if(merged.indexOf(id)<0)merged.push(id);});
+  if(!(await _asPatchUser(u.id,{assigned_clients:merged}))){toast('⚠ Could not save the cases. Nothing was changed — please check your connection and try again.','error',6000);return;}
+  u.assignedClients=merged;closeModal();toast('Cases saved ✓');render();
 }
 function renderStorageBar(){
   try{
@@ -7435,8 +7483,8 @@ function deactivateUser(id){
 async function confirmDeactivate(id){
   const u=DB.users.find(x=>x.id===id);
   if(!u)return;
+  if(!(await _asPatchUser(id,{active:false}))){toast('⚠ Could not deactivate this account. Nothing was changed — please check your connection and try again.','error',6000);return;}
   u.active=false;
-  await sbSaveUser(u);
   toast('Account deactivated ✓');
   render();
 }
@@ -7444,8 +7492,8 @@ async function reactivateUser(id){
   if(!currentUser||!['director','admin'].includes(currentUser.role)){toast('⚠ No permission');return;}
   const u=DB.users.find(x=>x.id===id);
   if(!u)return;
+  if(!(await _asPatchUser(id,{active:true}))){toast('⚠ Could not reactivate this account. Nothing was changed — please check your connection and try again.','error',6000);return;}
   u.active=true;
-  await sbSaveUser(u);
   toast('Account reactivated ✓');
   render();
 }
