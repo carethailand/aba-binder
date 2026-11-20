@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CN -->
+<!-- BUILD v2026-11-21-CO -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CN</title>
+<title>CARE Client Binder v2026-11-21-CO</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CN';
+const APP_VERSION='v2026-11-21-CO';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-21-CO',date:'21 Nov 2026',added:'A Cover tab on the admin page: every planned cover day from today on, listed by date with the case and the person, a + Add cover button that starts from choosing the case, an \u00d7 to remove a day, and a Refresh button. Directors and admins can set up and review cover without opening each case.',improved:'',fixed:''},
   {version:'v2026-11-21-CN',date:'21 Nov 2026',added:'Cover days. On a case screen, the case supervisor, a director or an admin can press Cover, choose who is covering and tap the days (any days, not only in a row). The covering person sees the case in their list tagged \u201cCovering today\u201d and can record on those days; before the first cover day they can read it (read-only) from a date you choose, 3 days ahead by default. A supervisor covering another supervisor\u2019s case can run a session but cannot change the program.',improved:'',fixed:''},
   {version:'v2026-11-21-CM',date:'21 Nov 2026',added:'',improved:'Removed the admin \u201cImport\u201d button, an old leftover that could replace all records in the app with any chosen file. Full Export and the archive tools are unchanged.',fixed:''},
   {version:'v2026-11-21-CL',date:'21 Nov 2026',added:'',improved:'Privacy on shared devices: note text that was typed but never saved is now erased from the device after 3 days, and when you log out yourself (the app asks first if there is unsaved note text). The automatic end-of-day sign-out keeps it, so late work is never lost. Unsaved session and BIP data is never cleared automatically.',fixed:''},
@@ -1490,7 +1491,7 @@ let currentView='clients';
 let selectedClientId=null;
 let graphMonth=''; // date filter: 'YYYY-MM' = that month only, '' = all
 let selectedTab='checklist';
-let adminSection='staff'; // admin sub-tab: 'staff' | 'data'
+let adminSection='staff'; // admin sub-tab: 'staff' | 'cover' | 'data'
 // ── Session-in-progress state (persisted in sessionStorage so it survives tab switches) ──
 const SESS_KEY='aba_sess_'+location.pathname;
 function getSessState(){try{return JSON.parse(sessionStorage.getItem(SESS_KEY))||{};}catch(e){return{};}}
@@ -3297,6 +3298,36 @@ function _coverSupLimited(){return !!(currentUser&&currentUser.role==='superviso
 function _viewOnlyWhy(){var r=currentUser&&currentUser.role;if(['junior','senior','qcd','supervisor'].includes(r)&&_coverMode(selectedClientId)==='read')return 'covering from '+_cvFmt(_coverNext(selectedClientId,currentUser.id))+' - you can read this case now and record on your cover days';return r==='supervisor'?'not assigned to this client':r==='qcd'?'QCD observer':'admin view';}
 function _cvCanManage(c){var r=currentUser&&currentUser.role;if(!c||!r)return false;if(r==='admin'||r==='director')return true;return r==='supervisor'&&((c.supervisor||'')===currentUser.id||(currentUser.assignedClients||[]).includes(c.id));}
 function _cvBtnHtml(c){if(!_cvCanManage(c))return '';var n=(DB.cover||[]).filter(function(r){return r.clientId===c.id&&r.date>=_todayLocal();}).length;return '<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="_cvOpen(\''+c.id+'\')" title="Give a therapist cover days for this case">Cover'+(n?' · '+n+' day'+(n>1?'s':''):'')+'</button>';}
+// v-CO: admin page "Cover" tab - all planned cover from today on, by date
+function _cvAdminHtml(){
+  var t=_todayLocal(),rows=(DB.cover||[]).filter(function(r){return r.date>=t;}).sort(function(a,b){return a.date.localeCompare(b.date)||String(a.clientId).localeCompare(String(b.clientId));});
+  var byDate={};rows.forEach(function(r){(byDate[r.date]=byDate[r.date]||[]).push(r);});
+  var body=Object.keys(byDate).sort().map(function(d){
+    var items=byDate[d].map(function(r){
+      var c=(DB.clients||[]).find(function(x){return x.id===r.clientId;})||{name:'Unknown case'},u=(DB.users||[]).find(function(x){return x.id===r.userId;})||{name:'Unknown',role:''};
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);flex-wrap:wrap"><div style="flex:1;min-width:160px"><b>'+esc(c.name)+'</b> <span style="color:var(--muted)">covered by</span> <b>'+esc(u.name)+'</b>'+(u.role?' <span style="font-size:.72rem;color:var(--muted)">('+esc(u.role)+')</span>':'')+'</div>'
+        +'<div style="font-size:.75rem;color:var(--muted)">'+(r.readFrom&&r.readFrom<r.date?'reads from '+_cvFmt(r.readFrom):'')+'</div>'
+        +'<button class="btn btn-outline btn-sm unlock-exempt" style="color:#d84a3a;border-color:#eba99d" title="Remove this cover day" onclick="_cvRemove(\''+r.id+'\')">Remove</button></div>';
+    }).join('');
+    return '<div style="margin-bottom:14px"><div style="font-weight:700;font-size:.9rem;margin-bottom:2px">'+(d===t?'Today · ':'')+_cvFmt(d)+' <span style="font-weight:400;color:var(--muted);font-size:.78rem">'+d.slice(0,4)+'</span></div>'+items+'</div>';
+  }).join('');
+  return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap"><h3 style="flex:1;margin:0">Cover</h3>'
+    +'<button class="btn btn-outline btn-sm unlock-exempt" onclick="_cvReload()" title="Fetch the latest cover days">↻ Refresh</button>'
+    +'<button class="btn btn-green btn-sm unlock-exempt" onclick="_cvPickCase()">＋ Add cover</button></div>'
+    +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Planned cover from today on. A covering person can read the case from the date shown, and record on their cover days.</p>'
+    +(body||'<p style="color:var(--muted);padding:14px 0">No cover planned. Press ＋ Add cover to plan some.</p>')+'</div>';
+}
+function _cvPickCase(){
+  var opts='<option value="">Choose a case…</option>'+(DB.clients||[]).slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+'</option>';}).join('');
+  modal('<h3 style="margin-bottom:10px">Add cover</h3><label style="font-size:.82rem;color:var(--muted)">Which case needs cover?</label><select id="cv-case" style="display:block;width:100%;box-sizing:border-box;margin:3px 0 14px">'+opts+'</select><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="_cvPickNext()">Next</button></div>');
+}
+function _cvPickNext(){var v=(document.getElementById('cv-case')||{}).value;if(!v){toast('Choose a case first.','error');return;}_cvOpen(v);}
+async function _cvReload(){
+  try{var r=await sbFetch('case_cover','GET',null,'select=*&cover_date=gte.'+_cvAdd(_todayLocal(),-1)+'&order=cover_date.asc');
+    if(!Array.isArray(r)){toast('⚠ Could not refresh just now. Please check your connection and try again.','error',5000);return;}
+    DB.cover=r.map(_cvRow);toast('Cover list updated ✓');render();
+  }catch(e){toast('⚠ Could not refresh just now. Please check your connection and try again.','error',5000);}
+}
 var _cv=null;
 function _cvOpen(cid){var c=DB.clients.find(function(x){return x.id===cid;});if(!_cvCanManage(c)){toast('Only the case supervisor, a director or an admin can set cover.');return;}
   _cv={cid:cid,uid:'',sel:{},month:_todayLocal().slice(0,7),from:'',touched:false};modal('<div id="cv-box" style="width:100%;max-width:420px">'+_cvHtml()+'</div>');}
@@ -7231,6 +7262,7 @@ function renderAdmin(){
   }).join('');
   const _asNav='<div class="tabs" style="margin-bottom:16px">'
     +'<button class="tab '+(adminSection==='staff'?'active':'')+'" onclick="setAdminSection(\'staff\')">👥 Staff &amp; Access</button>'
+    +'<button class="tab '+(adminSection==='cover'?'active':'')+'" onclick="setAdminSection(\'cover\')">🗓 Cover</button>'
     +'<button class="tab '+(adminSection==='data'?'active':'')+'" onclick="setAdminSection(\'data\')">💾 Data &amp; Storage</button>'
     +'</div>';
   const _asStaff='<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><h3 style="flex:1;margin:0">Users &amp; Client Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
@@ -7246,7 +7278,7 @@ function renderAdmin(){
     +'<p style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Select a client and date range to generate a read-only offline HTML archive. You will be asked whether to also remove that data from the database.</p>'
     +'<button class="unlock-exempt btn btn-outline" onclick="showArchiveModal()">📦 Archive Client Data…</button>'
     +'</div>';
-  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+_asNav+(adminSection==='data'?_asData:_asStaff)+'<div id="modal-area"></div>';
+  return '<h2 style="margin-bottom:16px">⚙ Admin</h2>'+_asNav+(adminSection==='data'?_asData:adminSection==='cover'?_cvAdminHtml():_asStaff)+'<div id="modal-area"></div>';
 }
 function changeRole(userId, newRole){
   const u=DB.users.find(x=>x.id===userId);
