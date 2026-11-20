@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CP -->
+<!-- BUILD v2026-11-21-CQ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="assets/care-logo.png?v=1">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CP</title>
+<title>CARE Client Binder v2026-11-21-CQ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -416,13 +417,8 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   <div style="display:flex;gap:16px;align-items:flex-start;justify-content:center;flex-wrap:nowrap;overflow-x:auto;padding:24px;width:100%;box-sizing:border-box">
   <div class="login-box">
     <div style="text-align:center;margin-bottom:20px">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130 46" width="110" height="38">
-        <text x="2" y="38" font-family="Arial Black,sans-serif" font-size="44" font-weight="900" fill="#1f8ec4">C</text>
-        <text x="30" y="38" font-family="Arial Black,sans-serif" font-size="38" font-weight="900" fill="#e6a71f">a</text>
-        <text x="56" y="38" font-family="Arial Black,sans-serif" font-size="44" font-weight="900" fill="#ec5f92">R</text>
-        <text x="86" y="38" font-family="Arial Black,sans-serif" font-size="38" font-weight="900" fill="#1f8ec4">e</text>
-      </svg>
-      <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#94a0ae;margin-top:2px">Thailand · Client Binder</div>
+      <img src="assets/care-logo.png?v=1" alt="CARE" width="130" style="display:block;margin:0 auto;height:auto">
+      <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#94a0ae;margin-top:2px">CARE Thailand · Client Binder</div>
     </div>
     <label>Email<input type="email" id="l-email" placeholder="you@example.com" autocomplete="email"></label>
     <label style="margin-top:12px">Password<input type="password" id="l-pass" placeholder="••••••"></label>
@@ -435,12 +431,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 </div>
 
 <div id="nav" style="display:none">
-  <h1 style="display:flex;align-items:center;gap:6px"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40" width="72" height="26" style="display:inline-block;vertical-align:middle;margin-right:4px">
-  <text x="2" y="32" font-family="Arial Black,sans-serif" font-size="38" font-weight="900" fill="#fff">C</text>
-  <text x="26" y="32" font-family="Arial Black,sans-serif" font-size="32" font-weight="900" fill="#e6a71f">a</text>
-  <text x="48" y="32" font-family="Arial Black,sans-serif" font-size="38" font-weight="900" fill="#ec5f92">R</text>
-  <text x="74" y="32" font-family="Arial Black,sans-serif" font-size="32" font-weight="900" fill="#fff">e</text>
-</svg><span style="font-size:.8rem;font-weight:400;opacity:.8;letter-spacing:.06em">CLIENT BINDER</span></h1>
+  <h1 style="display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:1px 8px"><img src="assets/care-logo.png?v=1" alt="CARE" style="height:34px;width:auto;display:block"></span><span style="font-size:.8rem;font-weight:400;opacity:.8;letter-spacing:.06em">CLIENT BINDER</span></h1>
   <span id="nav-user"></span>
   <button class="btn-nav" id="btn-update" style="display:none;background:#fff4d6;color:#8a6410;font-weight:700" onclick="_forceUpdate()">Update ready</button>
   <button class="btn-nav" id="btn-clients" onclick="showView('clients')">Clients</button>
@@ -454,10 +445,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CP';
+const APP_VERSION='v2026-11-21-CQ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-21-CQ',date:'21 Nov 2026',added:'',improved:'The login screen and the top bar now show the real CARE logo (the same as the Therapist Portal), and the browser tab shows it too. Admin, Staff & Access: By staff now has a separate card for each role (Directors, Admins, Supervisors, QCDs, Senior TX, Junior TX), and By case is grouped by supervisor, like the client list.',fixed:''},
   {version:'v2026-11-21-CP',date:'21 Nov 2026',added:'Admin page, Staff & Access: a tidier list with search and a role filter, assigned cases shown as small tags with an Edit cases button (tick the cases, then Save), a By case view showing who has each case, and a collapsed Former staff section. The role box is wide enough to read.',improved:'Changing a role, deactivating, reactivating or editing someone\u2019s cases now saves only that one thing, confirms with the database before the screen changes, and no longer overwrites other changes made at the same time.',fixed:''},
   {version:'v2026-11-21-CO',date:'21 Nov 2026',added:'A Cover tab on the admin page: every planned cover day from today on, listed by date with the case and the person, a + Add cover button that starts from choosing the case, an \u00d7 to remove a day, and a Refresh button. Directors and admins can set up and review cover without opening each case.',improved:'',fixed:''},
   {version:'v2026-11-21-CN',date:'21 Nov 2026',added:'Cover days. On a case screen, the case supervisor, a director or an admin can press Cover, choose who is covering and tap the days (any days, not only in a row). The covering person sees the case in their list tagged \u201cCovering today\u201d and can record on those days; before the first cover day they can read it (read-only) from a date you choose, 3 days ahead by default. A supervisor covering another supervisor\u2019s case can run a session but cannot change the program.',improved:'',fixed:''},
@@ -7277,37 +7269,49 @@ function _asUserRow(u,former){
   return '<div style="padding:10px 0;border-top:1px solid var(--border)'+(former?';opacity:.8':'')+'"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="flex:1;min-width:170px"><div style="font-weight:600">'+esc(u.name)+'</div><div style="font-size:.76rem;color:var(--muted)">'+esc(u.email||u.username||'—')+' &nbsp;'+auth+'</div></div>'+roleSel+btn+'</div>'
     +(former?'':'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px"><span style="font-size:.76rem;color:var(--muted)">Cases'+(_asCanAssign(u)?' ('+ac.length+')':'')+':</span>'+tags+(_asCanAssign(u)?'<button class="btn btn-outline btn-sm unlock-exempt" style="font-size:.72rem;padding:2px 10px" data-uid="'+u.id+'" onclick="_asEditCases(this.dataset.uid)">Edit cases</button>':'')+'</div>')+'</div>';
 }
+var _asGroupLabel={director:'Directors',admin:'Admins',supervisor:'Supervisors',qcd:'QCDs',senior:'Senior TX',junior:'Junior TX',other:'Other'};
+function _asGroupHead(label,n){return '<div style="font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:0 0 6px">'+esc(label)+' · '+n+'</div>';}
 function _asListHtml(){
   if(_asView==='case')return _asCaseHtml();
   var all=_asSorted(DB.users.filter(_asMatch)),act=all.filter(function(u){return u.active!==false;}),form=all.filter(function(u){return u.active===false;});
-  var h=act.length?act.map(function(u){return _asUserRow(u,false);}).join(''):'<p style="color:var(--muted);padding:14px 0">No staff match.</p>';
-  if(form.length)h+='<details'+(_asFormerOpen?' open':'')+' ontoggle="_asFormerOpen=this.open" style="margin-top:12px;border-top:1px solid var(--border);padding-top:8px"><summary style="cursor:pointer;font-size:.9rem;padding:4px 0">Former staff ('+form.length+') <span style="font-size:.76rem;color:var(--muted)">inactive accounts and old logins. Their names stay on past sessions.</span></summary>'+form.map(function(u){return _asUserRow(u,true);}).join('')+'</details>';
+  var known=['director','admin','supervisor','qcd','senior','junior'],h='';
+  known.concat(['other']).forEach(function(r){
+    var g=act.filter(function(u){return r==='other'?known.indexOf(u.role)<0:u.role===r;});if(!g.length)return;
+    h+='<div class="card" style="margin-bottom:14px">'+_asGroupHead(_asGroupLabel[r],g.length)+g.map(function(u){return _asUserRow(u,false);}).join('')+'</div>';
+  });
+  if(!act.length)h+='<div class="card" style="margin-bottom:14px"><p style="color:var(--muted)">No staff match.</p></div>';
+  if(form.length)h+='<div class="card"><details'+(_asFormerOpen?' open':'')+' ontoggle="_asFormerOpen=this.open"><summary style="cursor:pointer;font-size:.9rem;padding:2px 0">Former staff ('+form.length+') <span style="font-size:.76rem;color:var(--muted)">inactive accounts and old logins. Their names stay on past sessions.</span></summary>'+form.map(function(u){return _asUserRow(u,true);}).join('')+'</details></div>';
   return h;
 }
 function _asCaseHtml(){
   var q=_asQuery.trim().toLowerCase(),t=_todayLocal();
-  var cs=(DB.clients||[]).filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)>=0;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
-  if(!cs.length)return '<p style="color:var(--muted);padding:14px 0">No cases match.</p>';
-  return cs.map(function(c){
-    var sup=(DB.users||[]).find(function(u){return u.id===c.supervisor;});
-    var txs=_asSorted((DB.users||[]).filter(function(u){return u.active!==false&&['junior','senior','qcd'].includes(u.role)&&(u.assignedClients||[]).includes(c.id);}));
-    var cov=(DB.cover||[]).filter(function(r){return r.clientId===c.id&&r.date===t;}).map(function(r){return (DB.users||[]).find(function(u){return u.id===r.userId;});}).filter(Boolean);
-    var chips=txs.map(function(u){return '<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#eef2f7;color:#374151">'+esc(u.name)+'</span>';}).join(' ')
-      +cov.map(function(u){return ' <span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#e3f3df;color:#2f6b2c">Cover today: '+esc(u.name)+'</span>';}).join('')
-      +(!txs.length&&!cov.length?'<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#fbeecb;color:#8a6410">No therapist assigned</span>':'');
-    return '<div style="padding:9px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:600;min-width:90px">'+esc(c.name)+'</div><div style="font-size:.78rem;color:var(--muted);min-width:110px">'+(sup?esc(sup.name):'No supervisor')+'</div><div style="flex:1;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div></div>';
+  var cs=(DB.clients||[]).filter(function(c){return !q||(c.name||'').toLowerCase().indexOf(q)>=0;});
+  if(!cs.length)return '<div class="card"><p style="color:var(--muted)">No cases match.</p></div>';
+  var supName={};(DB.users||[]).forEach(function(u){supName[u.id]=u.name;});
+  var groups={},UN='__unassigned__';cs.forEach(function(c){var k=(c.supervisor&&supName[c.supervisor])?c.supervisor:UN;(groups[k]=groups[k]||[]).push(c);});
+  var keys=Object.keys(groups).filter(function(k){return k!==UN;}).sort(function(a,b){return (supName[a]||'').localeCompare(supName[b]||'');});if(groups[UN])keys.push(UN);
+  return keys.map(function(k){
+    var rows=groups[k].sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).map(function(c){
+      var txs=_asSorted((DB.users||[]).filter(function(u){return u.active!==false&&['junior','senior','qcd'].includes(u.role)&&(u.assignedClients||[]).includes(c.id);}));
+      var cov=(DB.cover||[]).filter(function(r){return r.clientId===c.id&&r.date===t;}).map(function(r){return (DB.users||[]).find(function(u){return u.id===r.userId;});}).filter(Boolean);
+      var chips=txs.map(function(u){return '<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#eef2f7;color:#374151">'+esc(u.name)+'</span>';}).join(' ')
+        +cov.map(function(u){return ' <span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#e3f3df;color:#2f6b2c">Cover today: '+esc(u.name)+'</span>';}).join('')
+        +(!txs.length&&!cov.length?'<span style="font-size:.76rem;padding:2px 9px;border-radius:10px;background:#fbeecb;color:#8a6410">No therapist assigned</span>':'');
+      return '<div style="padding:9px 0;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap"><div style="font-weight:600;min-width:90px">'+esc(c.name)+'</div><div style="flex:1;display:flex;gap:5px;flex-wrap:wrap">'+chips+'</div></div>';
+    }).join('');
+    return '<div class="card" style="margin-bottom:14px">'+_asGroupHead(k===UN?'Unassigned':supName[k],groups[k].length)+rows+'</div>';
   }).join('');
 }
 function _asStaffHtml(){
   var nAct=DB.users.filter(function(u){return u.active!==false;}).length;
   var bs=function(v,l){return '<button class="btn btn-sm '+(_asView===v?'btn-primary':'btn-outline')+' unlock-exempt" onclick="_asSetView(\''+v+'\')">'+l+'</button>';};
   var roleOpts='<option value="">All roles</option>'+Object.keys(_asRoleLabel).map(function(r){return '<option value="'+r+'"'+(_asRole===r?' selected':'')+'>'+_asRoleLabel[r]+'</option>';}).join('');
-  return '<div class="card"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="flex:1;margin:0;min-width:140px">Staff &amp; Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
+  return '<div class="card" style="margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap"><h3 style="flex:1;margin:0;min-width:140px">Staff &amp; Access</h3><button class="btn btn-green btn-sm" onclick="showAddUserModal()">＋ Add User</button></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px"><input type="text" id="as-q" class="unlock-exempt" placeholder="'+(_asView==='case'?'Search a case':'Search a name or email')+'" value="'+esc(_asQuery)+'" oninput="_asQ(this.value)" style="flex:1;min-width:160px">'
     +(_asView==='case'?'':'<select class="unlock-exempt" onchange="_asRoleF(this.value)" style="width:140px">'+roleOpts+'</select>')+'</div>'
     +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'+bs('staff','By staff')+bs('case','By case')+'<span style="margin-left:auto;font-size:.76rem;color:var(--muted)">'+nAct+' active staff</span></div>'
-    +'<p style="font-size:.78rem;color:var(--muted);margin:4px 0 2px">'+(_asView==='case'?'Who has each case. Change assignments from By staff → Edit cases.':'Junior/Senior TX only see assigned cases. Use Edit cases to change them.')+'</p>'
-    +'<div id="as-list">'+_asListHtml()+'</div></div>';
+    +'<p style="font-size:.78rem;color:var(--muted);margin:4px 0 0">'+(_asView==='case'?'Cases grouped by supervisor. Change assignments from By staff → Edit cases.':'Grouped by role. Junior/Senior TX only see assigned cases. Use Edit cases to change them.')+'</p></div>'
+    +'<div id="as-list">'+_asListHtml()+'</div>';
 }
 function _asRefreshList(){var e=document.getElementById('as-list');if(e)e.innerHTML=_asListHtml();}
 function _asQ(v){_asQuery=v;_asRefreshList();}
