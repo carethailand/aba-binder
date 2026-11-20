@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-20-CJ -->
+<!-- BUILD v2026-11-20-CK -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-20-CJ</title>
+<title>CARE Client Binder v2026-11-20-CK</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-20-CJ';
+const APP_VERSION='v2026-11-20-CK';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-20-CK',date:'20 Nov 2026',added:'A clear banner under the top bar when a new version is ready, with an Update now button. It never reloads the page by itself, and asks first if you seem to be in the middle of typing or a session.',improved:'',fixed:''},
   {version:'v2026-11-20-CJ',date:'20 Nov 2026',added:'',improved:'Removed the admin \u201cReset\u201d button, an old leftover that could wipe all records with two clicks. Records can no longer be erased from the app in one step.',fixed:''},
   {version:'v2026-11-20-CI',date:'20 Nov 2026',added:'',improved:'Deleting now only changes the screen after the database has confirmed it. If a delete does not go through, the item stays where it is and a message says so, instead of disappearing and coming back later. This covers sessions, BIPs, BIP log entries, ABC entries, lessons and the end-of-year archive (which now also reports honestly if any records could not be removed).',fixed:'A failed delete could look successful on screen while the record stayed in the database.'},
   {version:'v2026-11-20-CH',date:'20 Nov 2026',added:'',improved:'When a save or delete does not go through, the message now says so in plain words and tells you what to do next, instead of showing technical codes. Technical details written to the browser console no longer include the database reply.',fixed:''},
@@ -592,7 +593,21 @@ async function checkForUpdate(showToast){
   }catch(e){}
 }
 function _forceUpdate(){location.href=location.pathname+'?v='+Date.now();}
-function _updateNavBtn(v){try{var b=document.getElementById('btn-update');if(!b)return;if(v){b.title='New version '+v+' available - click to update when ready';b.style.display='';}else{b.style.display='none';}}catch(e){}}
+function _updateNavBtn(v){try{var b=document.getElementById('btn-update');if(!b)return;if(v){b.title='New version '+v+' available - click to update when ready';b.style.display='';}else{b.style.display='none';}}catch(e){}try{_updateBanner(v);}catch(e){}}
+// v-CK: visible "new version ready" banner under the top bar. Never reloads by itself; the button asks first when someone is typing or in a session.
+function _updateBanner(v){
+  var ex=document.getElementById('update-banner'),nav=document.getElementById('nav');
+  if(!v||typeof currentUser==='undefined'||!currentUser||!nav){if(ex)ex.remove();return;}
+  if(ex)return;
+  var b=document.createElement('div');b.id='update-banner';
+  b.style.cssText='background:#fff4d6;color:#6e4e12;border-bottom:1px solid #f0d98f;padding:10px 16px;font-size:.9rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;text-align:center';
+  b.innerHTML='<span>\u{1F504} A new version of the binder is ready.</span><button class="btn btn-sm btn-primary" onclick="_updateFromBanner()">Update now</button><span style="font-weight:400;font-size:.8rem">Finish and save what you are doing first.</span>';
+  nav.parentNode.insertBefore(b,nav.nextSibling);
+}
+function _updateFromBanner(){
+  try{if(_isBusy()&&!confirm('You seem to be in the middle of typing or a session.\n\nUpdating reloads the page. Please finish and save first if you can.\n\nUpdate now?'))return;}catch(e){}
+  _forceUpdate();
+}
 var _lastInputTs=0;
 document.addEventListener('input',function(){_lastInputTs=Date.now();},true);
 document.addEventListener('keydown',function(){_lastInputTs=Date.now();},true);
@@ -3079,6 +3094,7 @@ async function doLogout(){
   document.getElementById('nav').style.display='none';
   document.getElementById('app').style.display='none';
   const ub=document.getElementById('auth-upgrade-banner');if(ub)ub.remove();
+  const _upb=document.getElementById('update-banner');if(_upb)_upb.remove();
   const le=document.getElementById('l-email');if(le)le.value='';
   const lp=document.getElementById('l-pass');if(lp)lp.value='';
   const lerr=document.getElementById('l-err');if(lerr)lerr.style.display='none';

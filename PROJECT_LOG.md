@@ -153,10 +153,11 @@ Ranked findings from the full health check, worked one at a time (each its own v
 - [x] Removed the admin "Reset ALL data" button and its code (v2026-11-20-CJ).
 - [ ] Review the admin "Import" button: it replaces everything in memory with any chosen file after no confirmation, then syncs. Remove or guard.
 - [ ] Full function audit: review every button/feature left from the early builds — is it still needed, is the logic safe, is there a better way? (Songg agreed 20 Nov.)
-- [ ] Client names out of download file names and print titles (use initials/ID).
-- [ ] Clearer "new version available" banner.
+- [x] Client names in file names / print titles: checked 20 Nov — the app's client names are already short codes, so nothing to change. Optional idea: a gentle warning in Add Client if the name looks like a full name.
+- [x] Clearer "new version available" banner under the top bar; never reloads by itself, asks first if typing/in a session (v2026-11-20-CK).
 - [ ] Old local drafts: decide whether to clear on logout / after a set number of days.
 - [ ] Backups: 4-monthly archive + export of all cases; plan an extra routine export. Check Supabase plan/backups page.
 - [ ] Access: therapists see only assigned clients (cover sessions / team rotation need a temporary-access design); supervisors see all but edit only their own cases (may cover as therapist); admin sees admin pages only. Needs design before building.
 - [ ] Split index.html into separate files (styles, reports, lessons/BIP/School Shadow, saving last). Planned for the long holiday break, after archive. Model layout: the therapist portal (css/, js/ one file per area). Tag files with the version so old caches cannot mix.
 - [ ] Admin page (Staff & Access) redesign — noted 20 Nov: role drop-down is too narrow (shows only its arrow); one chip per client on every staff row makes a very long page; old unused/legacy and test accounts clutter the list; no way to give temporary cover access (team rotation). Ideas: wider role box, search/filter by staff or client, assignment grid, cover access with an end date, a tidy-up for legacy/test accounts. Design with Songg first.
+  - Admin page note (20 Nov): inactive "Legacy" accounts include former therapists who may have data on cases, so they are never deleted — only grouped under a collapsed "Former staff" section (no Upgrade/Reactivate clutter). Login is Supabase-only now (legacy accounts cannot log in). Early generic test accounts: check with read-only SQL that no records use them before hiding.
