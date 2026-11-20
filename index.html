@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-19-CG -->
+<!-- BUILD v2026-11-20-CH -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-19-CG</title>
+<title>CARE Client Binder v2026-11-20-CH</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-19-CG';
+const APP_VERSION='v2026-11-20-CH';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-20-CH',date:'20 Nov 2026',added:'',improved:'When a save or delete does not go through, the message now says so in plain words and tells you what to do next, instead of showing technical codes. Technical details written to the browser console no longer include the database reply.',fixed:''},
   {version:'v2026-11-19-CG',date:'19 Nov 2026',added:'',improved:'Day report and Finish & Preview with \u201cInclude lesson data & graphs\u201d: every target with data in the period now prints its graph, even when there is no session data on the report day (it then shows the last result and its date). On Clinic and All-visits reports the graphs go back at least to the last clinic visit (up to 3 months). Before printing, the report also fetches any sessions saved on other devices since the client was opened.',fixed:'Lesson graphs were missing from the report when there was no session data on that exact day.'},
   {version:'v2026-11-16-CF',date:'16 Nov 2026',added:'',improved:'Update notes reworded to describe features in general terms only.',fixed:''},
   {version:'v2026-11-14-CE',date:'14 Nov 2026',added:'',improved:'Observation notes by subject: each timetable box is read one subject at a time. A box with two options separated by a slash gives two subjects. When a box lists more than one class, only the child\u2019s own class (from Case Info \u2192 Class / Room) is used. Each subject appears once. The timetable itself is not changed.',fixed:''},
@@ -683,7 +684,7 @@ async function sbFetch(table,method='GET',body=null,params=''){
   const opts={method,headers:{'apikey':SUPABASE_KEY,'Authorization':await _sbAuth(),'Content-Type':'application/json',...((method==='POST'||method==='PATCH')?{'Prefer':'return=representation'}:{})}};
   if(body)opts.body=JSON.stringify(body);
   const r=await fetch(url,opts);
-  if(!r.ok){const t=await r.text();console.error('sbFetch error',table,method,r.status,t);return null;}
+  if(!r.ok){console.error('sbFetch error',table,method,r.status);return null;} // v-CH: log status only, never the reply (it can echo record values)
   if(method==='DELETE'||r.status===204)return true;
   return r.json();
 }
@@ -691,9 +692,9 @@ async function sbUpsert(table,body){
   const url=SUPABASE_URL+'/rest/v1/'+table;
   try{
     const r=await fetch(url,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':await _sbAuth(),'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=representation'},body:JSON.stringify(body)});
-    if(!r.ok){const t=await r.text();console.error('sbUpsert error',table,r.status,t);toast('⚠ Save error ('+table+'): '+r.status+' — '+t.slice(0,80),5000);return null;}
+    if(!r.ok){console.error('sbUpsert error',table,r.status);toast('⚠ Could not save just now. Please keep this page open, check your connection and try again.','error',6000);return null;}
     return r.json();
-  }catch(e){console.error('sbUpsert fetch failed',table,e);toast('⚠ Network error saving '+table,4000);return null;}
+  }catch(e){console.error('sbUpsert fetch failed',table,e);toast('⚠ No connection — could not save. Please keep this page open and try again when you are back online.','error',6000);return null;}
 }
 
 // ── Map DB <-> Supabase ──
@@ -1027,7 +1028,7 @@ async function sbSaveSession(rowObj){
 async function sbDeleteUser(id){
   const url=SUPABASE_URL+'/rest/v1/users?id=eq.'+id;
   const r=await fetch(url,{method:'DELETE',headers:{'apikey':SUPABASE_KEY,'Authorization':await _sbAuth(),'Content-Type':'application/json'}});
-  if(!r.ok){const t=await r.text();toast('❌ Delete failed: '+r.status);console.error('Delete error',r.status,t);return;}
+  if(!r.ok){toast('❌ Could not remove this person. Nothing was changed — please try again.','error',5000);console.error('Delete error',r.status);return;}
   DB.users=DB.users.filter(u=>u.id!==id);
   toast('User removed ✓');
   render();
@@ -5077,7 +5078,7 @@ async function saveSession(){
     selectedTab='checklist';render();
   }catch(e){
     console.error('saveSession error',e);
-    toast('⚠ Save error: '+e.message,'error',6000);
+    toast('⚠ Could not save this session. Your entries are still on screen — please check your connection and press save again.','error',8000);
     if(_sessCommitted)DB.sessions.pop();
   }
 }
@@ -6863,12 +6864,12 @@ function _doDeleteBIP(bipId){if(!requireActiveSession())return;
   // Delete behavior logs for this BIP from Supabase first
   const logsToDelete=(DB.behaviors||[]).filter(b=>b.bipId===bipId);
   sbFetch('bips','DELETE',null,'id=eq.'+bipId).then(r=>{
-    if(r===null){toast('⚠ BIP delete failed — check Supabase RLS policy for bips table','error');}
+    if(r===null){toast('⚠ Could not delete this BIP. Nothing was changed — please try again, or tell your supervisor if it keeps happening.','error',6000);}
     else{
       Promise.all(logsToDelete.map(b=>sbFetch('behaviors','DELETE',null,'id=eq.'+b.id)));
       toast('BIP deleted ✓');
     }
-  }).catch(e=>toast('Delete error: '+e.message,'error'));
+  }).catch(e=>toast('Could not delete. Nothing was changed — please try again.','error'));
   DB.bips=DB.bips.filter(b=>b.id!==bipId);
   DB.behaviors=DB.behaviors.filter(b=>b.bipId!==bipId);
   render();

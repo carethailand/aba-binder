@@ -145,3 +145,14 @@ Risk first, nothing to build yet. The biggest risk is a parent seeing another ch
 ---
 
 _Last updated: 10 Oct 2026 — current app v2026-10-10-AO. Security: AN (app sends each user's login with every request) + database locked to active staff only (verified: a stranger sees 0 rows on every table). Code now lives in the GitHub clone `Desktop/CARE/aba-binder`; Songg pushes with `git push` (token in Keychain, expires ~6 Jan 2027). Mobile Stage 5 started: AO = phone login screen._
+
+## Health check plan (started 20 Nov 2026)
+Ranked findings from the full health check, worked one at a time (each its own version, tested, then pushed by Songg):
+- [x] Plain-language save/delete error messages; console no longer logs database replies (v2026-11-20-CH).
+- [ ] Deletes: show "deleted" only after the database confirms (ABC entries, behaviour log entries, session delete, archive).
+- [ ] Client names out of download file names and print titles (use initials/ID).
+- [ ] Clearer "new version available" banner.
+- [ ] Old local drafts: decide whether to clear on logout / after a set number of days.
+- [ ] Backups: 4-monthly archive + export of all cases; plan an extra routine export. Check Supabase plan/backups page.
+- [ ] Access: therapists see only assigned clients (cover sessions / team rotation need a temporary-access design); supervisors see all but edit only their own cases (may cover as therapist); admin sees admin pages only. Needs design before building.
+- [ ] Split index.html into separate files (styles, reports, lessons/BIP/School Shadow, saving last). Planned for the long holiday break, after archive. Model layout: the therapist portal (css/, js/ one file per area). Tag files with the version so old caches cannot mix.
