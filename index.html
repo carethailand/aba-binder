@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CM -->
+<!-- BUILD v2026-11-21-CN -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,7 +7,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CM</title>
+<title>CARE Client Binder v2026-11-21-CN</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,10 +454,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CM';
+const APP_VERSION='v2026-11-21-CN';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-21-CN',date:'21 Nov 2026',added:'Cover days. On a case screen, the case supervisor, a director or an admin can press Cover, choose who is covering and tap the days (any days, not only in a row). The covering person sees the case in their list tagged \u201cCovering today\u201d and can record on those days; before the first cover day they can read it (read-only) from a date you choose, 3 days ahead by default. A supervisor covering another supervisor\u2019s case can run a session but cannot change the program.',improved:'',fixed:''},
   {version:'v2026-11-21-CM',date:'21 Nov 2026',added:'',improved:'Removed the admin \u201cImport\u201d button, an old leftover that could replace all records in the app with any chosen file. Full Export and the archive tools are unchanged.',fixed:''},
   {version:'v2026-11-21-CL',date:'21 Nov 2026',added:'',improved:'Privacy on shared devices: note text that was typed but never saved is now erased from the device after 3 days, and when you log out yourself (the app asks first if there is unsaved note text). The automatic end-of-day sign-out keeps it, so late work is never lost. Unsaved session and BIP data is never cleared automatically.',fixed:''},
   {version:'v2026-11-20-CK',date:'20 Nov 2026',added:'A clear banner under the top bar when a new version is ready, with an Update now button. It never reloads the page by itself, and asks first if you seem to be in the middle of typing or a session.',improved:'',fixed:''},
@@ -925,6 +926,8 @@ async function loadFromSupabase(){
     _captureBaselines();
     // Client-list "Last:" dates from the summary view (optional — if the view doesn't exist yet, the badge just hides)
     try{const _sum=await sbFetch('client_session_summary','GET',null,'select=*');DB.sessSummary=Array.isArray(_sum)?_sum:null;}catch(e){DB.sessSummary=null;}
+    // v-CN: cover days (optional - if the table is missing or unreadable, nobody has cover)
+    try{const _cv=await sbFetch('case_cover','GET',null,'select=*&cover_date=gte.'+_cvAdd(_todayLocal(),-1)+'&order=cover_date.asc');DB.cover=Array.isArray(_cv)?_cv.map(_cvRow):[];}catch(e){DB.cover=[];}
     hideSyncStatus();return true;
   }catch(e){
     console.error('loadFromSupabase failed',e);
@@ -3178,7 +3181,7 @@ function _stopSessAutoSave(){
 // ── ROUTING ──
 function showView(v){currentView=v;render();}
 function selectClient(id){
-  if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)){toast('⚠ Not assigned to this client');return;}
+  if(currentUser&&['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(id)&&!_coverMode(id)){toast('⚠ Not assigned to this client');return;}
 if(selectedClientId!==id)clearSessionDraft();_hideStaleBanner();_behViewCtx=null;selectedClientId=id;selectedTab=(currentUser&&currentUser.role==='admin')?'schoolinfo':'checklist';_backtrackFirstTrial();showView('client');}
 function setTab(t){
   if(selectedTab==='session'&&t!=='session'){saveSessionDraft();_stopSessAutoSave();}
@@ -3278,10 +3281,84 @@ function render(){
 
 }
 
+// ── COVER DAYS (v-CN) ──
+// A cover grant = rows in case_cover (one per day). On a cover day the person works the case like an assigned therapist;
+// from `readFrom` until then they can read it (read-only). Access switches itself off the day after the last cover day.
+function _cvRow(r){return{id:r.id,clientId:r.client_id,userId:r.user_id,date:r.cover_date,readFrom:r.read_from,grantedBy:r.granted_by||''};}
+function _cvAdd(d,n){var p=d.split('-');var t=new Date(+p[0],+p[1]-1,+p[2]+n);return t.getFullYear()+'-'+('0'+(t.getMonth()+1)).slice(-2)+'-'+('0'+t.getDate()).slice(-2);}
+function _cvFmt(d){var p=d.split('-');var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return (+p[2])+' '+m[+p[1]-1];}
+// 'record' = today is a cover day; 'read' = inside the read-ahead window before a cover day; '' = no cover
+function _coverMode(cid,uid){uid=uid||(currentUser&&currentUser.id);if(!uid||!cid)return '';var t=_todayLocal(),m='';(DB.cover||[]).forEach(function(r){if(r.clientId!==cid||r.userId!==uid)return;if(r.date===t)m='record';else if(m!=='record'&&r.readFrom<=t&&t<r.date)m='read';});return m;}
+function _coverNext(cid,uid){var t=_todayLocal(),best='';(DB.cover||[]).forEach(function(r){if(r.clientId===cid&&r.userId===uid&&r.date>t&&(!best||r.date<best))best=r.date;});return best;}
+function _coverTag(cid){var m=_coverMode(cid);if(!m)return '';var isA=(currentUser.assignedClients||[]).includes(cid);if(isA)return '';
+  return ' <span style="font-size:.68rem;font-weight:600;border-radius:6px;padding:2px 7px;vertical-align:middle;background:'+(m==='record'?'#e3f3df':'#eef2f7')+';color:'+(m==='record'?'#2f6b2c':'#516070')+'">'+(m==='record'?'Covering today':'Read only until '+_cvFmt(_coverNext(cid,currentUser.id)))+'</span>';}
+// a supervisor running a cover session on another supervisor's case: sessions only, no program changes
+function _coverSupLimited(){return !!(currentUser&&currentUser.role==='supervisor'&&selectedClientId&&!(currentUser.assignedClients||[]).includes(selectedClientId)&&_coverMode(selectedClientId)==='record');}
+function _viewOnlyWhy(){var r=currentUser&&currentUser.role;if(['junior','senior','qcd','supervisor'].includes(r)&&_coverMode(selectedClientId)==='read')return 'covering from '+_cvFmt(_coverNext(selectedClientId,currentUser.id))+' - you can read this case now and record on your cover days';return r==='supervisor'?'not assigned to this client':r==='qcd'?'QCD observer':'admin view';}
+function _cvCanManage(c){var r=currentUser&&currentUser.role;if(!c||!r)return false;if(r==='admin'||r==='director')return true;return r==='supervisor'&&((c.supervisor||'')===currentUser.id||(currentUser.assignedClients||[]).includes(c.id));}
+function _cvBtnHtml(c){if(!_cvCanManage(c))return '';var n=(DB.cover||[]).filter(function(r){return r.clientId===c.id&&r.date>=_todayLocal();}).length;return '<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="_cvOpen(\''+c.id+'\')" title="Give a therapist cover days for this case">Cover'+(n?' · '+n+' day'+(n>1?'s':''):'')+'</button>';}
+var _cv=null;
+function _cvOpen(cid){var c=DB.clients.find(function(x){return x.id===cid;});if(!_cvCanManage(c)){toast('Only the case supervisor, a director or an admin can set cover.');return;}
+  _cv={cid:cid,uid:'',sel:{},month:_todayLocal().slice(0,7),from:'',touched:false};modal('<div id="cv-box" style="width:100%;max-width:420px">'+_cvHtml()+'</div>');}
+function _cvStaff(cid){var roles=['junior','senior','qcd','supervisor','director'];return (DB.users||[]).filter(function(u){return u.active!==false&&roles.includes(u.role)&&!(u.assignedClients||[]).includes(cid);}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});}
+function _cvAutoFrom(){var days=Object.keys(_cv.sel).sort();if(!days.length)return '';var f=_cvAdd(days[0],-3);var t=_todayLocal();return f<t?t:f;}
+function _cvHtml(){
+  var c=DB.clients.find(function(x){return x.id===_cv.cid;})||{},t=_todayLocal();
+  var staff=_cvStaff(_cv.cid);
+  var opts='<option value="">Choose a person…</option>'+staff.map(function(u){return '<option value="'+u.id+'"'+(_cv.uid===u.id?' selected':'')+'>'+esc(u.name)+' ('+u.role+')</option>';}).join('');
+  var y=+_cv.month.slice(0,4),m=+_cv.month.slice(5,7);
+  var first=new Date(y,m-1,1),lead=(first.getDay()+6)%7,dim=new Date(y,m,0).getDate();
+  var mn=['January','February','March','April','May','June','July','August','September','October','November','December'][m-1];
+  var cells=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(function(h){return '<div style="font-size:.7rem;color:var(--muted);text-align:center">'+h+'</div>';}).join('');
+  for(var i=0;i<lead;i++)cells+='<div></div>';
+  for(var d=1;d<=dim;d++){
+    var ds=_cv.month+'-'+('0'+d).slice(-2),past=ds<t,on=!!_cv.sel[ds];
+    cells+='<button type="button" '+(past?'disabled ':'onclick="_cvPick(\''+ds+'\')" ')+'style="padding:7px 0;border-radius:7px;font-size:.82rem;cursor:'+(past?'default':'pointer')+';border:'+(on?'2px solid #1a6f94':ds===t?'1.5px solid #1a6f94':'1px solid var(--border)')+';background:'+(on?'#d9ecf7':past?'#f3f4f6':'#fff')+';color:'+(past?'#a8b0ba':on?'#0f4c6b':'inherit')+';font-weight:'+(on?'700':'400')+'">'+d+'</button>';
+  }
+  var days=Object.keys(_cv.sel).sort(),from=_cv.touched&&_cv.from?_cv.from:_cvAutoFrom();
+  var sum=days.length?'Covering '+days.length+' day'+(days.length>1?'s':'')+': '+days.map(_cvFmt).join(', ')+'.':'Tap the days that need cover.';
+  var fromRow=days.length?'<div style="margin-top:10px;font-size:.82rem"><label>Can read the case from <input type="date" id="cv-from" value="'+from+'" min="'+t+'" max="'+days[0]+'" onchange="_cvFrom(this.value)" style="margin-left:4px;max-width:100%;box-sizing:border-box"></label><div style="color:var(--muted);font-size:.74rem;margin-top:2px">Read-only until the first cover day; recording starts on the cover days.</div></div>':'';
+  // already planned
+  var planned={};(DB.cover||[]).filter(function(r){return r.clientId===_cv.cid&&r.date>=t;}).forEach(function(r){(planned[r.userId]=planned[r.userId]||[]).push(r);});
+  var pl=Object.keys(planned).map(function(uid){var u=(DB.users||[]).find(function(x){return x.id===uid;})||{name:'Unknown'};
+    return '<div style="margin-top:6px;font-size:.82rem"><b>'+esc(u.name)+'</b>: '+planned[uid].sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(r){return '<span style="display:inline-flex;align-items:center;gap:3px;background:#eef2f7;border-radius:6px;padding:2px 4px 2px 8px;margin:2px 3px 2px 0">'+_cvFmt(r.date)+'<button type="button" title="Remove this day" onclick="_cvRemove(\''+r.id+'\')" style="border:none;background:none;cursor:pointer;color:#a3392b;font-size:.9rem;line-height:1;padding:0 3px">×</button></span>';}).join('')+'</div>';}).join('');
+  return '<h3 style="margin-bottom:10px">Cover for '+esc(c.name||'this case')+'</h3>'
+   +'<label style="font-size:.82rem;color:var(--muted)">Who is covering</label><select onchange="_cv.uid=this.value" style="display:block;width:100%;box-sizing:border-box;margin:3px 0 12px">'+opts+'</select>'
+   +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px"><button type="button" class="btn btn-outline btn-sm" onclick="_cvMonth(-1)">‹</button><div style="flex:1;text-align:center;font-weight:600;font-size:.9rem">'+mn+' '+y+'</div><button type="button" class="btn btn-outline btn-sm" onclick="_cvMonth(1)">›</button></div>'
+   +'<div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px">'+cells+'</div>'
+   +'<div style="font-size:.82rem;margin-top:10px;color:var(--muted)">'+sum+'</div>'+fromRow
+   +(pl?'<div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border)"><div style="font-size:.74rem;font-weight:700;letter-spacing:.05em;color:var(--muted);text-transform:uppercase">Already planned</div>'+pl+'</div>':'')
+   +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="_cvSave()">Save cover</button></div>';
+}
+function _cvDraw(){var b=document.getElementById('cv-box');if(b)b.innerHTML=_cvHtml();}
+function _cvMonth(n){var y=+_cv.month.slice(0,4),m=+_cv.month.slice(5,7)+n;var d=new Date(y,m-1,1);_cv.month=d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2);_cvDraw();}
+function _cvPick(d){if(_cv.sel[d])delete _cv.sel[d];else _cv.sel[d]=1;_cvDraw();}
+function _cvFrom(v){_cv.from=v;_cv.touched=!!v;_cvDraw();}
+async function _cvSave(){
+  var c=DB.clients.find(function(x){return x.id===_cv.cid;});if(!_cvCanManage(c))return;
+  var days=Object.keys(_cv.sel).sort(),t=_todayLocal();
+  if(!_cv.uid){toast('Choose who is covering.','error');return;}
+  if(!days.length){toast('Tap at least one day.','error');return;}
+  var from=_cv.touched&&_cv.from?_cv.from:_cvAutoFrom();if(from<t)from=t;if(from>days[0])from=days[0];
+  var rows=days.map(function(d){return{id:'cv-'+_cv.cid+'-'+_cv.uid+'-'+d,client_id:_cv.cid,user_id:_cv.uid,cover_date:d,read_from:from,granted_by:currentUser.id};});
+  var r=await sbUpsert('case_cover',rows);
+  if(r===null)return;
+  if(!DB.cover)DB.cover=[];
+  rows.forEach(function(x){var row=_cvRow(x);var i=DB.cover.findIndex(function(y){return y.id===row.id;});if(i>=0)DB.cover[i]=row;else DB.cover.push(row);});
+  toast('Cover saved ✓');closeModal();render();
+}
+async function _cvRemove(id){
+  var row=(DB.cover||[]).find(function(x){return x.id===id;});if(!row)return;
+  var c=DB.clients.find(function(x){return x.id===row.clientId;});if(!_cvCanManage(c))return;
+  if(!(await _sbDel('case_cover',id))){toast('⚠ Could not remove this cover day. Nothing was changed — please check your connection and try again.','error',6000);return;}
+  DB.cover=DB.cover.filter(function(x){return x.id!==id;});
+  if(_cv&&document.getElementById('cv-box'))_cvDraw();
+  render();
+}
 // ── CLIENT LIST ──
 function renderClientList(){
   const visibleClients=currentUser&&['junior','senior'].includes(currentUser.role)
-    ?DB.clients.filter(c=>(currentUser.assignedClients||[]).includes(c.id))
+    ?DB.clients.filter(c=>(currentUser.assignedClients||[]).includes(c.id)||!!_coverMode(c.id))
     :DB.clients;
   if(currentUser&&['junior','senior'].includes(currentUser.role)&&visibleClients.length===0){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
@@ -3291,7 +3368,7 @@ function renderClientList(){
     const n=DB.lessons.filter(l=>l.clientId===c.id).length;
     const lastD=_clientLastDate(c.id);
     const flags=countFlags(c.id);
-    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':(lastD?'<span class="badge badge-gray">Last: '+lastD+'</span>':(_clientLastKnown(c.id)?'<span class="badge badge-gray">No sessions</span>':'')))+'</p></div>';
+    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+_coverTag(c.id)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':(lastD?'<span class="badge badge-gray">Last: '+lastD+'</span>':(_clientLastKnown(c.id)?'<span class="badge badge-gray">No sessions</span>':'')))+'</p></div>';
   }
 
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
@@ -3476,7 +3553,7 @@ function renderClientView(){
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
   const _lsSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));})[0];
   const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
-  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+(_workDate()!==_todayLocal()?'<div class="alert alert-warn no-print" style="margin-bottom:10px">\uD83D\uDCC5 Recording for <strong>'+_drFmtD(_workDate())+'</strong> (not today) \u2014 everything you save in this visit is dated <strong>'+_drFmtD(_workDate())+'</strong>. Change the date in the bar above if that\u2019s not right.</div>':'')+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+(currentUser&&currentUser.role==='supervisor'?'not assigned to this client':currentUser.role==='qcd'?'QCD observer':'admin view')+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
+  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_cvBtnHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+(_workDate()!==_todayLocal()?'<div class="alert alert-warn no-print" style="margin-bottom:10px">\uD83D\uDCC5 Recording for <strong>'+_drFmtD(_workDate())+'</strong> (not today) \u2014 everything you save in this visit is dated <strong>'+_drFmtD(_workDate())+'</strong>. Change the date in the bar above if that\u2019s not right.</div>':'')+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+_viewOnlyWhy()+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
 function _isDemoClient(cid){try{var c=(DB.clients||[]).find(function(x){return x.id===cid;});return !!c&&(c.name||'').trim().toLowerCase()==='demo client';}catch(e){return false;}}
 function isViewOnly(){
@@ -3486,15 +3563,22 @@ function isViewOnly(){
   if(currentUser.role==='admin')return true;
   if(currentUser.role==='qcd'){
     const ac=currentUser.assignedClients||[];
-    return !ac.includes(selectedClientId);
+    if(!ac.includes(selectedClientId))return _coverMode(selectedClientId)!=='record'; // v-CN: cover day = can record
+    return false;
   }
   // directors can edit all clients
   if(currentUser.role==='director')return false;
   // supervisors can view all but only edit assigned clients
   if(currentUser.role==='supervisor'){
     const ac=currentUser.assignedClients||[];
-    return !ac.includes(selectedClientId);
+    if(!ac.includes(selectedClientId)){
+      // v-CN: on a cover day a supervisor can run a session (as therapist) on someone else's case, not change the program
+      const _cs=getSessState();return !(_coverMode(selectedClientId)==='record'&&_cs&&_cs.started&&_cs.clientId===selectedClientId);
+    }
+    return false;
   }
+  // v-CN: therapists on a case they cover: read-only before the cover day, normal on the cover day
+  if(['junior','senior'].includes(currentUser.role)&&!(currentUser.assignedClients||[]).includes(selectedClientId)){return _coverMode(selectedClientId)!=='record';}
   return false;
 }
 function isSessionActive(){
@@ -6257,7 +6341,7 @@ function renderProgramChecklist(){
   const maintL=allLessons.filter(l=>l.phase==='maintenance');
   const holdL=allLessons.filter(l=>l.phase==='hold');
   const _ckRole=currentUser&&currentUser.role;
-  const _ckSupAll=['supervisor','director'].includes(_ckRole)&&!isViewOnly();
+  const _ckSupAll=['supervisor','director'].includes(_ckRole)&&!isViewOnly()&&!_coverSupLimited();
 
   function _grid(lessonSet, sessList, opts){
     opts=opts||{};
@@ -6324,7 +6408,7 @@ function renderProgramChecklist(){
   out+=_secHead('⏸ Hold lessons ('+holdL.length+')','#8a6410');
   if(holdL.length){
     out+=holdL.map(function(l){
-      var resumeBtn=(['supervisor','director'].includes(_ckRole)&&!isViewOnly())?' <button class="btn btn-xs btn-outline no-print unlock-exempt" style="font-size:.72rem" onclick="setLessonStatus(\''+l.id+'\',\'active\')" title="Resume this lesson">▶ Resume</button>':'';
+      var resumeBtn=(['supervisor','director'].includes(_ckRole)&&!isViewOnly()&&!_coverSupLimited())?' <button class="btn btn-xs btn-outline no-print unlock-exempt" style="font-size:.72rem" onclick="setLessonStatus(\''+l.id+'\',\'active\')" title="Resume this lesson">▶ Resume</button>':'';
       return '<div class="cl-row" style="align-items:center"><span style="flex:1">'+esc(l.name)+' <span class="badge" style="background:#fbeecb;color:#8a6410;border:1px solid #e8c14e;font-size:.68rem">ON HOLD</span></span>'+resumeBtn+'</div>';
     }).join('');
   } else { out+='<p style="color:var(--muted);font-size:.85rem">No lessons on hold.</p>'; }
