@@ -4,7 +4,7 @@ Hi, and thank you for taking care with this. 💙 A quick note on *why* this fil
 
 **This app holds real clinical records for children in ABA therapy.** Lost data isn't an inconvenience here — it can mean a therapist's whole day of observations, or a supervisor's setup, gone. We have been through that several times, and it was painful. So the single most important thing in this project is: **never lose or overwrite data.** Features can wait; data safety cannot. Everything below exists to protect the people whose information lives in this app. When in doubt, choose the safer option and ask.
 
-**Current version:** `v2026-11-20-CK`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
+**Current version:** `v2026-11-21-CL`. Work on the `index.html` in this folder, and always **build on top of the current file** — never paste an older full copy over it, or you'll silently drop the protections below.
 
 ---
 
@@ -28,6 +28,7 @@ All of a client's data — School Shadow setup AND records, school info, notes, 
 - **Save baselines (v-BO):** `sbSaveClient` / `sbSaveLesson` / `sbSaveBIP` / `sbSaveABC` take a JSON snapshot of exactly what is sent BEFORE the network wait, and set `_recBaseline` to that snapshot ONLY if the server confirms (`sbUpsert` not null). Never re-stringify live objects after `await`, and never set the baseline on a failed save — otherwise an edit made during a save, or a failed save, is silently treated as saved and never retried.
 - **Phantom-empty guard:** an empty or auto-created section may never overwrite real data on the server. Genuine edits and deletes still work. Lives in `_ssIsEmptyish` + `_mergeField`.
 - **Free-text note drafts (so typing is never lost):** `_fdSkip / _fdKey / _restoreFieldDrafts / _clearFieldDraft` + the `input` listener; keep `_restoreFieldDrafts()` at the end of `render()`; keep the exclusions (`tx-sess-notes`, `ss-sess-notes`, `parent-note-input`, `sdnadd_*`); keep the `_clearFieldDraft(...)` calls in the note-add handlers. Drafts are **local only** — they never write to the database.
+- **Note-draft clean-up (v-CL):** only free-text note drafts (`care_fd:*`) are cleared — after 3 days (`_fdSweep`, time stamps in `care_fd_ts`) and on a MANUAL logout (`_logoutClick` asks first; `doLogout(false)`). The automatic end-of-day sign-out calls `doLogout(true)` and must keep them. Session, BIP, School Shadow and stimuli drafts are unsaved data: never clear them automatically.
 - **School Shadow in-progress drafts:** `_ssSaveShadowDraft / _ssRestoreShadowDraft / _ssApplyCellValue / _ssClearShadowDraft`; keep `_ssRestoreShadowDraft()` at the end of `render()`, `_ssSaveShadowDraft()` in `_ssPick` and the `.ssn-c/.ssn-t` input listener, and the clear on discard.
 - **Updates are a button, never a silent reload:** `#btn-update` + `_updateNavBtn` + `checkForUpdate`. Do not reintroduce auto-reload. Keep the 5-minute check.
 - **Daily sign-out (privacy for a shared clinic device):** `_stampLoginDay`, `_checkDailyLogout`, the resume day-gate in `tryResumeSession`. Must stay gated by `_isBusy()` so it never interrupts someone mid-recording or mid-typing.

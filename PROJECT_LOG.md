@@ -155,7 +155,7 @@ Ranked findings from the full health check, worked one at a time (each its own v
 - [ ] Full function audit: review every button/feature left from the early builds — is it still needed, is the logic safe, is there a better way? (Songg agreed 20 Nov.)
 - [x] Client names in file names / print titles: checked 20 Nov — the app's client names are already short codes, so nothing to change. Optional idea: a gentle warning in Add Client if the name looks like a full name.
 - [x] Clearer "new version available" banner under the top bar; never reloads by itself, asks first if typing/in a session (v2026-11-20-CK).
-- [ ] Old local drafts: decide whether to clear on logout / after a set number of days.
+- [x] Old local note drafts: erased after 3 days and on a manual logout (asks first); automatic end-of-day sign-out keeps them; session/BIP/School Shadow/stimuli drafts are never auto-cleared (v2026-11-21-CL).
 - [ ] Backups: 4-monthly archive + export of all cases; plan an extra routine export. Check Supabase plan/backups page.
 - [ ] Access: therapists see only assigned clients (cover sessions / team rotation need a temporary-access design); supervisors see all but edit only their own cases (may cover as therapist); admin sees admin pages only. Needs design before building.
 - [ ] Split index.html into separate files (styles, reports, lessons/BIP/School Shadow, saving last). Planned for the long holiday break, after archive. Model layout: the therapist portal (css/, js/ one file per area). Tag files with the version so old caches cannot mix.
