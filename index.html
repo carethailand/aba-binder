@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-21-CQ -->
+<!-- BUILD v2026-11-22-CR -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-21-CQ</title>
+<title>CARE Client Binder v2026-11-22-CR</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -445,10 +445,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-21-CQ';
+const APP_VERSION='v2026-11-22-CR';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-22-CR',date:'22 Nov 2026',added:'A supervisor can now run a School Shadow session as a therapist: the Start Session (as therapist) bar has the same 1:1 | Shadow switch therapists use, and the daily grid, NET trials, notes and End & Save work for them like for a therapist, recorded under their own name. It works on their own cases any day, and on another supervisor\u2019s case on the days they were given cover (the timetable, targets and program stay read-only there).',improved:'Starting a session as a therapist on a case you are not allowed to record on now says so straight away.',fixed:''},
   {version:'v2026-11-21-CQ',date:'21 Nov 2026',added:'',improved:'The login screen and the top bar now show the real CARE logo (the same as the Therapist Portal), and the browser tab shows it too. Admin, Staff & Access: By staff now has a separate card for each role (Directors, Admins, Supervisors, QCDs, Senior TX, Junior TX), and By case is grouped by supervisor, like the client list.',fixed:''},
   {version:'v2026-11-21-CP',date:'21 Nov 2026',added:'Admin page, Staff & Access: a tidier list with search and a role filter, assigned cases shown as small tags with an Edit cases button (tick the cases, then Save), a By case view showing who has each case, and a collapsed Former staff section. The role box is wide enough to read.',improved:'Changing a role, deactivating, reactivating or editing someone\u2019s cases now saves only that one thing, confirms with the database before the screen changes, and no longer overwrites other changes made at the same time.',fixed:''},
   {version:'v2026-11-21-CO',date:'21 Nov 2026',added:'A Cover tab on the admin page: every planned cover day from today on, listed by date with the case and the person, a + Add cover button that starts from choosing the case, an \u00d7 to remove a day, and a Refresh button. Directors and admins can set up and review cover without opening each case.',improved:'',fixed:''},
@@ -2195,12 +2196,16 @@ function startSupervision(){
   _behViewCtx=null;setSupState({clientId:selectedClientId,date:d,supType:ty,setting:_supSet,started:true});
   render();
 }
+var _supSessSetting='therapy'; // v-CR: 1:1 | Shadow choice for a supervisor's as-therapist session
 function startSessionAsSup(){
+  // v-CR: own cases any day, other supervisors' cases only on a cover day (directors: any)
+  var _okS=currentUser.role==='director'||(currentUser.assignedClients||[]).includes(selectedClientId)||_coverMode(selectedClientId)==='record';
+  if(!_okS){toast('⚠ You can run a session on your own cases, or on a day you have been given cover for this case.','error',6000);return;}
   if(typeof hideUnsavedBanner==='function')hideUnsavedBanner();
   const d=(document.getElementById('sv-date')||{}).value||_todayLocal();
-  const _set=(document.getElementById('sv-setting')||{}).value||'therapy';
+  const _set=_supSessSetting==='shadow'?'shadow':'therapy';
   _ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
-  selectedTab='session';
+  selectedTab=_set==='shadow'?'schoolshadow':'session';
   render();
 }
 
@@ -3554,6 +3559,7 @@ function renderClientView(){
         +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value);updateSupState(\'setting\',this.value===\'school\'?\'school\':\'therapy\')">'+supTypeOpts+'</select>'
         +'<div style="flex:1"></div>'
         +'<button class="unlock-exempt" style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
+        +'<div class="seg-toggle seg-sm unlock-exempt" role="group" aria-label="Session type" style="margin-left:6px;max-width:220px"><button type="button" class="seg-btn unlock-exempt'+(_supSessSetting!=='shadow'?' seg-on':'')+'" onclick="_supSessSetting=\'therapy\';render()">1:1</button><button type="button" class="seg-btn unlock-exempt'+(_supSessSetting==='shadow'?' seg-on':'')+'" onclick="_supSessSetting=\'shadow\';render()">Shadow</button></div>'
         +'<button class="unlock-exempt" style="background:#1f8ec4;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:6px" onclick="startSessionAsSup()">▶ Start Session (as therapist)</button>'
         +'</div>';
     } else {
@@ -3895,7 +3901,7 @@ function _ssGet(){var c=_ssClient();if(!c.schoolShadow)c.schoolShadow={slots:[],
   if(!s.slots)s.slots=[];if(!s.grid)s.grid={};_SS_DAYS.forEach(function(d){if(!s.grid[d])s.grid[d]={};});if(!s.targets)s.targets=[];if(!s.net)s.net=[];if(!s.log)s.log={};if(!s.netLog)s.netLog={};if(!s.notes)s.notes=[];
   return s;}
 function _ssSave(){sbSaveClient(_ssClient());}
-function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role);}
+function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role)&&!_coverSupLimited();} // v-CR: not while covering another supervisor's case
 function _ssActive(){var isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');var se=getSessState();if(isSup){var sv=getSupState();return (sv.started&&sv.clientId===selectedClientId)||(se.started&&se.clientId===selectedClientId);}return se.started&&se.clientId===selectedClientId;}
 function _ssCM(code){return {'C':{c:'#2f6b2c',bg:'#e2f2df',b:'#9fce97'},'P':{c:'#8a6410',bg:'#fbeecb',b:'#e8c14e'},'-':{c:'#b23a2a',bg:'#fbe0da',b:'#e6b3aa'},'/':{c:'#6b7280',bg:'#eef1f4',b:'#d5dae1'}}[code];}
 function _ssBtnStyle(active,code){var m=_ssCM(code);return active?('background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b+';font-weight:700'):('background:#fff;color:#c0c7ce;border:1px solid #e6e9ee;font-weight:600');}
@@ -3930,9 +3936,16 @@ function _ssSaveNet(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document
 function _ssSetNetStatus(btn){if(!_ssCanSetup())return;var ss=_ssGet();var n=(ss.net||[]).find(function(x){return x.id===btn.dataset.id;});if(n){_ssStampStatus(n,btn.dataset.st);n.status=btn.dataset.st;}_ssSave();render();}
 function _ssNetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.net=(ss.net||[]).filter(function(x){return x.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetCalc(el){var id=el.dataset.id;var c=parseFloat((document.querySelector('.ssn-c[data-id="'+id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+id+'"]')||{}).value);var p=document.getElementById('ssn-p-'+id);if(!p)return;if(t>0&&c>=0){if(c>t)c=t;p.textContent=Math.round(c/t*100)+'%';}else{p.textContent='–';}}
-function _ssSaveEntry(){if(!(['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly()))){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
-function _ssSaveNetDay(){if(!(['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly()))){toast('Only therapists record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
-function _ssCanRecord(){return ['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly());}
+function _ssSaveEntry(){if(!_ssCanRecord()){toast('Start a session on this case to record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var cells={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){if(b.dataset.v)cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v;});ss.log[_ssDate]={tx:currentUser.name,cells:cells,ts:new Date().toISOString()};_ssSave();toast('Day saved ✓');render();}
+function _ssSaveNetDay(){if(!_ssCanRecord()){toast('Start a session on this case to record school shadow data.');return;}if(!requireActiveSession())return;var ss=_ssGet();var day={};(ss.net||[]).forEach(function(nt){var c=parseFloat((document.querySelector('.ssn-c[data-id="'+nt.id+'"]')||{}).value);var t=parseFloat((document.querySelector('.ssn-t[data-id="'+nt.id+'"]')||{}).value);if(t>0&&c>=0){if(c>t)c=t;day[nt.id]={c:c,t:t,pct:Math.round(c/t*100)};}});ss.netLog[_ssDate]={tx:currentUser.name,data:day,ts:new Date().toISOString()};_ssSave();toast('NET saved ✓');render();}
+function _ssCanRecord(){
+  var r=currentUser.role;
+  if(['junior','senior'].includes(r))return true;
+  if(r==='qcd')return !isViewOnly();
+  // v-CR: a supervisor/director can record like a therapist, but only inside their own as-therapist session on this case and only where the case is not view-only (own case, or a cover day)
+  if(['supervisor','director'].includes(r)){var s=getSessState();return !!(s&&s.started&&s.clientId===selectedClientId&&!isViewOnly());}
+  return false;
+}
 function _ssCaptureAll(){
   if(!_ssCanRecord())return false;
   var ss=_ssGet();var changed=false;
@@ -4315,7 +4328,7 @@ function _ssMonthlyOverview(ss){
 }
 function renderSchoolShadowTab(){
   const c=_ssClient();const ss=_ssGet();const canSetup=_ssCanSetup();
-  const _isTherapist=['junior','senior'].includes(currentUser.role)||(currentUser.role==='qcd'&&!isViewOnly());
+  const _isTherapist=_ssCanRecord();
   const _sess=getSessState();
   const active=_isTherapist&&_sess.started&&_sess.clientId===selectedClientId&&_sess.setting==='shadow';
   const _liveDate=(_sess.started&&_sess.clientId===selectedClientId&&_sess.date)?_sess.date:_todayLocal();
@@ -4354,7 +4367,7 @@ function renderSchoolShadowTab(){
   var _dpick=(!active)?('<div class="no-print" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:8px"><input type="date" value="'+date+'" max="'+_todayStr+'" onchange="_ssSetViewDate(this.value)" style="width:auto;font-size:.8rem;padding:2px 6px">'+(_recDates.length?('<select onchange="if(this.value)_ssSetViewDate(this.value)" style="width:auto;font-size:.78rem;padding:2px 6px"><option value="">Recorded days\u2026</option>'+_recDates.map(function(dk){return '<option value="'+dk+'"'+(dk===date?' selected':'')+'>'+esc(fmtDateShort(dk))+((ss.log&&ss.log[dk]&&ss.log[dk].tx)?(' \u00b7 '+esc((''+ss.log[dk].tx).split(' ')[0])):'')+'</option>';}).join('')+'</select>'):'')+((date!==_todayStr)?'<button type="button" class="btn btn-xs btn-outline" onclick="_ssSetViewDate(\'\')">Today</button>':'')+'</div>'):'';
   h+='<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">Daily log</div>'+_recBy+'<span style="font-size:.85rem;font-weight:600;color:#234b63">'+(_SS_DAYLABEL[wd]||wd)+', '+fmtDateShort(date)+'</span></div>'+_dpick;
   if(!active&&date!==_todayStr)h+='<div class="no-print" style="background:#eef6fb;border:1px solid #cfe6f5;color:#234b63;border-radius:8px;padding:6px 10px;font-size:.8rem;margin-bottom:10px">Viewing '+fmtDateShort(date)+' \u2014 past day, read only.</div>';
-  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session with Type = School Shadow to record data. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a School Shadow session.')+'</div>';
+  if(!active)h+='<div style="background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 12px;font-size:.82rem;margin-bottom:10px">'+(_isTherapist?'▶ Start a session with Type = School Shadow to record data. You can still review below.':((['supervisor','director'].includes(currentUser.role)&&(!isViewOnly()||_coverMode(selectedClientId)==='record'))?'▶ To record school shadow data, press Start Session (as therapist) and choose Shadow. You can still review below.':'👁 Read only — school shadow data is recorded by therapists during a School Shadow session.'))+'</div>';
   if(!dTargets.length){h+='<p style="color:var(--muted);font-size:.85rem">'+(targets.length?'No active targets — all mastered or on hold.':'No school targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
