@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-22-CR -->
+<!-- BUILD v2026-11-22-CS -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-22-CR</title>
+<title>CARE Client Binder v2026-11-22-CS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -197,14 +197,6 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 /* End session bar */
 #end-session-bar{background:#fff;border:2px solid var(--primary);border-radius:var(--radius);padding:14px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
 #end-session-bar h3{flex:1;font-size:.95rem;color:var(--primary);}
-#sess-sticky{position:sticky;top:0;z-index:200;padding:8px 18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.12);}
-#sess-sticky.ss-idle{background:#fdeae4;border-bottom:2px solid #d84a3a;}
-#sess-sticky.ss-active{background:#f0faed;border-bottom:2px solid #4fa14a;}
-#sess-sticky .ss-label{font-size:.75rem;font-weight:700;letter-spacing:.03em;}
-#sess-sticky.ss-idle .ss-label{color:#d84a3a;}
-#sess-sticky.ss-active .ss-label{color:#3f8f3b;}
-#sess-sticky .ss-val{font-size:.85rem;font-weight:700;color:#1f2733;}
-#sess-sticky input,#sess-sticky select{padding:3px 7px;font-size:.82rem;border-radius:5px;border:1px solid #d5dae1;width:auto;}
 
 /* ── Mobile responsive ── */
 @media (max-width: 600px) {
@@ -217,12 +209,7 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .btn-nav{padding:4px 10px;font-size:.76rem;}
 
   /* Session sticky bar */
-  #sess-sticky{padding:6px 10px;gap:6px;}
-  #sess-sticky .ss-label{font-size:.68rem;}
-  #sess-sticky .ss-val{font-size:.78rem;}
-  #sess-sticky input,#sess-sticky select{font-size:.76rem;padding:2px 5px;}
   /* Stack the sticky bar into 2 rows */
-  #sess-sticky{flex-wrap:wrap;}
 
   /* Client list */
   .card-grid{grid-template-columns:1fr;}
@@ -263,25 +250,13 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .lesson-card > summary{flex-wrap:wrap;row-gap:6px;}
 
   /* Sticky bar — compact 2-row layout */
-  #sess-sticky{padding:5px 8px;gap:4px;row-gap:5px;}
-  #sess-sticky .ss-label{font-size:.65rem;letter-spacing:.02em;}
-  #sess-sticky .ss-val{font-size:.8rem;}
-  #sess-sticky input[type="date"]{width:110px!important;font-size:.74rem;}
-  #sess-sticky input[type="number"]{width:46px!important;font-size:.74rem;}
-  #sess-sticky select{font-size:.74rem;padding:2px 2px;}
-  #sess-sticky button{font-size:.74rem!important;padding:5px 10px!important;}
-  #sess-sticky div[style*="flex:1"]{display:none;}
 
   /* Client view header row */
   div.no-print.btn-outline{font-size:.78rem;padding:4px 8px;}
 
   /* Hide pipe separators on mobile */
-  #sess-sticky span[style*="color:#eba99d"],
-  #sess-sticky span[style*="color:#a3d99a"]{display:none;}
 
   /* Make the Start/End buttons full-width on their own row */
-  #sess-sticky button[onclick*="startSession"],
-  #sess-sticky button[onclick*="startSupervision"]{width:100%;margin-top:2px;}
 }
 
 /* ══ Mobile Layout · shared shell + calm layout (v2026-09-19-Q) · presentation-only ══ */
@@ -342,30 +317,9 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
   .status-btn{min-height:34px;}
 
   /* SESSION / SUPERVISION BAR — ACTIVE: pinned, one compact line, fixed height (no wiggle) */
-  #sess-sticky.ss-active{height:52px;min-height:52px;flex-wrap:nowrap;overflow:hidden;gap:8px;padding:0 12px;align-items:center;}
-  #sess-sticky.ss-active .ss-label{display:none;}
-  #sess-sticky.ss-active input{display:none;}                    /* date/time are set at start; hidden while recording */
-  #sess-sticky.ss-active span[style*="4fa14a22"]{display:none;}  /* drop the redundant verbose type badge */
-  #sess-sticky.ss-active .ss-val{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.95rem;font-weight:700;}
-  #sess-sticky.ss-active .btn{flex:0 0 auto;}
-  #sess-sticky.ss-active div[style*="flex:1"]{display:block!important;flex:1 1 auto;} /* keep buttons right-aligned */
   /* End & Save = green (positive save); Discard/Cancel = compact red ✕, freeing room for session info */
-  #sess-sticky.ss-active button[onclick*="confirmEndSession"]{background:var(--sup)!important;color:#fff!important;border-color:var(--sup)!important;}
-  #sess-sticky.ss-active button[onclick*="confirmDiscard"],
-  #sess-sticky.ss-active button[onclick*="cancelSupervision"]{font-size:0!important;width:44px;min-width:44px;padding:0!important;flex:0 0 auto;color:var(--danger)!important;border:1.5px solid var(--danger)!important;background:#fff!important;}
-  #sess-sticky.ss-active button[onclick*="confirmDiscard"]::before,
-  #sess-sticky.ss-active button[onclick*="cancelSupervision"]::before{content:"✕";font-size:1.15rem;font-weight:800;line-height:1;}
 
   /* SESSION / SUPERVISION BAR — IDLE: calm setup card, scrolls with the page (nothing floats) */
-  #sess-sticky.ss-idle{position:static;flex-direction:column;align-items:stretch;gap:8px;padding:12px;margin-bottom:12px;border-bottom:none;border:1px solid var(--border);border-radius:12px;}
-  #sess-sticky.ss-idle .ss-row{flex-wrap:nowrap;gap:8px;}
-  #sess-sticky.ss-idle .ss-label{flex:0 0 auto;font-size:.7rem;}
-  #sess-sticky.ss-idle .ss-val{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;font-size:.95rem;}
-  #sess-sticky.ss-idle #ss-date{margin-left:auto;width:auto;flex:0 0 auto;min-height:40px;}
-  #sess-sticky.ss-idle #ss-time{width:52px;flex:0 0 auto;min-height:40px;}
-  #sess-sticky.ss-idle .seg-toggle{flex:0 0 auto;width:auto;}
-  #sess-sticky.ss-idle .seg-btn{flex:0 0 auto;width:74px;text-align:center;min-height:40px;padding:7px 4px;font-size:.8rem;}
-  #sess-sticky.ss-idle .ss-start-btn{flex:1 1 auto;min-width:0;min-height:40px;white-space:normal;line-height:1.15;font-size:.85rem;padding:8px 10px;}
   /* Program Checklist header — one line */
   .chk-head{flex-wrap:nowrap!important;}
   .chk-head h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.96rem!important;}
@@ -409,6 +363,57 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .view-only-banner{display:none;align-items:center;gap:8px;background:#fce7f3;border:1px solid #f9a8d4;border-radius:8px;padding:8px 14px;margin-bottom:12px;font-size:.85rem;color:#b83268;}
 
 .role-select{font-size:.78rem;padding:2px 6px;border-radius:6px;border:1px solid var(--border);}
+
+/* ── Session banner (v-CS): equal-block grid, same order on every device ── */
+#sess-sticky.sb{position:sticky;top:0;z-index:200;display:grid;gap:8px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+#sess-sticky.sb-idle{background:#fdeae4;border-bottom:2px solid #d84a3a;}
+#sess-sticky.sb-active{background:#f0faed;border-bottom:2px solid #4fa14a;}
+#sess-sticky.sb-tx.sb-idle{grid-template-columns:1.6fr 1fr .7fr 1.1fr 1.2fr;}
+#sess-sticky.sb-tx.sb-active{grid-template-columns:1.7fr 1fr .7fr 1fr 1fr;}
+#sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr 1fr;}
+#sess-sticky.sb-sup.sb-active{grid-template-columns:1.7fr 1fr 1.2fr 1fr;}
+.sb .sb-cell{background:#fff;border:1px solid #d5dae1;border-radius:9px;padding:4px 10px;min-height:46px;display:flex;flex-direction:column;justify-content:center;min-width:0;margin:0;}
+.sb .sb-cell small{font-size:.68rem;color:#6b7280;line-height:1.15;font-weight:600;}
+.sb .sb-cell input,.sb .sb-cell select{border:none;background:transparent;padding:0;font-size:.92rem;font-weight:600;color:#1f2733;width:100%;min-width:0;outline:none;box-shadow:none;}
+.sb .sb-cell b{font-size:.92rem;font-weight:600;color:#1f2733;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb .sb-st{background:transparent;border:none;padding-left:2px;}
+.sb .sb-st small{font-weight:700;letter-spacing:.05em;}
+.sb-idle .sb-st small{color:#c0392b;}
+.sb-active .sb-st small{color:#3f8f3b;}
+.sb .sb-st b{font-size:1.02rem;display:flex;align-items:center;gap:8px;min-width:0;}
+.sb .sb-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+.sb .sb-badge{flex:0 0 auto;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:7px;background:#fbeecb;color:#8a6410;}
+.sb .sb-badge.b11{background:#e2f0f7;color:#234b63;}
+.sb .sb-btn{min-height:46px;border:1.5px solid transparent;border-radius:9px;color:#fff;font-weight:700;font-size:.9rem;padding:0 12px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;}
+.sb .sb-go{background:var(--sup);}
+.sb .sb-cov{background:#1f8ec4;}
+.sb .sb-end{background:#d84a3a;}
+.sb .sb-out{background:#fff;color:#1f8ec4;border-color:#1f8ec4;}
+.sb .sb-x{display:none;}
+.sb .sb-sm{display:none;}
+.sb .sb-sw{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #d5dae1;border-radius:9px;overflow:hidden;background:#fff;min-height:46px;}
+.sb .sb-sw button{border:none;background:#fff;font-size:.9rem;color:#444;cursor:pointer;padding:0 8px;}
+.sb .sb-sw button.on{background:#1f8ec4;color:#fff;font-weight:700;}
+.sb .sb-panel{background:#fff;border:1px solid #f0b6a8;border-radius:10px;padding:8px;display:grid;gap:8px;min-width:0;}
+.sb .sb-pt{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7a2d20;}
+.sb .sb-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0;}
+@media (max-width:640px){
+  #sess-sticky.sb{padding:8px;gap:6px;}
+  #sess-sticky.sb-idle{position:static;margin-bottom:12px;border:1px solid var(--border);border-radius:12px;padding:10px;gap:8px;}
+  #sess-sticky.sb-tx.sb-idle{grid-template-columns:1fr 1fr;}
+  #sess-sticky.sb-tx.sb-idle .sb-st,#sess-sticky.sb-tx.sb-idle .sb-sw,#sess-sticky.sb-tx.sb-idle .sb-go{grid-column:1/3;}
+  #sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr;}
+  #sess-sticky.sb-tx.sb-active{grid-template-columns:1fr auto auto;height:auto;}
+  #sess-sticky.sb-sup.sb-active{grid-template-columns:1fr auto auto;}
+  .sb-active .sb-hide-ph{display:none;}
+  .sb-active .sb-btn{padding:0 12px;}
+  .sb-active .sb-out .sb-t{display:none;}
+  .sb-active .sb-out .sb-x{display:inline;font-size:1.1rem;}
+  .sb-active .sb-out{min-width:46px;}
+  .sb .sb-lg{display:none;}
+  .sb .sb-sm{display:inline;}
+  .sb-active .sb-badge{display:none;}
+}
 </style>
 </head>
 <body>
@@ -445,10 +450,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-22-CR';
+const APP_VERSION='v2026-11-22-CS';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-22-CS',date:'22 Nov 2026',added:'',improved:'The session banner (not started / in progress, for therapists and supervisors) has a new tidy layout: equal-sized blocks that fill the width, the same order everywhere, one setting badge, and a clear phone and iPad layout. For supervisors, the banner now has two clear groups: Supervise, and Cover as therapist (with its 1:1 | Shadow switch). While a supervisor is acting as a therapist, the School Shadow timetable and targets setup and the observation-note box are hidden, so they see what a therapist sees.',fixed:'The in-progress banner no longer wraps awkwardly on PC, iPad and phone, and no longer shows the School Shadow badge twice.'},
   {version:'v2026-11-22-CR',date:'22 Nov 2026',added:'A supervisor can now run a School Shadow session as a therapist: the Start Session (as therapist) bar has the same 1:1 | Shadow switch therapists use, and the daily grid, NET trials, notes and End & Save work for them like for a therapist, recorded under their own name. It works on their own cases any day, and on another supervisor\u2019s case on the days they were given cover (the timetable, targets and program stay read-only there).',improved:'Starting a session as a therapist on a case you are not allowed to record on now says so straight away.',fixed:''},
   {version:'v2026-11-21-CQ',date:'21 Nov 2026',added:'',improved:'The login screen and the top bar now show the real CARE logo (the same as the Therapist Portal), and the browser tab shows it too. Admin, Staff & Access: By staff now has a separate card for each role (Directors, Admins, Supervisors, QCDs, Senior TX, Junior TX), and By case is grouped by supervisor, like the client list.',fixed:''},
   {version:'v2026-11-21-CP',date:'21 Nov 2026',added:'Admin page, Staff & Access: a tidier list with search and a role filter, assigned cases shown as small tags with an Edit cases button (tick the cases, then Save), a By case view showing who has each case, and a collapsed Former staff section. The role box is wide enough to read.',improved:'Changing a role, deactivating, reactivating or editing someone\u2019s cases now saves only that one thing, confirms with the database before the screen changes, and no longer overwrites other changes made at the same time.',fixed:''},
@@ -3508,36 +3514,27 @@ function renderClientView(){
         '<button style="background:#4f46e5;color:#fff;border:none;padding:6px 14px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:4px" onclick="editLastSession()" title="Edit the most recent session data">✏ Edit Last</button>'
         
         :'';
-      stickyBar='<div id="sess-sticky" class="ss-idle">'
-        +'<div class="ss-row ss-row1">'
-          +'<span class="ss-label">⚠ NOT STARTED</span>'
-          +'<span class="ss-val">'+esc(c.name)+'</span>'
-          +'<input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)">'
+      stickyBar='<div id="sess-sticky" class="sb sb-idle sb-tx">'
+        +'<div class="sb-cell sb-st"><small>NOT STARTED</small><b><span class="sb-nm">'+esc(c.name)+'</span></b></div>'
+        +'<label class="sb-cell"><small>Date</small><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)"></label>'
+        +'<label class="sb-cell"><small>Hours</small><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)"></label>'
+        +'<div class="sb-sw" role="group" aria-label="Session type">'
+          +'<button type="button" class="'+(_ssSetting!=='shadow'?'on':'')+'" onclick="updateSessState(\'setting\',\'therapy\');render()">1:1</button>'
+          +'<button type="button" class="'+(_ssSetting==='shadow'?'on':'')+'" onclick="updateSessState(\'setting\',\'shadow\');render()">Shadow</button>'
         +'</div>'
-        +'<div class="ss-row ss-row2">'
-          +'<span class="ss-label">Hrs</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)">'
-          +'<div class="seg-toggle seg-sm" role="group" aria-label="Session type">'
-            +'<button type="button" class="seg-btn'+(_ssSetting!=='shadow'?' seg-on':'')+'" onclick="updateSessState(\'setting\',\'therapy\');render()">1:1</button>'
-            +'<button type="button" class="seg-btn'+(_ssSetting==='shadow'?' seg-on':'')+'" onclick="updateSessState(\'setting\',\'shadow\');render()">Shadow</button>'
-          +'</div>'
-          +'<select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="display:none"><option value="therapy"'+(_ssSetting!=='shadow'?' selected':'')+'>🧩 1:1 Therapy</option><option value="shadow"'+(_ssSetting==='shadow'?' selected':'')+'>🏫 School Shadow</option></select>'
-          +'<button class="ss-start-btn" onclick="startSessionFromBar()">▶ Start Session</button>'
-        +'</div>'
+        +'<select id="ss-setting" onchange="updateSessState(\'setting\',this.value)" style="display:none"><option value="therapy"'+(_ssSetting!=='shadow'?' selected':'')+'>🧩 1:1 Therapy</option><option value="shadow"'+(_ssSetting==='shadow'?' selected':'')+'>🏫 School Shadow</option></select>'
+        +'<button class="sb-btn sb-go" onclick="startSessionFromBar()">▶ Start session</button>'
         +'</div>';
     } else {
       const _ssSettingActive=ss.setting||'therapy';
       const sessTypeLabel=_ssSettingActive==='shadow'?'School Shadow':'1:1 Therapy';
       const settingBadge=_ssSettingActive==='shadow'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🏫 School Shadow</span>':'<span style="background:#e2f0f7;color:#234b63;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">🧩 1:1</span>';
-      stickyBar='<div id="sess-sticky" class="ss-active">'
-        +'<span class="ss-label">✅ SESSION IN PROGRESS</span>'
-        +'<span class="ss-val">'+esc(c.name)+'</span>'
-        +'<span style="background:#4fa14a22;color:#3f8f3b;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">'+sessTypeLabel+'</span>'+settingBadge
-        +'<span style="color:#a3d99a;font-size:.78rem">|</span>'
-        +'<span class="ss-label">Date</span><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)" style="width:130px">'
-        +'<span class="ss-label">Time&nbsp;(hrs)</span><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)" style="width:60px">'
-        +'<div style="flex:1"></div>'
-        +'<button class="btn btn-danger btn-sm" onclick="confirmEndSession()">⏹ End &amp; Save</button>'
-        +'<button class="btn btn-outline btn-sm" onclick="confirmDiscard()">✕ Discard</button>'
+      stickyBar='<div id="sess-sticky" class="sb sb-active sb-tx">'
+        +'<div class="sb-cell sb-st"><small>IN PROGRESS<span class="sb-sm"> · '+(_ssSettingActive==='shadow'?'SHADOW':'1:1')+'</span></small><b><span class="sb-nm">'+esc(c.name)+'</span>'+(_ssSettingActive==='shadow'?'<span class="sb-badge">🏫 School Shadow</span>':'<span class="sb-badge b11">🧩 1:1</span>')+'</b></div>'
+        +'<label class="sb-cell sb-hide-ph"><small>Date</small><input type="date" id="ss-date" value="'+ss.date+'" onchange="updateSessState(\'date\',this.value)"></label>'
+        +'<label class="sb-cell sb-hide-ph"><small>Hours</small><input type="number" id="ss-time" value="'+(ss.sessTime||4)+'" step=".5" min=".5" max="12" onchange="updateSessState(\'sessTime\',parseFloat(this.value)||2)"></label>'
+        +'<button class="sb-btn sb-end" onclick="confirmEndSession()">End &amp; Save</button>'
+        +'<button class="sb-btn sb-out" onclick="confirmDiscard()" title="Discard this session"><span class="sb-t">Discard</span><span class="sb-x">✕</span></button>'
         +'</div>';
     }
   }
@@ -3551,30 +3548,27 @@ function renderClientView(){
     const supTypeOpts=['overlap','clinic','school'].map(v=>'<option value="'+v+'"'+(sv2.supType===v?' selected':'')+'>'+_supTypeLabels[v]+'</option>').join('');
     const _svSetting=sv2.setting||'therapy';
     if(!sv2.started){
-      supBar='<div id="sess-sticky" class="ss-idle">'
-        +'<span class="ss-label">⚠ SUPERVISION NOT STARTED</span>'
-        +'<span class="ss-val">'+esc(c.name)+'</span>'
-        +'<span style="color:#eba99d;font-size:.78rem">|</span>'
-        +'<span class="ss-label">Date</span><input type="date" id="sv-date" value="'+sv2.date+'" onchange="updateSupState(\'date\',this.value)" style="width:130px">'
-        +'<span class="ss-label">Type</span><select id="sv-type" onchange="updateSupState(\'supType\',this.value);updateSupState(\'setting\',this.value===\'school\'?\'school\':\'therapy\')">'+supTypeOpts+'</select>'
-        +'<div style="flex:1"></div>'
-        +'<button class="unlock-exempt" style="background:#4fa14a;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer" onclick="startSupervision()">▶ Start Supervision</button>'
-        +'<div class="seg-toggle seg-sm unlock-exempt" role="group" aria-label="Session type" style="margin-left:6px;max-width:220px"><button type="button" class="seg-btn unlock-exempt'+(_supSessSetting!=='shadow'?' seg-on':'')+'" onclick="_supSessSetting=\'therapy\';render()">1:1</button><button type="button" class="seg-btn unlock-exempt'+(_supSessSetting==='shadow'?' seg-on':'')+'" onclick="_supSessSetting=\'shadow\';render()">Shadow</button></div>'
-        +'<button class="unlock-exempt" style="background:#1f8ec4;color:#fff;border:none;padding:6px 16px;border-radius:7px;font-weight:700;font-size:.83rem;cursor:pointer;margin-left:6px" onclick="startSessionAsSup()">▶ Start Session (as therapist)</button>'
+      supBar='<div id="sess-sticky" class="sb sb-idle sb-sup">'
+        +'<div class="sb-cell sb-st"><small>NOT STARTED</small><b><span class="sb-nm">'+esc(c.name)+'</span></b></div>'
+        +'<label class="sb-cell"><small>Date</small><input type="date" id="sv-date" value="'+sv2.date+'" onchange="updateSupState(\'date\',this.value)"></label>'
+        +'<div class="sb-panel"><span class="sb-pt">Supervise</span><div class="sb-two">'
+          +'<label class="sb-cell"><small>Type</small><select id="sv-type" onchange="updateSupState(\'supType\',this.value);updateSupState(\'setting\',this.value===\'school\'?\'school\':\'therapy\')">'+supTypeOpts+'</select></label>'
+          +'<button class="sb-btn sb-go unlock-exempt" onclick="startSupervision()">▶ Start supervision</button>'
+        +'</div></div>'
+        +'<div class="sb-panel"><span class="sb-pt">Cover as therapist</span><div class="sb-two">'
+          +'<div class="sb-sw unlock-exempt" role="group" aria-label="Session type"><button type="button" class="unlock-exempt'+(_supSessSetting!=='shadow'?' on':'')+'" onclick="_supSessSetting=\'therapy\';render()">1:1</button><button type="button" class="unlock-exempt'+(_supSessSetting==='shadow'?' on':'')+'" onclick="_supSessSetting=\'shadow\';render()">Shadow</button></div>'
+          +'<button class="sb-btn sb-cov unlock-exempt" onclick="startSessionAsSup()">▶ Start session</button>'
+        +'</div></div>'
         +'</div>';
     } else {
       const supTypeLabel=({overlap:'1:1 Overlap',clinic:'Clinic',school:'School Observation'})[sv2.supType||'overlap']||'1:1 Overlap';
       const _svSettingActive=sv2.setting||'therapy';
       const supSettingBadge='';
-      supBar='<div id="sess-sticky" class="ss-active">'
-        +'<span class="ss-label">✅ SUPERVISION IN PROGRESS</span>'
-        +'<span class="ss-val">'+esc(c.name)+'</span>'
-        +'<span style="background:#4fa14a22;color:#3f8f3b;border-radius:4px;padding:1px 8px;font-size:.75rem;font-weight:700">'+supTypeLabel+'</span>'
-        +'<span style="color:#a3d99a;font-size:.78rem">|</span>'
-        +'<span class="ss-label">'+sv2.date+'</span>'
-        +'<div style="flex:1"></div>'
-        +'<button class="btn btn-primary btn-sm unlock-exempt" onclick="finishSupervision()">📄 Finish &amp; Preview</button>'
-        +'<button class="btn btn-outline btn-sm unlock-exempt" onclick="cancelSupervision()">✕ Cancel</button>'
+      supBar='<div id="sess-sticky" class="sb sb-active sb-sup">'
+        +'<div class="sb-cell sb-st"><small><span class="sb-lg">SUPERVISION IN PROGRESS</span><span class="sb-sm">SUPERVISING · '+(({overlap:'1:1',clinic:'CLINIC',school:'SCHOOL'})[sv2.supType||'overlap']||'1:1')+'</span></small><b><span class="sb-nm">'+esc(c.name)+'</span><span class="sb-badge b11">'+supTypeLabel+'</span></b></div>'
+        +'<div class="sb-cell sb-hide-ph"><small>Date</small><b>'+_cvFmt(sv2.date)+' '+sv2.date.slice(0,4)+'</b></div>'
+        +'<button class="sb-btn sb-cov unlock-exempt" onclick="finishSupervision()"><span class="sb-lg">📄 Finish &amp; Preview</span><span class="sb-sm">📄 Finish</span></button>'
+        +'<button class="sb-btn sb-out unlock-exempt" onclick="cancelSupervision()" title="Cancel this supervision visit"><span class="sb-t">Cancel</span><span class="sb-x">✕</span></button>'
         +'</div>';
     }
     stickyBar=supBar;
@@ -3901,7 +3895,8 @@ function _ssGet(){var c=_ssClient();if(!c.schoolShadow)c.schoolShadow={slots:[],
   if(!s.slots)s.slots=[];if(!s.grid)s.grid={};_SS_DAYS.forEach(function(d){if(!s.grid[d])s.grid[d]={};});if(!s.targets)s.targets=[];if(!s.net)s.net=[];if(!s.log)s.log={};if(!s.netLog)s.netLog={};if(!s.notes)s.notes=[];
   return s;}
 function _ssSave(){sbSaveClient(_ssClient());}
-function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role)&&!_coverSupLimited();} // v-CR: not while covering another supervisor's case
+function _ssTxMode(){var s=getSessState();return ['supervisor','director','admin'].includes(currentUser.role)&&!!(s&&s.started&&s.clientId===selectedClientId);} // v-CS: a supervisor running a session as therapist
+function _ssCanSetup(){return ['admin','supervisor','director'].includes(currentUser.role)&&!_coverSupLimited()&&!_ssTxMode();} // not while covering another supervisor's case, nor while acting as therapist
 function _ssActive(){var isSup=['supervisor','director'].includes(currentUser&&currentUser.role||'');var se=getSessState();if(isSup){var sv=getSupState();return (sv.started&&sv.clientId===selectedClientId)||(se.started&&se.clientId===selectedClientId);}return se.started&&se.clientId===selectedClientId;}
 function _ssCM(code){return {'C':{c:'#2f6b2c',bg:'#e2f2df',b:'#9fce97'},'P':{c:'#8a6410',bg:'#fbeecb',b:'#e8c14e'},'-':{c:'#b23a2a',bg:'#fbe0da',b:'#e6b3aa'},'/':{c:'#6b7280',bg:'#eef1f4',b:'#d5dae1'}}[code];}
 function _ssBtnStyle(active,code){var m=_ssCM(code);return active?('background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b+';font-weight:700'):('background:#fff;color:#c0c7ce;border:1px solid #e6e9ee;font-weight:600');}
@@ -4338,7 +4333,7 @@ function renderSchoolShadowTab(){
   const slots=_ssSortSlots(ss.slots);const targets=ss.targets||[];
   const ttGtc='84px repeat(5,minmax(96px,1fr)) 26px';
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
-  var _canSSNote=['admin','supervisor','director'].includes(currentUser.role);
+  var _canSSNote=['admin','supervisor','director'].includes(currentUser.role)&&!_ssTxMode();
   var _ssNotes=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
   var _ssNoteCards=_ssNotes.length?_ssScrollBox(_ssNotes.map(function(nn){return '<div style="border-bottom:1px solid #eef1f4;padding:8px 0 6px;font-size:.83rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="flex:1;font-size:.74rem;color:#6b7280"><strong style="color:#1f2733">'+_drFmtD(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+'</span>'+(_canSSNote?'<button type="button" class="no-print" title="Delete note" data-id="'+nn.id+'" onclick="_ssDelNoteAsk(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#a3392b">🗑</button>':'')+'</div><div style="line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join('')):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
   var _ssNoteAdd=_canSSNote?'<div style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><textarea id="ssn-note-in" rows="2" placeholder="Overlap overview / recommendations for the team..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="_ssAddNote()">Add</button></div>':'';
