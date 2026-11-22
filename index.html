@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-22-CS -->
+<!-- BUILD v2026-11-22-CU -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-22-CS</title>
+<title>CARE Client Binder v2026-11-22-CU</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -365,55 +365,95 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .role-select{font-size:.78rem;padding:2px 6px;border-radius:6px;border:1px solid var(--border);}
 
 /* ── Session banner (v-CS): equal-block grid, same order on every device ── */
-#sess-sticky.sb{position:sticky;top:0;z-index:200;display:grid;gap:8px;padding:10px 14px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+#sess-sticky.sb{position:sticky;top:0;z-index:200;display:grid;gap:6px;padding:7px 12px;box-shadow:0 2px 8px rgba(0,0,0,.12);}
 #sess-sticky.sb-idle{background:#fdeae4;border-bottom:2px solid #d84a3a;}
 #sess-sticky.sb-active{background:#f0faed;border-bottom:2px solid #4fa14a;}
 #sess-sticky.sb-tx.sb-idle{grid-template-columns:1.6fr 1fr .7fr 1.1fr 1.2fr;}
 #sess-sticky.sb-tx.sb-active{grid-template-columns:1.7fr 1fr .7fr 1fr 1fr;}
 #sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr 1fr;}
 #sess-sticky.sb-sup.sb-active{grid-template-columns:1.7fr 1fr 1.2fr 1fr;}
-.sb .sb-cell{background:#fff;border:1px solid #d5dae1;border-radius:9px;padding:4px 10px;min-height:46px;display:flex;flex-direction:column;justify-content:center;min-width:0;margin:0;}
-.sb .sb-cell small{font-size:.68rem;color:#6b7280;line-height:1.15;font-weight:600;}
-.sb .sb-cell input,.sb .sb-cell select{border:none;background:transparent;padding:0;font-size:.92rem;font-weight:600;color:#1f2733;width:100%;min-width:0;outline:none;box-shadow:none;}
-.sb .sb-cell b{font-size:.92rem;font-weight:600;color:#1f2733;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sb .sb-cell{background:#fff;border:1px solid #d5dae1;border-radius:8px;padding:2px 9px;min-height:36px;display:flex;flex-direction:column;justify-content:center;min-width:0;margin:0;}
+.sb .sb-cell small{font-size:.6rem;color:#6b7280;line-height:1.15;font-weight:600;}
+.sb .sb-cell input,.sb .sb-cell select{border:none;background:transparent;padding:0;font-size:.84rem;font-weight:600;color:#1f2733;width:100%;min-width:0;outline:none;box-shadow:none;}
+.sb .sb-cell b{font-size:.84rem;font-weight:600;color:#1f2733;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sb .sb-st{background:transparent;border:none;padding-left:2px;}
 .sb .sb-st small{font-weight:700;letter-spacing:.05em;}
 .sb-idle .sb-st small{color:#c0392b;}
 .sb-active .sb-st small{color:#3f8f3b;}
-.sb .sb-st b{font-size:1.02rem;display:flex;align-items:center;gap:8px;min-width:0;}
+.sb .sb-st b{font-size:.94rem;display:flex;align-items:center;gap:8px;min-width:0;}
 .sb .sb-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
 .sb .sb-badge{flex:0 0 auto;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:7px;background:#fbeecb;color:#8a6410;}
 .sb .sb-badge.b11{background:#e2f0f7;color:#234b63;}
-.sb .sb-btn{min-height:46px;border:1.5px solid transparent;border-radius:9px;color:#fff;font-weight:700;font-size:.9rem;padding:0 12px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;}
+.sb .sb-btn{min-height:36px;border:1.5px solid transparent;border-radius:8px;color:#fff;font-weight:700;font-size:.82rem;padding:0 10px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;}
 .sb .sb-go{background:var(--sup);}
 .sb .sb-cov{background:#1f8ec4;}
 .sb .sb-end{background:#d84a3a;}
 .sb .sb-out{background:#fff;color:#1f8ec4;border-color:#1f8ec4;}
 .sb .sb-x{display:none;}
 .sb .sb-sm{display:none;}
-.sb .sb-sw{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #d5dae1;border-radius:9px;overflow:hidden;background:#fff;min-height:46px;}
-.sb .sb-sw button{border:none;background:#fff;font-size:.9rem;color:#444;cursor:pointer;padding:0 8px;}
+.sb .sb-sw{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid #d5dae1;border-radius:8px;overflow:hidden;background:#fff;min-height:36px;}
+.sb .sb-sw button{border:none;background:#fff;font-size:.82rem;color:#444;cursor:pointer;padding:0 8px;}
 .sb .sb-sw button.on{background:#1f8ec4;color:#fff;font-weight:700;}
-.sb .sb-panel{background:#fff;border:1px solid #f0b6a8;border-radius:10px;padding:8px;display:grid;gap:8px;min-width:0;}
-.sb .sb-pt{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7a2d20;}
-.sb .sb-two{display:grid;grid-template-columns:1fr 1fr;gap:8px;min-width:0;}
+.sb .sb-panel{background:#fff;border:1px solid #f0b6a8;border-radius:9px;padding:5px 7px;display:grid;gap:4px;min-width:0;}
+.sb .sb-pt{font-size:.58rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7a2d20;}
+.sb .sb-two{display:grid;grid-template-columns:1fr 1fr;gap:6px;min-width:0;}
+@media (min-width:1100px){#sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr 1fr 2.3fr 2.3fr;}}
 @media (max-width:640px){
-  #sess-sticky.sb{padding:8px;gap:6px;}
+  #sess-sticky.sb{padding:6px 8px;gap:5px;}
   #sess-sticky.sb-idle{position:static;margin-bottom:12px;border:1px solid var(--border);border-radius:12px;padding:10px;gap:8px;}
   #sess-sticky.sb-tx.sb-idle{grid-template-columns:1fr 1fr;}
   #sess-sticky.sb-tx.sb-idle .sb-st,#sess-sticky.sb-tx.sb-idle .sb-sw,#sess-sticky.sb-tx.sb-idle .sb-go{grid-column:1/3;}
-  #sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr;}
+  #sess-sticky.sb-sup.sb-idle{grid-template-columns:1fr 1fr;}
+  #sess-sticky.sb-sup.sb-idle .sb-panel{grid-column:1/3;}
   #sess-sticky.sb-tx.sb-active{grid-template-columns:1fr auto auto;height:auto;}
   #sess-sticky.sb-sup.sb-active{grid-template-columns:1fr auto auto;}
   .sb-active .sb-hide-ph{display:none;}
   .sb-active .sb-btn{padding:0 12px;}
   .sb-active .sb-out .sb-t{display:none;}
   .sb-active .sb-out .sb-x{display:inline;font-size:1.1rem;}
-  .sb-active .sb-out{min-width:46px;}
+  .sb-active .sb-out{min-width:40px;}
   .sb .sb-lg{display:none;}
   .sb .sb-sm{display:inline;}
   .sb-active .sb-badge{display:none;}
 }
+
+/* ── Top bar (v-CT): logo never overlaps the buttons ── */
+.nav-logo{display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:1px 8px;flex:0 0 auto;}
+.nav-logo img{height:32px;width:auto;display:block;}
+.nb-i{display:none;}
+@media (max-width:640px){
+  #nav h1 .nav-logo{display:inline-flex;padding:1px 6px;border-radius:8px;}
+  .nav-logo img{height:26px;}
+  #nav h1{flex:1 1 auto;min-width:max-content;}
+  .nb-t{display:none;}
+  .nb-i{display:inline;}
+  #nav .btn-nav{padding:5px 10px;}
+}
+
+/* ── Client list and client page header (v-CU) ── */
+.cl-search{width:100%;max-width:420px;margin:0 0 6px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;font-size:.9rem;background:#fff;}
+.cl-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(340px,100%),1fr));gap:0 16px;align-items:start;}
+.cl-gh{display:flex;justify-content:space-between;font-size:.7rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:12px 2px 5px;}
+.cl-list{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.cl-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:1px solid #eef1f4;min-height:46px;cursor:pointer;}
+.cl-row:first-child{border-top:none;}
+.cl-row:hover{background:#f5f9fc;}
+.cl-nm{font-weight:600;font-size:.95rem;min-width:44px;}
+.cl-dx{flex:1;font-size:.8rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.cl-chip{font-size:.7rem;padding:2px 8px;border-radius:7px;white-space:nowrap;}
+.cl-fl{background:#fbeecb;color:#8a6410;font-weight:600;}
+.cl-ls{font-size:.72rem;color:#8a94a1;white-space:nowrap;}
+.cl-none{padding:24px;text-align:center;color:var(--muted);}
+.client-head2{display:flex;align-items:center;gap:8px;margin-bottom:2px;}
+.client-head2 h2{font-size:1.2rem;margin:0;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ch-info{font-size:.78rem;color:var(--muted);margin-bottom:10px;}
+.ch-menu-wrap{position:relative;}
+.ch-menu{font-size:1.15rem;line-height:1;padding:3px 12px;}
+.ch-pop{position:absolute;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.14);z-index:300;min-width:210px;overflow:hidden;}
+.ch-pop button{display:block;width:100%;text-align:left;background:#fff;border:none;border-top:1px solid #eef1f4;padding:10px 14px;font-size:.85rem;cursor:pointer;color:var(--text);}
+.ch-pop button:first-child{border-top:none;}
+.ch-pop button:hover{background:#f5f6f8;}
+.ch-n{font-size:.7rem;background:#e3f3df;color:#2f6b2c;border-radius:6px;padding:1px 7px;margin-left:6px;}
 </style>
 </head>
 <body>
@@ -436,12 +476,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 </div>
 
 <div id="nav" style="display:none">
-  <h1 style="display:flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;background:#fff;border-radius:10px;padding:1px 8px"><img src="assets/care-logo.png?v=1" alt="CARE" style="height:34px;width:auto;display:block"></span><span style="font-size:.8rem;font-weight:400;opacity:.8;letter-spacing:.06em">CLIENT BINDER</span></h1>
+  <h1 style="display:flex;align-items:center;gap:6px"><span class="nav-logo"><img src="assets/care-logo.png?v=1" alt="CARE"></span><span style="font-size:.8rem;font-weight:400;opacity:.8;letter-spacing:.06em">CLIENT BINDER</span></h1>
   <span id="nav-user"></span>
-  <button class="btn-nav" id="btn-update" style="display:none;background:#fff4d6;color:#8a6410;font-weight:700" onclick="_forceUpdate()">Update ready</button>
+  <button class="btn-nav" id="btn-update" title="A new version is ready" style="display:none;background:#fff4d6;color:#8a6410;font-weight:700" onclick="_forceUpdate()"><span class="nb-i">🔄</span><span class="nb-t">Update ready</span></button>
   <button class="btn-nav" id="btn-clients" onclick="showView('clients')">Clients</button>
-  <button class="btn-nav" id="btn-admin" style="display:none" onclick="showView('admin')">⚙ Admin</button>
-  <button class="btn-nav" id="btn-change-pw" style="display:none" onclick="showChangePasswordModal()">🔑 Password</button>
+  <button class="btn-nav" id="btn-admin" style="display:none" title="Admin" onclick="showView('admin')">⚙<span class="nb-t"> Admin</span></button>
+  <button class="btn-nav" id="btn-change-pw" style="display:none" title="Change password" onclick="showChangePasswordModal()">🔑<span class="nb-t"> Password</span></button>
   <button class="btn-nav" onclick="_logoutClick()">Log out</button>
 </div>
 
@@ -450,10 +490,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-22-CS';
+const APP_VERSION='v2026-11-22-CU';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-22-CU',date:'22 Nov 2026',added:'A search box on the client list.',improved:'A calmer client list: one tidy line per case (name, diagnosis, flags, last session) grouped by supervisor, with two supervisors side by side on a wide screen. A calmer client page: the header is one line with a small menu (Change supervisor, Give cover, Archive), a quiet info line (supervisor and last session), a smaller graph-month control, and the repeated yellow notice is gone.',fixed:''},
+  {version:'v2026-11-22-CT',date:'22 Nov 2026',added:'',improved:'The session banner is smaller and tidier (on a wide screen the supervisor banner now fits in one row). On a phone the top bar no longer lets the logo cover the Clients button: the logo is smaller and Admin, Password and Update show as icons.',fixed:''},
   {version:'v2026-11-22-CS',date:'22 Nov 2026',added:'',improved:'The session banner (not started / in progress, for therapists and supervisors) has a new tidy layout: equal-sized blocks that fill the width, the same order everywhere, one setting badge, and a clear phone and iPad layout. For supervisors, the banner now has two clear groups: Supervise, and Cover as therapist (with its 1:1 | Shadow switch). While a supervisor is acting as a therapist, the School Shadow timetable and targets setup and the observation-note box are hidden, so they see what a therapist sees.',fixed:'The in-progress banner no longer wraps awkwardly on PC, iPad and phone, and no longer shows the School Shadow badge twice.'},
   {version:'v2026-11-22-CR',date:'22 Nov 2026',added:'A supervisor can now run a School Shadow session as a therapist: the Start Session (as therapist) bar has the same 1:1 | Shadow switch therapists use, and the daily grid, NET trials, notes and End & Save work for them like for a therapist, recorded under their own name. It works on their own cases any day, and on another supervisor\u2019s case on the days they were given cover (the timetable, targets and program stay read-only there).',improved:'Starting a session as a therapist on a case you are not allowed to record on now says so straight away.',fixed:''},
   {version:'v2026-11-21-CQ',date:'21 Nov 2026',added:'',improved:'The login screen and the top bar now show the real CARE logo (the same as the Therapist Portal), and the browser tab shows it too. Admin, Staff & Access: By staff now has a separate card for each role (Directors, Admins, Supervisors, QCDs, Senior TX, Junior TX), and By case is grouped by supervisor, like the client list.',fixed:''},
@@ -3399,19 +3441,27 @@ function renderClientList(){
     return '<div style="padding:40px;text-align:center"><h2 style="color:var(--muted);font-size:1.1rem">No clients assigned yet.</h2><p style="color:var(--muted);margin-top:8px">Ask your supervisor to assign you to a client in Admin settings.</p></div>';
   }
 
-  function clientCard(c){
-    const n=DB.lessons.filter(l=>l.clientId===c.id).length;
-    const lastD=_clientLastDate(c.id);
-    const flags=countFlags(c.id);
-    return '<div class="client-card" onclick="selectClient(\''+c.id+'\')">'+'<h3 style="font-size:1rem;font-weight:600">'+esc(c.name)+_coverTag(c.id)+'</h3><p style="font-size:.82rem;color:var(--muted);margin-top:4px">'+esc(c.diagnosis)+' &nbsp;|&nbsp; DOB: '+c.dob+'</p><p style="margin-top:8px;font-size:.82rem">'+n+' lessons &nbsp;'+(flags?'<span class="badge badge-yellow">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':(lastD?'<span class="badge badge-gray">Last: '+lastD+'</span>':(_clientLastKnown(c.id)?'<span class="badge badge-gray">No sessions</span>':'')))+'</p></div>';
+  // v-CU: one tidy row per case, grouped, with a search box
+  function clRow(c){
+    var flags=countFlags(c.id),lastD=_clientLastDate(c.id);
+    var last=lastD?_clRel(lastD):(_clientLastKnown(c.id)?'No sessions':'');
+    var q=(c.name+' '+(c.diagnosis||'')).toLowerCase();
+    var hide=_clQuery&&q.indexOf(_clQuery.trim().toLowerCase())<0;
+    return '<div class="cl-row" data-q="'+esc(q)+'"'+(hide?' style="display:none"':'')+' onclick="selectClient(\''+c.id+'\')"><span class="cl-nm">'+esc(c.name)+'</span>'+_coverTag(c.id)+'<span class="cl-dx">'+esc(c.diagnosis||'')+'</span>'+(flags?'<span class="cl-chip cl-fl" title="'+flags+' flagged target'+(flags>1?'s':'')+'">⛑ '+flags+' flag'+(flags>1?'s':'')+'</span>':'')+'<span class="cl-ls">'+esc(last)+'</span></div>';
+  }
+  function clGroup(label,cs){
+    var rows=cs.slice().sort(function(a,b){return (a.name||'').localeCompare(b.name||'');}).map(clRow).join('');
+    var any=cs.some(function(c){var q=(c.name+' '+(c.diagnosis||'')).toLowerCase();return !_clQuery||q.indexOf(_clQuery.trim().toLowerCase())>=0;});
+    return '<div class="cl-group"'+(any?'':' style="display:none"')+'><div class="cl-gh"><span>'+esc(label)+'</span><span>'+cs.length+'</span></div><div class="cl-list">'+rows+'</div></div>';
   }
 
   const addBtn=['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-primary btn-sm no-print" onclick="showAddClient()">+ Add Client</button>':'';
-  const header='<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div>';
+  const header='<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px"><h2 style="flex:1;font-size:1.3rem">Clients</h2>'+addBtn+'</div>'
+    +'<input type="search" id="cl-q" class="cl-search unlock-exempt" placeholder="Search a case" value="'+esc(_clQuery)+'" oninput="_clFilter(this.value)" autocomplete="off">';
 
-  // TX roles: flat list (only see their assigned clients anyway)
+  // TX roles: one list (only their assigned / covered cases)
   if(currentUser&&['junior','senior'].includes(currentUser.role)){
-    return header+'<div class="card-grid">'+visibleClients.map(clientCard).join('')+'</div><div id="modal-area"></div>';
+    return header+'<div class="cl-wrap">'+clGroup('Your clients',visibleClients)+'</div><div id="cl-none" class="cl-none" style="display:none">No case matches.</div><div id="modal-area"></div>';
   }
 
   // Supervisor/director/admin: group by assigned supervisor
@@ -3433,17 +3483,20 @@ function renderClientList(){
   });
   if(groups[UNASSIGNED])supIds.push(UNASSIGNED);
 
-  let html=header;
+  let html=header+'<div class="cl-wrap">';
   supIds.forEach(function(sid){
     const label=sid===UNASSIGNED?'Unassigned':(supMap[sid]||'Unknown Supervisor');
-    const clients=groups[sid].slice().sort(function(a,b){return a.name.localeCompare(b.name);});
-    html+='<div style="margin-bottom:24px">'
-      +'<div style="font-size:.72rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);padding:4px 0 8px;border-bottom:1px solid var(--border);margin-bottom:10px">'+esc(label)+'</div>'
-      +'<div class="card-grid">'+clients.map(clientCard).join('')+'</div>'
-      +'</div>';
+    html+=clGroup(label,groups[sid]);
   });
-  html+='<div id="modal-area"></div>';
+  html+='</div><div id="cl-none" class="cl-none" style="display:none">No case matches.</div><div id="modal-area"></div>';
   return html;
+}
+var _clQuery='';
+function _clRel(d){if(!d)return '';var t=_todayLocal();if(d===t)return 'Today';if(d===_cvAdd(t,-1))return 'Yesterday';var n=Math.round((new Date(t+'T00:00')-new Date(d+'T00:00'))/864e5);if(n>=0&&n<=6)return n+' days ago';return _cvFmt(d)+(d.slice(0,4)!==t.slice(0,4)?' '+d.slice(0,4):'');}
+function _clFilter(v){
+  _clQuery=v||'';var q=_clQuery.trim().toLowerCase(),shown=0;
+  document.querySelectorAll('.cl-group').forEach(function(g){var n=0;g.querySelectorAll('.cl-row').forEach(function(r){var ok=!q||(r.getAttribute('data-q')||'').indexOf(q)>=0;r.style.display=ok?'':'none';if(ok)n++;});g.style.display=n?'':'none';shown+=n;});
+  var m=document.getElementById('cl-none');if(m)m.style.display=shown?'none':'block';
 }
 function countFlags(cid){return DB.lessons.filter(l=>l.clientId===cid).reduce((s,l)=>s+l.sds.reduce((s2,sd)=>s2+sd.targets.filter(t=>t.status==='flagged').length,0),0);}
 function showAddClient(){modal('<h3 style="margin-bottom:14px">Add Client</h3><label>Name<input id="nc-n" type="text"></label><label style="margin-top:10px">DOB<input id="nc-d" type="date"></label><label style="margin-top:10px">Diagnosis<input id="nc-dx" type="text" value="ASD"></label><div style="display:flex;gap:8px;margin-top:16px"><button class="btn btn-primary" onclick="addNewClient()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
@@ -3457,6 +3510,25 @@ function _fmtWhen(ts){
   var sameDay=d.toDateString()===new Date().toDateString();
   var hh=('0'+d.getHours()).slice(-2),mm=('0'+d.getMinutes()).slice(-2);
   return (sameDay?'today':fmtDateShort((''+ts).slice(0,10)))+' '+hh+':'+mm;
+}
+// v-CU: the client page "⋯" menu holds the rare actions
+function _chMenuHtml(c){
+  var items=[],r=currentUser&&currentUser.role;
+  if(['director','admin'].includes(r))items.push('<button type="button" onclick="_chPopClose();_chSupModal(\''+c.id+'\')">Change supervisor…</button>');
+  if(_cvCanManage(c)){var n=(DB.cover||[]).filter(function(x){return x.clientId===c.id&&x.date>=_todayLocal();}).length;items.push('<button type="button" onclick="_chPopClose();_cvOpen(\''+c.id+'\')">Give cover…'+(n?' <span class="ch-n">'+n+' day'+(n>1?'s':'')+'</span>':'')+'</button>');}
+  if(['supervisor','director','admin'].includes(r))items.push('<button type="button" onclick="_chPopClose();showArchiveModal()">Archive old data…</button>');
+  if(!items.length)return '';
+  return '<div class="ch-menu-wrap no-print unlock-exempt"><button type="button" class="btn btn-outline btn-sm unlock-exempt ch-menu" aria-label="More actions" title="More actions" onclick="_chPopToggle(event)">⋯</button><div id="ch-pop" class="ch-pop" style="display:none">'+items.join('')+'</div></div>';
+}
+function _chPopToggle(e){e.stopPropagation();var p=document.getElementById('ch-pop');if(p)p.style.display=p.style.display==='none'?'block':'none';}
+function _chPopClose(){var p=document.getElementById('ch-pop');if(p)p.style.display='none';}
+document.addEventListener('click',function(){_chPopClose();});
+function _chSupModal(cid){
+  if(!['director','admin'].includes(currentUser.role)){toast('Only a director or admin can reassign a case.');return;}
+  var c=DB.clients.find(function(x){return x.id===cid;});if(!c)return;
+  var sups=(DB.users||[]).filter(function(u){return ['supervisor','director'].includes(u.role)&&u.active!==false;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});
+  var opts='<option value="">Unassigned</option>'+sups.map(function(u){return '<option value="'+u.id+'"'+((c.supervisor||'')===u.id?' selected':'')+'>'+esc(u.name)+'</option>';}).join('');
+  modal('<h3 style="margin-bottom:8px">Change supervisor</h3><p style="font-size:.85rem;color:var(--muted);margin-bottom:10px">Case: <strong>'+esc(c.name)+'</strong></p><select id="chs-sel" style="width:100%;margin-bottom:14px">'+opts+'</select><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-primary" onclick="_reassignSup(\''+c.id+'\',document.getElementById(\'chs-sel\').value);closeModal()">Save</button></div>');
 }
 function _supReassignHtml(c){try{if(!['director','admin'].includes(currentUser.role))return '';var sups=(DB.users||[]).filter(function(u){return ['supervisor','director'].includes(u.role)&&u.active!==false;}).sort(function(a,b){return (a.name||'').localeCompare(b.name||'');});var opts='<option value="">Unassigned</option>'+sups.map(function(u){return '<option value="'+u.id+'"'+((c.supervisor||'')===u.id?' selected':'')+'>'+esc(u.name)+'</option>';}).join('');return '<span class="no-print unlock-exempt" style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;color:var(--muted)"><span>Sup:</span><select title="Assign case supervisor" onchange="_reassignSup(\''+c.id+'\',this.value)" style="font-size:.76rem;padding:2px 6px;border:1px solid var(--border);border-radius:6px;max-width:150px">'+opts+'</select></span>';}catch(e){return '';}}
 function _reassignSup(clientId,supId){if(!['director','admin'].includes(currentUser.role)){toast('Only a director or admin can reassign a case.');return;}var c=DB.clients.find(function(x){return x.id===clientId;});if(!c)return;c.supervisor=supId||'';sbSaveClient(c);toast('Case supervisor updated \u2713');render();}
@@ -3577,7 +3649,9 @@ function renderClientView(){
   const txNotif=(c.supNotif&&!isSup)?'<div class="alert" style="background:#eef6fb;border:1p'+'x solid #b8dcef;color:#1a6f94;margin-bottom:8px;display:flex;align-items:center;gap:10px">🔔 <strong>Supervisor updated this client on '+esc(c.supNotif.date)+'</strong> ('+esc(c.supNotif.supType)+') — '+c.supNotif.count+' change'+(c.supNotif.count!==1?'s':'')+' made. <button class="btn btn-xs btn-outline no-print" style="margin-left:auto" onclick="dismissSupNotif()">Dismiss</button></div>':'';
   const _lsSess=DB.sessions.filter(function(s){return s.clientId===selectedClientId;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));})[0];
   const _lsInfo=_lsSess?'<span style="font-size:.72rem;color:var(--muted);white-space:nowrap" title="Most recent session recorded">🕒 '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?' · '+esc(_lsSess.txName.split(' ')[0]):'')+'</span>':'';
-  return stickyBar+'<div class="client-head" style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><h2 style="flex:1;font-size:1.2rem">'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span>'+_supReassignHtml(c)+_cvBtnHtml(c)+_lsInfo+((['supervisor','director','admin'].includes(currentUser.role))?'<button class="btn btn-outline btn-sm no-print unlock-exempt" onclick="showArchiveModal()" title="Archive old data">📦 Archive</button>':'')+'</div>'+(_workDate()!==_todayLocal()?'<div class="alert alert-warn no-print" style="margin-bottom:10px">\uD83D\uDCC5 Recording for <strong>'+_drFmtD(_workDate())+'</strong> (not today) \u2014 everything you save in this visit is dated <strong>'+_drFmtD(_workDate())+'</strong>. Change the date in the bar above if that\u2019s not right.</div>':'')+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:8px;padding:6px 16px 2px;flex-wrap:wrap">'+'<span style="font-size:.75rem;color:var(--muted)">Graph month:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+_viewOnlyWhy()+'</div><div class="no-session-banner">👁 '+(['supervisor','director'].includes(currentUser&&currentUser.role||'')?'Start a supervision visit to record data.':' Start a session to record data — you can still view lessons.')+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
+  var _supU=(DB.users||[]).find(function(u){return u.id===c.supervisor;});
+  var _chInfo=esc(_supU?_supU.name:'No supervisor')+(_lsSess?' \u00b7 last session '+_fmtWhen(_lsSess.createdAt||_lsSess.date)+(_lsSess.txName?', '+esc(_lsSess.txName.split(' ')[0]):''):' \u00b7 no sessions yet');
+  return stickyBar+'<div class="client-head2"><h2>'+esc(c.name)+'</h2><span class="badge badge-gray">'+esc(c.diagnosis)+'</span><span style="flex:1"></span>'+_chMenuHtml(c)+'</div><div class="ch-info">'+_chInfo+'</div>'+(_workDate()!==_todayLocal()?'<div class="alert alert-warn no-print" style="margin-bottom:10px">\uD83D\uDCC5 Recording for <strong>'+_drFmtD(_workDate())+'</strong> (not today) \u2014 everything you save in this visit is dated <strong>'+_drFmtD(_workDate())+'</strong>. Change the date in the bar above if that\u2019s not right.</div>':'')+flagBanner+txNotif+'<div class="tabs">'+tabHtml+'</div>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="no-print graph-month-row" style="display:flex;align-items:center;gap:6px;padding:0 2px 6px;justify-content:flex-end">'+'<span style="font-size:.72rem;color:var(--muted)">📅 Graphs:</span>'+'<input type="month" class="unlock-exempt" style="padding:3px 7px;border:1px solid var(--border);border-radius:6px;font-size:.8rem;width:auto" value="'+graphMonth+'" onchange="graphMonth=this.value;render()">'+'<button class="btn btn-sm '+(graphMonth===''?'btn-primary':'btn-outline')+' unlock-exempt" onclick="graphMonth=\'\';render()">All</button>'+'</div>')+'<div id="tab-content"'+(isViewOnly()?' class="view-only-mode"':(isSessionActive()?'':' class="session-locked"'))+'>'+(['schoolinfo','schoolshadow'].includes(selectedTab)?'':'<div class="view-only-banner">👁️ View only — '+_viewOnlyWhy()+'</div>')+renderTab()+'</div><div id="modal-area"></div>';
 }
 function _isDemoClient(cid){try{var c=(DB.clients||[]).find(function(x){return x.id===cid;});return !!c&&(c.name||'').trim().toLowerCase()==='demo client';}catch(e){return false;}}
 function isViewOnly(){
