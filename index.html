@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-23-CW -->
+<!-- BUILD v2026-11-23-CX -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-23-CW</title>
+<title>CARE Client Binder v2026-11-23-CX</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -496,10 +496,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-23-CW';
+const APP_VERSION='v2026-11-23-CX';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-23-CX',date:'23 Nov 2026',added:'School Shadow rating targets: when adding a school target, a supervisor can choose Rating. The scale starts at 0 or 1, the top number goes up to 5 (at most 5 numbers), and each number gets a label that shows under the daily grid. Therapists record a rating for each period; the daily average, School checklist, monthly overview, Day report and graphs show the average rating. 0 counts as a real rating; blank means not recorded; N/A is left out of the average. A target\u2019s type and scale are fixed once it is created (labels can still be edited).',improved:'School Shadow daily grid: every box is now one button \u2014 tap it and keep tapping to go round (blank, C, P, \u2212, N/A; for ratings: blank, the numbers, N/A). Bigger to tap and takes less space, especially on a phone. Saved data and percentages are unchanged.',fixed:''},
   {version:'v2026-11-23-CW',date:'23 Nov 2026',added:'When you log out and there is note text you typed but did not save, the pop-up now lists each one: the client, which note box it is, and the start of the text, with a Go to this note button. Then you can choose Log out and erase, or Cancel.',improved:'',fixed:'The \u201cunsaved note\u201d warning on logout could appear even though everything was saved (for example after editing a note or saving Case Info). Only the real note boxes keep a typed-text copy now, it is cleared when the note is saved, and old leftovers are removed.'},
   {version:'v2026-11-23-CV',date:'23 Nov 2026',added:'Edit and delete for notes everywhere they were missing. Sup Notes and lesson General Notes can now be deleted; behavior notes, team notes, target-set notes and School Shadow observation notes can now be edited. Every delete first shows the note and asks. Supervisors and directors can tidy any note on the cases they can edit, and therapists their own notes, without starting a visit or session first.',improved:'Changing or removing a note now works on the latest saved copy, so it can no longer wipe out a note someone else added at the same time, and it only changes the screen after it is saved. If it cannot save, a plain message says nothing was changed.',fixed:'The delete buttons on behavior notes and team notes did nothing unless a session was running.'},
   {version:'v2026-11-22-CU',date:'22 Nov 2026',added:'A search box on the client list.',improved:'A calmer client list: one tidy line per case (name, diagnosis, flags, last session) grouped by supervisor, with two supervisors side by side on a wide screen. A calmer client page: the header is one line with a small menu (Change supervisor, Give cover, Archive), a quiet info line (supervisor and last session), a smaller graph-month control, and the repeated yellow notice is gone.',fixed:''},
@@ -2862,12 +2863,28 @@ function _drLastObs(c,D,kind){
   (DB.bips||[]).forEach(function(b){if(b.clientId===c.id)walk(b,0);});
   return best;
 }
+// v-CX: Day report block for one School Shadow rating target
+function _drRtData(ss,t,D,from,lbl){
+  var sc=_ssScale(t),log=ss.log||{};
+  var slotById={},slotOrder={};(ss.slots||[]).forEach(function(x){slotById[x.id]=x;});_ssSortSlots(ss.slots).forEach(function(x,i){slotOrder[x.id]=i;});
+  var dayCells=function(d){var e=log[d];if(!e)return [];var grid=(ss.grid&&ss.grid[_ssWeekday(d)])||{};var out=[];
+    Object.keys(e.cells||{}).forEach(function(k){var v=e.cells[k];if(!/^\d+$/.test(v||''))return;var u=k.indexOf('_');if(u<0||k.slice(0,u)!==t.id)return;var sid=k.slice(u+1);var sl=slotById[sid];out.push({sid:sid,subj:grid[sid]||(sl&&sl.time)||'',v:+v});});
+    out.sort(function(a,b){return (slotOrder[a.sid]==null?999:slotOrder[a.sid])-(slotOrder[b.sid]==null?999:slotOrder[b.sid]);});return out;};
+  var a=_ssRtAgg(ss,t,function(d){return d>=from&&d<=D;});var today=dayCells(D);
+  if(!today.length&&!a.all.n&&(t.status||'active')!=='active')return '';
+  var avg=function(L){var sm=0;L.forEach(function(x){sm+=x.v;});return L.length?sm/L.length:null;};
+  var ti='';
+  if(today.length)ti+='<p><strong>Today:</strong> average '+_ssAvgTxt(avg(today))+' / '+sc.max+(log[D]&&log[D].tx?' · recorded by '+esc(log[D].tx):'')+'</p><p>'+today.map(function(x){return (x.subj?esc(x.subj)+' ':'')+'<span style="display:inline-block;padding:0 6px;border-radius:4px;font-weight:700;color:#1b5f86;background:#e3f1fa">'+x.v+'</span>';}).join(' · ')+'</p>';
+  else{var prev=Object.keys(log).filter(function(d){return d<D&&dayCells(d).length;}).sort().pop();ti+='<p style="color:#6b7280"><strong>Today:</strong> no data'+(prev?' · last recorded '+_drFmtD(prev)+' (average '+_ssAvgTxt(avg(dayCells(prev)))+' / '+sc.max+')':' · nothing recorded yet')+'</p>';}
+  if(a.all.n)ti+='<p style="margin-top:6px"><strong>'+esc(lbl)+':</strong> '+a.days.length+' school day'+(a.days.length!==1?'s':'')+' · average '+_ssAvgTxt(_ssAvg(a.all))+' / '+sc.max+'</p>'+_ssRtBody(a,t,true);
+  return '<div class="lesson-title">School rating data: '+esc(t.name)+'</div><div class="ldet">'+ti+'</div>';
+}
 // v-CC: school targets summary — current targets + changes from `from` to D (dates shown)
 function _drSsSummary(ss,D,from,lbl){
   if(!ss)return '';
   var all=[];(ss.targets||[]).forEach(function(t){all.push({t:t,net:false});});(ss.net||[]).forEach(function(t){all.push({t:t,net:true});});
   if(!all.length)return '';
-  var nm=function(x){return esc(x.t.name)+(x.net?' (NET)':'');};
+  var nm=function(x){return esc(x.t.name)+(x.net?' (NET)':(_ssIsRt(x.t)?' (rating)':''));};
   var inW=function(d){return d&&d>=from&&d<=D;};
   var cur=all.filter(function(x){var st=x.t.status||'active';if(x.t.addedDate&&x.t.addedDate>D)return false;if(st==='active')return !(x.t.resumedDate&&x.t.resumedDate>D&&x.t.heldDate&&x.t.heldDate<=D&&x.t.heldDate<x.t.resumedDate);return (st==='mastered'&&x.t.masteredDate&&x.t.masteredDate>D)||(st!=='mastered'&&x.t.heldDate&&x.t.heldDate>D);}); // as of D (a past report must not use today's status)
   var row=function(label,col,key){var L=all.filter(function(x){return inW(x.t[key]);}).sort(function(a,b){return a.t[key].localeCompare(b.t[key]);});
@@ -2896,6 +2913,7 @@ function _drSsData(ss,D,from,lbl){
   var winDays=Object.keys(log).filter(function(d){return d>=from&&d<=D;}).sort();
   var html='';
   (ss.targets||[]).forEach(function(t){
+    if(_ssIsRt(t)){html+=_drRtData(ss,t,D,from,lbl);return;}
     var today=dayCells(t.id,D);
     var agg={c:0,op:0},subj={},bucket={Morning:{c:0,op:0},Lunch:{c:0,op:0},Afternoon:{c:0,op:0}},pts=[];
     winDays.forEach(function(d){
@@ -3978,6 +3996,22 @@ const _SS_DAYS=['mon','tue','wed','thu','fri'];
 const _SS_DAYLABEL={mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday'};
 var _ssDate='';var _ssViewDate='';var _ssSetupOpen=true;var _ssMonth='';
 const _SS_CODES=[['C','C'],['P','P'],['-','−'],['/','N/A']];
+// v-CX: School Shadow RATING targets (t.kind==='rating', t.scale={min:0|1,max,labels}). A target's type and scale never change after it is created.
+// A rating cell stores the number as text ('0'..'5'); '/' = N/A; '' = not recorded. 0 is a real rating and counts as data.
+function _ssIsRt(t){return !!(t&&t.kind==='rating');}
+function _ssScale(t){var sc=(t&&t.scale)||{};var lo=(sc.min===0||sc.min==='0')?0:1;var hi=parseInt(sc.max,10);if(!(hi>lo))hi=lo===0?4:5;if(hi-lo>4)hi=lo+4;return {min:lo,max:hi,labels:sc.labels||{}};}
+function _ssIsData(v){return v==='C'||v==='P'||v==='-'||/^\d+$/.test(v||'');}
+function _ssCycle(isRt,lo,hi){var a=[''];if(isRt){for(var v=lo;v<=hi;v++)a.push(String(v));}else{a.push('C','P','-');}a.push('/');return a;}
+function _ssFace(isRt,v){
+  if(!v)return {c:'#c0c7ce',bg:'#ffffff',b:'#e1e5ea',t:'·',w:600};
+  if(v==='/')return {c:'#6b7280',bg:'#eef1f4',b:'#d5dae1',t:'N/A',w:700};
+  if(isRt)return {c:'#1b5f86',bg:'#e3f1fa',b:'#9ccbe6',t:v,w:700};
+  var m=_ssCM(v)||_ssCM('/');return {c:m.c,bg:m.bg,b:m.b,t:_ssLbl(v),w:700};
+}
+function _ssKeyTxt(t){var sc=_ssScale(t),p=[];for(var v=sc.min;v<=sc.max;v++){var l=String(sc.labels[v]||'').trim();p.push(v+(l?' = '+l:''));}return p.join(' · ');}
+function _ssRtTag(t){if(!_ssIsRt(t))return '';var sc=_ssScale(t);return '<span style="background:#e3f1fa;color:#1b5f86;border-radius:4px;padding:0 6px;font-size:.66rem;font-weight:700">RATING '+sc.min+'–'+sc.max+'</span>';}
+function _ssRtLegend(list){var rows=(list||[]).filter(_ssIsRt).map(function(t){return '<div style="font-size:.76rem;color:#374151;margin-top:5px;line-height:1.5"><strong>'+esc(t.name)+'</strong> <span style="color:#6b7280">(rating)</span>: '+esc(_ssKeyTxt(t))+'</div>';}).join('');return rows;}
+function _ssHeadCell(t){return '<span style="text-align:center;white-space:normal;word-break:break-word;line-height:1.2" title="'+esc(t.name)+'">'+esc(t.name)+(_ssIsRt(t)?'<span style="display:block;font-weight:400;font-size:.68rem;color:#4b5563;margin-top:2px">Rating '+_ssScale(t).min+'\u2013'+_ssScale(t).max+'</span>':'')+'</span>';}
 function _ssClient(){return DB.clients.find(function(x){return x.id===selectedClientId;});}
 function _ssWeekday(d){var g=new Date(d+'T00:00').getDay();return ['sun','mon','tue','wed','thu','fri','sat'][g];}
 function _ssTimeMin(t){if(!t)return 9999;var m=(''+t).match(/(\d{1,2})[:.]?(\d{2})?/);if(!m)return 9999;return (+m[1])*60+(+(m[2]||0));}
@@ -3994,20 +4028,26 @@ function _ssActive(){var isSup=['supervisor','director'].includes(currentUser&&c
 function _ssCM(code){return {'C':{c:'#2f6b2c',bg:'#e2f2df',b:'#9fce97'},'P':{c:'#8a6410',bg:'#fbeecb',b:'#e8c14e'},'-':{c:'#b23a2a',bg:'#fbe0da',b:'#e6b3aa'},'/':{c:'#6b7280',bg:'#eef1f4',b:'#d5dae1'}}[code];}
 function _ssBtnStyle(active,code){var m=_ssCM(code);return active?('background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b+';font-weight:700'):('background:#fff;color:#c0c7ce;border:1px solid #e6e9ee;font-weight:600');}
 function _ssLbl(v){return v==='/'?'N/A':(v==='-'?'−':(v||'·'));}
-function _ssCellHtml(tid,pid,v,active){
-  if(!active){var m=v?_ssCM(v):null;return '<div class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" style="height:30px;display:flex;align-items:center;justify-content:center;border-radius:5px;font-size:.78rem;font-weight:700;'+(m?'background:'+m.bg+';color:'+m.c+';border:1px solid '+m.b:'background:#fafbfc;color:#c8cfd6;border:1px solid #eef1f4')+'">'+_ssLbl(v)+'</div>';}
-  var btns=_SS_CODES.map(function(cd){return '<button type="button" data-v="'+cd[0]+'" onclick="_ssPick(this)" style="flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(v===cd[0],cd[0])+'">'+cd[1]+'</button>';}).join('');
-  return '<div class="ss-cell" data-t="'+tid+'" data-p="'+pid+'" data-v="'+v+'" style="display:flex;gap:3px">'+btns+'</div>';
+function _ssCellHtml(tid,pid,v,active,tg){
+  var rt=_ssIsRt(tg),sc=_ssScale(tg),f=_ssFace(rt,v);
+  var at=' data-t="'+tid+'" data-p="'+pid+'" data-v="'+esc(v)+'" data-k="'+(rt?'r':'f')+'" data-lo="'+sc.min+'" data-hi="'+sc.max+'"';
+  var st='height:'+(active?'34':'30')+'px;width:100%;display:flex;align-items:center;justify-content:center;border-radius:6px;font-size:.84rem;background:'+f.bg+';color:'+f.c+';border:1px solid '+f.b+';font-weight:'+f.w;
+  if(!active)return '<div class="ss-cell"'+at+' style="display:flex"><div style="'+st+'">'+esc(f.t)+'</div></div>';
+  return '<div class="ss-cell"'+at+' style="display:flex"><button type="button" onclick="_ssPick(this)" style="'+st+';cursor:pointer;padding:0">'+esc(f.t)+'</button></div>';
 }
 function _ssDraftKey(){return 'care_ss_draft:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+_ssDate;}
-function _ssApplyCellValue(cell,v){try{cell.dataset.v=v||'';Array.prototype.forEach.call(cell.children,function(b){if(b.tagName==='BUTTON')b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===(v||''),b.dataset.v));});}catch(e){}}
+function _ssApplyCellValue(cell,v){try{var rt=cell.dataset.k==='r';v=v||'';if(v&&_ssCycle(rt,+cell.dataset.lo,+cell.dataset.hi).indexOf(v)<0)return;cell.dataset.v=v;var f=_ssFace(rt,v);var b=cell.querySelector('button');if(b){b.textContent=f.t;b.style.background=f.bg;b.style.color=f.c;b.style.borderColor=f.b;b.style.fontWeight=f.w;}}catch(e){}}
 function _ssSaveShadowDraft(){try{if(!(typeof _ssCanRecord==='function'&&_ssCanRecord()))return;var grid=document.getElementById('ss-grid');var hasNet=document.querySelector('.ssn-c');if(!grid&&!hasNet)return;var d={cells:{},net:{}};if(grid){document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){d.cells[b.dataset.t+'_'+b.dataset.p]=b.dataset.v||'';});}if(hasNet){document.querySelectorAll('.ssn-c').forEach(function(cel){var id=cel.dataset.id;var t=document.querySelector('.ssn-t[data-id="'+id+'"]');d.net[id]={c:(cel.value||''),t:(t?(t.value||''):'')};});}try{localStorage.setItem(_ssDraftKey(),JSON.stringify(d));}catch(e){}}catch(e){}}
 function _ssClearShadowDraft(){try{localStorage.removeItem(_ssDraftKey());}catch(e){}}
 function _ssRestoreShadowDraft(){try{var grid=document.getElementById('ss-grid');var netc=document.querySelector('.ssn-c');var editable=(grid&&grid.querySelector('button'))||netc;if(!editable)return;var raw=null;try{raw=localStorage.getItem(_ssDraftKey());}catch(e){}if(!raw)return;var d=null;try{d=JSON.parse(raw);}catch(e){return;}if(!d)return;if(grid&&grid.querySelector('button')&&d.cells){document.querySelectorAll('#ss-grid .ss-cell').forEach(function(cell){var k=cell.dataset.t+'_'+cell.dataset.p;if(Object.prototype.hasOwnProperty.call(d.cells,k)&&d.cells[k]!==(cell.dataset.v||'')){_ssApplyCellValue(cell,d.cells[k]);}});try{_ssRecalc();}catch(e){}}if(netc&&d.net){Object.keys(d.net).forEach(function(id){var c=document.querySelector('.ssn-c[data-id="'+id+'"]');var t=document.querySelector('.ssn-t[data-id="'+id+'"]');var dv=d.net[id]||{};if(c&&dv.c!=null&&dv.c!==''&&(''+(c.value||''))===''){c.value=dv.c;}if(t&&dv.t!=null&&dv.t!==''&&(''+(t.value||''))===''){t.value=dv.t;}if(c&&typeof _ssNetCalc==='function'){try{_ssNetCalc(c);}catch(e){}}});}}catch(e){}}
 document.addEventListener('input',function(ev){try{var el=ev.target;if(el&&el.classList&&(el.classList.contains('ssn-c')||el.classList.contains('ssn-t')))_ssSaveShadowDraft();}catch(e){}},true);
-function _ssPick(btn){var cell=btn.parentNode;var nv=btn.dataset.v;if(cell.dataset.v===nv)nv='';cell.dataset.v=nv;Array.prototype.forEach.call(cell.children,function(b){b.setAttribute('style','flex:1;min-width:0;height:30px;border-radius:4px;font-size:.7rem;cursor:pointer;padding:0 1px;'+_ssBtnStyle(b.dataset.v===nv,b.dataset.v));});_ssRecalc();_ssSaveShadowDraft();}
-function _ssRecalc(){var byT={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){var t=b.dataset.t,v=b.dataset.v;if(!byT[t])byT[t]={c:0,op:0};if(v==='C'){byT[t].c++;byT[t].op++;}else if(v==='P'||v==='-'){byT[t].op++;}});document.querySelectorAll('.ss-pct').forEach(function(el){var o=byT[el.dataset.t];el.textContent=(o&&o.op)?Math.round(o.c/o.op*100)+'%':'–';});}
-function _ssPct(cells,tid,periods){var cn=0,op=0;periods.forEach(function(pp){var v=cells[tid+'_'+pp.id];if(v==='C'){cn++;op++;}else if(v==='P'||v==='-'){op++;}});return op?Math.round(cn/op*100)+'%':'–';}
+function _ssPick(btn){var cell=btn.parentNode;var rt=cell.dataset.k==='r';var seq=_ssCycle(rt,+cell.dataset.lo,+cell.dataset.hi);var i=seq.indexOf(cell.dataset.v||'');_ssApplyCellValue(cell,seq[(i+1)%seq.length]);_ssRecalc();_ssSaveShadowDraft();}
+function _ssDayTxt(vals,rt,hi){
+  if(rt){var sm=0,n=0;vals.forEach(function(v){if(/^\d+$/.test(v||'')){sm+=+v;n++;}});return n?(Math.round(sm/n*10)/10)+' / '+hi:'–';}
+  var cn=0,op=0;vals.forEach(function(v){if(v==='C'){cn++;op++;}else if(v==='P'||v==='-')op++;});return op?Math.round(cn/op*100)+'%':'–';
+}
+function _ssRecalc(){var by={},kind={},hi={};document.querySelectorAll('#ss-grid .ss-cell').forEach(function(b){var t=b.dataset.t;if(!by[t]){by[t]=[];kind[t]=b.dataset.k==='r';hi[t]=b.dataset.hi;}by[t].push(b.dataset.v||'');});document.querySelectorAll('.ss-pct').forEach(function(el){el.textContent=by[el.dataset.t]?_ssDayTxt(by[el.dataset.t],kind[el.dataset.t],hi[el.dataset.t]):'–';});}
+function _ssPct(cells,t,periods){var vals=periods.map(function(pp){return cells[t.id+'_'+pp.id]||'';});return _ssDayTxt(vals,_ssIsRt(t),_ssScale(t).max);}
 function _ssSetDate(v){if(v){_ssDate=v;render();}}
 function _ssSetViewDate(v){_ssViewDate=v||'';render();}
 function _ssSlotTime(el){if(!_ssCanSetup())return;var ss=_ssGet();var s=(ss.slots||[]).find(function(x){return x.id===el.dataset.id;});if(s){s.time=el.value.trim();_ssSave();}}
@@ -4015,8 +4055,37 @@ function _ssGridSet(el){if(!_ssCanSetup())return;var ss=_ssGet();var d=el.datase
 function _ssSlotAdd(){if(!_ssCanSetup())return;var ss=_ssGet();ss.slots.push({id:uid(),time:''});_ssSave();render();}
 function _ssSlotDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();var sid=btn.dataset.id;ss.slots=(ss.slots||[]).filter(function(x){return x.id!==sid;});_SS_DAYS.forEach(function(d){if(ss.grid[d])delete ss.grid[d][sid];});_ssSave();render();}
 var _ssTgtEditId='';var _ssNetEditId='';
-function _ssTargetModal(id){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}_ssTgtEditId=id||'';var ss=_ssGet();var t=id?(ss.targets||[]).find(function(x){return x.id===id;}):null;t=t||{};modal('<h3 style="margin-bottom:10px">'+(id?'Edit':'Add')+' school target (first trial)</h3><label>Target name<input id="sst-n" type="text" value="'+esc(t.name||'')+'"></label><label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2">'+esc(t.sd||'')+'</textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2">'+esc(t.r||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">'+(id?'Save':'Add')+'</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
-function _ssSaveTarget(){if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('sst-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}var sd=((document.getElementById('sst-sd')||{}).value||'').trim();var r=((document.getElementById('sst-r')||{}).value||'').trim();if(_ssTgtEditId){var t=(ss.targets||[]).find(function(x){return x.id===_ssTgtEditId;});if(t){t.name=nm;t.sd=sd;t.r=r;}}else{ss.targets.push({id:uid(),name:nm,sd:sd,r:r,status:'active',addedDate:_workDate(),addedKind:_workKind()});}_ssTgtEditId='';_ssSave();closeModal();render();}
+function _ssTopOpts(lo,cur){var a=lo===0?[1,2,3,4]:[2,3,4,5];return a.map(function(x){return '<option value="'+x+'"'+(x===cur?' selected':'')+'>'+x+'</option>';}).join('');}
+function _ssTypeChg(){var sl=document.getElementById('sst-type'),b=document.getElementById('sst-rt');if(sl&&b)b.style.display=sl.value==='rating'?'block':'none';_ssLabRows();}
+function _ssStartChg(){var lo=+document.getElementById('sst-lo').value,hi=document.getElementById('sst-hi');var cur=+hi.value;var mn=lo===0?1:2,mx=lo===0?4:5;hi.innerHTML=_ssTopOpts(lo,Math.min(Math.max(cur,mn),mx));_ssLabRows();}
+function _ssLabRows(){var el=document.getElementById('sst-labs');if(!el)return;var loE=document.getElementById('sst-lo'),hiE=document.getElementById('sst-hi');if(!loE||!hiE)return;var lo=+loE.value,hi=+hiE.value;var keep={};el.querySelectorAll('.sst-lab').forEach(function(i){keep[i.dataset.v]=i.value;});var h='';for(var v=lo;v<=hi;v++){var val=keep[v]!=null?keep[v]:((window._ssLabInit||{})[v]||'');h+='<div style="display:flex;gap:8px;align-items:center;margin-top:4px"><span style="width:20px;text-align:center;font-weight:700">'+v+'</span><input class="sst-lab" data-v="'+v+'" type="text" maxlength="60" value="'+esc(val)+'" placeholder="'+(v===0?'Required: what does 0 mean?':'Label (optional)')+'" style="flex:1"></div>';}el.innerHTML=h;}
+function _ssTargetModal(id){
+  if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}
+  _ssTgtEditId=id||'';var ss=_ssGet();var t=id?(ss.targets||[]).find(function(x){return x.id===id;}):null;t=t||{};
+  var rt=_ssIsRt(t),sc=_ssScale(t);window._ssLabInit=sc.labels||{};
+  var typ=id?'<div style="margin-top:8px;font-size:.84rem;color:#4b5563">Type: <strong>'+(rt?'Rating':'First trial')+'</strong> <span style="color:#94a0ae">(fixed once created)</span></div>':'<label style="margin-top:8px">Type<select id="sst-type" onchange="_ssTypeChg()"><option value="ft">First trial (C / P / −)</option><option value="rating">Rating</option></select></label>';
+  var scaleRow=id?('<div style="font-size:.84rem;color:#4b5563">Scale: <strong>'+sc.min+'–'+sc.max+'</strong> <span style="color:#94a0ae">(fixed once created; you can still change the labels)</span></div><input type="hidden" id="sst-lo" value="'+sc.min+'"><input type="hidden" id="sst-hi" value="'+sc.max+'">'):('<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><label style="margin:0;display:flex;align-items:center;gap:6px">Starts at <select id="sst-lo" onchange="_ssStartChg()" style="width:auto"><option value="1">1</option><option value="0">0</option></select></label><label style="margin:0;display:flex;align-items:center;gap:6px">Top number <select id="sst-hi" onchange="_ssLabRows()" style="width:auto">'+_ssTopOpts(1,5)+'</select></label></div>');
+  var rtBox='<div id="sst-rt" style="display:'+(rt?'block':'none')+';margin-top:8px">'+scaleRow+'<div style="font-size:.76rem;color:#8a6410;background:#fff4d6;border-radius:8px;padding:7px 10px;margin:8px 0;line-height:1.5">Blank = not recorded. N/A = not observed. Start at 0 only when 0 is a real result: its label is then required. Summaries treat a higher number as better.</div><div style="font-size:.78rem;color:var(--muted)">Label for each number (shown under the grid)</div><div id="sst-labs"></div></div>';
+  modal('<h3 style="margin-bottom:10px">'+(id?'Edit':'Add')+' school target</h3><label>Target name<input id="sst-n" type="text" value="'+esc(t.name||'')+'"></label>'+typ+rtBox+'<label style="margin-top:8px">SD (optional)<textarea id="sst-sd" rows="2">'+esc(t.sd||'')+'</textarea></label><label style="margin-top:8px">R (optional)<textarea id="sst-r" rows="2">'+esc(t.r||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveTarget()">'+(id?'Save':'Add')+'</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>',{tall:true});
+  _ssLabRows();
+}
+function _ssSaveTarget(){
+  if(!_ssCanSetup())return;var ss=_ssGet();var nm=((document.getElementById('sst-n')||{}).value||'').trim();if(!nm){toast('Enter a name');return;}
+  var sd=((document.getElementById('sst-sd')||{}).value||'').trim();var r=((document.getElementById('sst-r')||{}).value||'').trim();
+  var ex=_ssTgtEditId?(ss.targets||[]).find(function(x){return x.id===_ssTgtEditId;}):null;
+  if(_ssTgtEditId&&!ex){closeModal();toast('That target no longer exists.','error');return;}
+  var rt=ex?_ssIsRt(ex):((document.getElementById('sst-type')||{}).value==='rating');
+  var labels={},lo=1,hi=5;
+  if(rt){
+    lo=+((document.getElementById('sst-lo')||{}).value);hi=+((document.getElementById('sst-hi')||{}).value);
+    if(lo!==0)lo=1;if(!(hi>lo))hi=lo+1;if(hi-lo>4)hi=lo+4;
+    document.querySelectorAll('#sst-labs .sst-lab').forEach(function(i){var x=(i.value||'').trim();if(x)labels[i.dataset.v]=x;});
+    if(lo===0&&!labels['0']){toast('Add a label for 0 so everyone knows what it means.','error');return;}
+  }
+  if(ex){ex.name=nm;ex.sd=sd;ex.r=r;if(rt)ex.scale={min:lo,max:hi,labels:labels};}
+  else{var nt={id:uid(),name:nm,sd:sd,r:r,status:'active',addedDate:_workDate(),addedKind:_workKind()};if(rt){nt.kind='rating';nt.scale={min:lo,max:hi,labels:labels};}ss.targets.push(nt);}
+  _ssTgtEditId='';_ssSave();closeModal();render();
+}
 function _ssSetTargetStatus(btn){if(!_ssCanSetup())return;var ss=_ssGet();var t=(ss.targets||[]).find(function(x){return x.id===btn.dataset.id;});if(t){_ssStampStatus(t,btn.dataset.st);t.status=btn.dataset.st;}_ssSave();render();}
 function _ssTargetDel(btn){if(!_ssCanSetup())return;var ss=_ssGet();ss.targets=(ss.targets||[]).filter(function(t){return t.id!==btn.dataset.id;});_ssSave();render();}
 function _ssNetModal(id){if(!_ssCanSetup()){toast('Only admin/supervisor can edit setup.');return;}_ssNetEditId=id||'';var ss=_ssGet();var n=id?(ss.net||[]).find(function(x){return x.id===id;}):null;n=n||{};modal('<h3 style="margin-bottom:10px">'+(id?'Edit':'Add')+' NET target (% correct)</h3><label>Target name<input id="ssnt-n" type="text" value="'+esc(n.name||'')+'"></label><label style="margin-top:8px">SD<textarea id="ssnt-sd" rows="2">'+esc(n.sd||'')+'</textarea></label><label style="margin-top:8px">R<textarea id="ssnt-r" rows="2">'+esc(n.r||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-primary" onclick="_ssSaveNet()">'+(id?'Save':'Add')+'</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');}
@@ -4059,6 +4128,42 @@ function _ssBar(label,pct){
   var bg=pct>=80?'#C0DD97':pct>=50?'#FAC775':'#F09595';
   return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px"><span>'+esc(label)+'</span><span style="font-weight:700;color:'+col+'">'+pct+'%</span></div><div style="height:8px;background:#eef1f4;border-radius:4px;overflow:hidden"><div style="height:8px;width:'+pct+'%;background:'+bg+';border-radius:4px"></div></div></div>';
 }
+// v-CX: rating targets — average rating overall / by subject / by time of day (a higher number is treated as better)
+function _ssRtAgg(ss,t,inRange){
+  var slotById={};(ss.slots||[]).forEach(function(x){slotById[x.id]=x;});
+  var a={all:{s:0,n:0},subj:{},bucket:{Morning:{s:0,n:0},Lunch:{s:0,n:0},Afternoon:{s:0,n:0}},days:[]};
+  Object.keys(ss.log||{}).sort().forEach(function(d){
+    if(!inRange(d))return;var grid=(ss.grid&&ss.grid[_ssWeekday(d)])||{};var cells=((ss.log[d]||{}).cells)||{};var ds=0,dn=0;
+    Object.keys(cells).forEach(function(k){var v=cells[k];if(!/^\d+$/.test(v||''))return;var u=k.indexOf('_');if(u<0||k.slice(0,u)!==t.id)return;var sid=k.slice(u+1);var x=+v;
+      var add=function(o){o.s+=x;o.n++;};add(a.all);ds+=x;dn++;
+      var sj=grid[sid]||'';if(sj){if(!a.subj[sj])a.subj[sj]={s:0,n:0};add(a.subj[sj]);}
+      var sl=slotById[sid];if(sl&&sl.time)add(a.bucket[_ssBucket(sl.time)]);});
+    if(dn)a.days.push({date:d,y:Math.round(ds/dn*100)/100});
+  });
+  return a;
+}
+function _ssAvg(o){return o&&o.n?o.s/o.n:null;}
+function _ssAvgTxt(x){return x==null?'–':String(Math.round(x*10)/10);}
+function _ssRBar(label,avg,sc){var frac=sc.max>sc.min?Math.max(0,Math.min(1,(avg-sc.min)/(sc.max-sc.min))):0;return '<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px"><span>'+esc(label)+'</span><span style="font-weight:700;color:#1b5f86">'+_ssAvgTxt(avg)+' / '+sc.max+'</span></div><div style="height:8px;background:#eef1f4;border-radius:4px;overflow:hidden"><div style="height:8px;width:'+Math.round(frac*100)+'%;background:#9ccbe6;border-radius:4px"></div></div></div>';}
+function _ssRtBody(a,t,graphsOn){
+  var sc=_ssScale(t);
+  var sRows=Object.keys(a.subj).sort(function(x,y){return _ssAvg(a.subj[y])-_ssAvg(a.subj[x]);}).map(function(n){return _ssRBar(n,_ssAvg(a.subj[n]),sc);}).join('');
+  var bRows=['Morning','Lunch','Afternoon'].filter(function(b){return a.bucket[b].n>0;}).map(function(b){return _ssRBar(b,_ssAvg(a.bucket[b]),sc);}).join('');
+  var lo=null,lv=1e9;Object.keys(a.subj).forEach(function(n){var x=_ssAvg(a.subj[n]);if(x<lv){lv=x;lo=n;}});
+  var lb=null,lbv=1e9;['Morning','Lunch','Afternoon'].forEach(function(b){if(a.bucket[b].n>0){var x=_ssAvg(a.bucket[b]);if(x<lbv){lbv=x;lb=b;}}});
+  var ticks=[];for(var v=sc.min;v<=sc.max;v++)ticks.push(v);
+  var h='';
+  if(graphsOn&&a.days.length)h+=_svgChart(a.days,{min:sc.min,max:sc.max,ticks:ticks,color:'#1b6f9e'});
+  if(sRows||bRows)h+='<div style="-webkit-print-color-adjust:exact;print-color-adjust:exact;display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0;page-break-inside:avoid"><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject</div>'+(sRows||'<p style="color:#94a0ae">—</p>')+'</div><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day</div>'+(bRows||'<p style="color:#94a0ae">—</p>')+'</div></div>';
+  if(lo||lb)h+='<p style="-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#faeeda;border:1px solid #FAC775;border-radius:6px;padding:4px 10px;color:#633806">Lowest: '+(lo?'<strong>'+esc(lo)+' ('+_ssAvgTxt(lv)+' / '+sc.max+')</strong>':'')+(lo&&lb?' &amp; ':'')+(lb?'<strong>'+lb+' ('+_ssAvgTxt(lbv)+' / '+sc.max+')</strong>':'')+'</p>';
+  h+='<p style="font-size:.72rem;color:#6b7280;margin:4px 0 0">Scale: '+esc(_ssKeyTxt(t))+'</p>';
+  return h;
+}
+function _ssRtBlock(ss,t,inRange,graphsOn){
+  var sc=_ssScale(t),a=_ssRtAgg(ss,t,inRange);
+  if(!a.all.n)return '<div style="margin:6px 0;font-size:.85rem"><strong>'+esc(t.name)+'</strong> — <span style="color:#6b7280">no data in range</span></div>';
+  return '<div style="margin:8px 0"><div style="font-weight:600;font-size:.86rem;margin-bottom:3px">'+esc(t.name)+' <span style="color:#1f8ec4">— average '+_ssAvgTxt(_ssAvg(a.all))+' / '+sc.max+'</span></div>'+_ssRtBody(a,t,graphsOn)+'</div>';
+}
 function _ssReportSummary(ss,fromD,toD,graphsOn){
   if(!ss)return '';
   var targets=(ss.targets||[]).filter(function(t){return (t.status||'active')==='active';});
@@ -4080,6 +4185,7 @@ function _ssReportSummary(ss,fromD,toD,graphsOn){
     });
   });
   var ftHtml=targets.map(function(t){
+    if(_ssIsRt(t))return '';
     var a=agg[t.id];
     if(!a||a.overall.op===0)return '<div style="margin:6px 0;font-size:.85rem"><strong>'+esc(t.name)+'</strong> \u2014 <span style="color:#6b7280">no data in range</span></div>';
     var ov=_ssPctOf(a.overall);
@@ -4095,20 +4201,22 @@ function _ssReportSummary(ss,fromD,toD,graphsOn){
     var g=graphsOn?('<div style="margin:2px 0 6px">'+_svgChart(pts,{min:0,max:100,ticks:[0,50,100],suffix:'%',mastery:80,color:'#1f8ec4'})+'</div>'):'';
     return '<div style="margin:8px 0"><div style="font-weight:600;font-size:.86rem">'+esc(nn.name)+' (NET) <span style="color:#1f8ec4">\u2014 latest '+last+'%</span></div>'+g+'</div>';
   }).join('');
-  if(!ftHtml&&!netHtml)return '';
+  var rtHtml=targets.filter(_ssIsRt).map(function(t){return _ssRtBlock(ss,t,inRange,graphsOn);}).join('');
+  if(!ftHtml&&!netHtml&&!rtHtml)return '';
   var out='';
   if(ftHtml)out+='<p style="margin:6px 0 2px;font-weight:700;color:#234b63">School targets (first-trial, % independent by subject)</p>'+ftHtml;
+  if(rtHtml)out+='<p style="margin:10px 0 2px;font-weight:700;color:#234b63">School targets (rating, average by subject)</p>'+rtHtml;
   if(netHtml)out+='<p style="margin:10px 0 2px;font-weight:700;color:#234b63">NET targets (% correct)</p>'+netHtml;
   return out;
 }
 // School Shadow checklist (v-BK): school + NET targets × recorded school days (last 30, newest on the right). Read-only.
 function _ssChecklist(ss){
   var log=ss.log||{},nlog=ss.netLog||{},dates={};
-  Object.keys(log).forEach(function(d){var cl=(log[d]||{}).cells||{};if(Object.keys(cl).some(function(k){var v=cl[k];return v==='C'||v==='P'||v==='-';}))dates[d]=1;});
+  Object.keys(log).forEach(function(d){var cl=(log[d]||{}).cells||{};if(Object.keys(cl).some(function(k){var v=cl[k];return _ssIsData(v);}))dates[d]=1;});
   Object.keys(nlog).forEach(function(d){var dt=(nlog[d]||{}).data||{};if(Object.keys(dt).length)dates[d]=1;});
   var cols=Object.keys(dates).sort().slice(-30);
-  var cnt=function(t,d){var cl=(log[d]||{}).cells||{},n={C:0,P:0,'-':0};Object.keys(cl).forEach(function(k){if(k.indexOf(t.id+'_')===0&&n[cl[k]]!=null)n[cl[k]]++;});return n;};
-  var hasT=function(t){return cols.some(function(d){var n=cnt(t,d);return n.C+n.P+n['-']>0;});};
+  var cnt=function(t,d){var cl=(log[d]||{}).cells||{},n={C:0,P:0,'-':0,R:[]};Object.keys(cl).forEach(function(k){if(k.indexOf(t.id+'_')!==0)return;var v=cl[k];if(v==='C'||v==='P'||v==='-')n[v]++;else if(/^\d+$/.test(v||''))n.R.push(+v);});return n;};
+  var hasT=function(t){return cols.some(function(d){var n=cnt(t,d);return n.C+n.P+n['-']+n.R.length>0;});};
   var hasN=function(nt){return cols.some(function(d){return !!(((nlog[d]||{}).data||{})[nt.id]);});};
   var tg=(ss.targets||[]).filter(function(t){return (t.status||'active')==='active'||hasT(t);});
   var net=(ss.net||[]).filter(function(t){return (t.status||'active')==='active'||hasN(t);});
@@ -4119,9 +4227,9 @@ function _ssChecklist(ss){
   var sec=function(label){return '<tr><td style="background:#eef1f4;font-size:.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;padding:5px 10px;position:sticky;left:0;z-index:2">'+label+'</td><td colspan="'+cols.length+'" style="background:#eef1f4"></td></tr>';};
   var name=function(t,bg){return '<td style="padding:7px 10px;font-size:.87rem;background:'+bg+';border-right:2px solid #b8dcef;position:sticky;left:0;z-index:2;min-width:150px">'+esc(t.name)+((t.status||'active')!=='active'?' <span style="font-size:.72rem;color:var(--muted)">(retired)</span>':'')+'</td>';};
   var rows='';
-  if(tg.length){rows+=sec('School targets');tg.forEach(function(t,i){var bg=i%2?'#ffffff':'#f0faed';rows+='<tr>'+name(t,bg)+cols.map(function(d){var n=cnt(t,d),tot=n.C+n.P+n['-'];return cell(tot>0,tot?('C '+n.C+' · P '+n.P+' · − '+n['-']):'',bg);}).join('')+'</tr>';});}
+  if(tg.length){rows+=sec('School targets');tg.forEach(function(t,i){var bg=i%2?'#ffffff':'#f0faed';rows+='<tr>'+name(t,bg)+cols.map(function(d){var n=cnt(t,d),tot=n.C+n.P+n['-']+n.R.length;var avg=n.R.length?n.R.reduce(function(x,y){return x+y;},0)/n.R.length:null;return cell(tot>0,tot?(_ssIsRt(t)?('Average '+_ssAvgTxt(avg)+' / '+_ssScale(t).max+' ('+n.R.length+' rated)'):('C '+n.C+' · P '+n.P+' · − '+n['-'])):'',bg);}).join('')+'</tr>';});}
   if(net.length){rows+=sec('NET targets');net.forEach(function(nt,i){var bg=i%2?'#ffffff':'#f0faed';rows+='<tr>'+name(nt,bg)+cols.map(function(d){var v=((nlog[d]||{}).data||{})[nt.id];return cell(!!v,v?(v.pct+'% ('+v.c+'/'+v.t+')'):'',bg);}).join('')+'</tr>';});}
-  return '<div class="card">'+head+'<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+hdr+rows+'</table></div><p style="font-size:.72rem;color:var(--muted);margin:6px 0 0">✓ = recorded that day (hover or long-press a tick for C / P / − counts or NET %). Last 30 school days, newest on the right.</p></div>';
+  return '<div class="card">'+head+'<div class="scroll-newest" style="overflow-x:auto"><table style="border-collapse:collapse;width:auto;min-width:100%">'+hdr+rows+'</table></div><p style="font-size:.72rem;color:var(--muted);margin:6px 0 0">✓ = recorded that day (hover or long-press a tick for C / P / − counts, the average rating or NET %). Last 30 school days, newest on the right.</p></div>';
 }
 // ── School Shadow merge, piece by piece (v-BL) ──
 // School Shadow used to merge as ONE block: a therapist saving the daily log and a supervisor editing
@@ -4409,9 +4517,10 @@ function _ssMonthlyOverview(ss){
     var hardest=(hSubj||hBk)?'<div style="background:#faeeda;border:1px solid #FAC775;border-radius:6px;padding:6px 10px;font-size:.8rem;color:#633806;margin-top:8px">Hardest: '+(hSubj?'<b>'+esc(hSubj)+' ('+hs+'%)</b>':'')+(hSubj&&hBk?' &amp; ':'')+(hBk?'<b>'+hBk+' ('+hb+'%)</b>':'')+'</div>':'';
     return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:10px"><div style="font-weight:700;font-size:.9rem;margin-bottom:8px">'+esc(t.name)+' <span style="color:#1f8ec4">— '+ov+'%</span></div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px"><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By subject</div>'+subjRows+'</div><div><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;color:#94a0ae;margin-bottom:6px">By time of day</div>'+bkRows+'</div></div>'+hardest+'</div>';
   }).join('');
-  if(!diff)diff='<p style="font-size:.85rem;color:var(--muted)">No school-shadow data recorded for this month.</p>';
+  var rdiff=targets.filter(_ssIsRt).map(function(t){var a=_ssRtAgg(ss,t,function(d){return d.slice(0,7)===mon;});if(!a.all.n)return '';return '<div style="border:1px solid #e6e9ee;border-radius:8px;padding:10px 12px;margin-bottom:10px"><div style="font-weight:700;font-size:.9rem;margin-bottom:8px">'+esc(t.name)+' <span style="color:#1f8ec4">— average '+_ssAvgTxt(_ssAvg(a.all))+' / '+_ssScale(t).max+'</span></div>'+_ssRtBody(a,t,false)+'</div>';}).join('');
+  if(!diff&&!rdiff)diff='<p style="font-size:.85rem;color:var(--muted)">No school-shadow data recorded for this month.</p>';
   return '<div class="card"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div class="section-title" style="flex:1;margin:0">📊 Monthly overview</div><input type="month" value="'+mon+'" onchange="_ssSetMonth(this.value)" style="width:auto"></div>'
-    +'<div class="section-title" style="font-size:.8rem">First-trial difficulty</div>'+diff
+    +(diff?'<div class="section-title" style="font-size:.8rem">First-trial difficulty</div>'+diff:'')+(rdiff?'<div class="section-title" style="font-size:.8rem">Ratings — average</div>'+rdiff:'')
     +'</div>';
 }
 function renderSchoolShadowTab(){
@@ -4438,11 +4547,11 @@ function renderSchoolShadowTab(){
     if(!slots.length)rows='<p style="font-size:.8rem;color:var(--muted);margin:4px 0">No periods yet — add a time row.</p>';
     var _ssStBadge=function(st){return st==='mastered'?'<span style="background:#e2f2df;color:#2f6b2c;border-radius:4px;padding:0 6px;font-size:.66rem;font-weight:700">MASTERED</span>':st==='on_hold'?'<span style="background:#fbeecb;color:#8a6410;border-radius:4px;padding:0 6px;font-size:.66rem;font-weight:700">ON HOLD</span>':'';};
     var _ssBtns=function(id,st,editFn,statFn,delFn){var b='<button type="button" title="Edit" data-id="'+id+'" onclick="'+editFn+'(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.85rem">✏</button>';if((st||'active')==='active'){b+='<button type="button" title="Mastered" data-id="'+id+'" data-st="mastered" onclick="'+statFn+'(this)" style="color:#2f6b2c;background:none;border:none;cursor:pointer;font-size:.85rem">✓</button><button type="button" title="Hold" data-id="'+id+'" data-st="on_hold" onclick="'+statFn+'(this)" style="color:#8a6410;background:none;border:none;cursor:pointer;font-size:.85rem">⏸</button>';}else{b+='<button type="button" title="Reactivate" data-id="'+id+'" data-st="active" onclick="'+statFn+'(this)" style="color:#1f8ec4;background:none;border:none;cursor:pointer;font-size:.85rem">↺</button>';}b+='<button type="button" title="Delete" data-id="'+id+'" onclick="'+delFn+'(this)" style="color:#a3392b;background:none;border:none;cursor:pointer;font-size:.85rem">✕</button>';return b;};
-    var tgtChips=targets.map(function(t){var st=t.status||'active';return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem">'+esc(t.name)+'</span>'+_ssStBadge(st)+_ssBtns(t.id,st,'_ssTargetModal','_ssSetTargetStatus','_ssTargetDel')+'</div>';}).join('');
+    var tgtChips=targets.map(function(t){var st=t.status||'active';return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem">'+esc(t.name)+'</span>'+_ssRtTag(t)+_ssStBadge(st)+_ssBtns(t.id,st,'_ssTargetModal','_ssSetTargetStatus','_ssTargetDel')+'</div>';}).join('');
     var netChips=(ss.net||[]).map(function(nn){var st=nn.status||'active';return '<div style="display:flex;align-items:center;gap:6px;background:#f5f6f8;border:1px solid #eef1f4;border-radius:6px;padding:4px 10px;margin-bottom:6px"><span style="flex:1;font-size:.85rem"><b>'+esc(nn.name)+'</b>'+(nn.sd?'<span style="color:#6b7280"> · SD: '+esc(nn.sd)+'</span>':'')+'</span>'+_ssStBadge(st)+_ssBtns(nn.id,st,'_ssNetModal','_ssSetNetStatus','_ssNetDel')+'</div>';}).join('');
     h+='<details class="card"'+(_ssSetupOpen?' open':'')+' ontoggle="_ssSetupOpen=this.open"><summary style="cursor:pointer;font-weight:700;font-size:.9rem">⚙ Timetable &amp; targets setup</summary>'
       +'<div style="margin-top:10px"><div class="section-title">Weekly timetable</div><div style="overflow-x:auto"><div style="min-width:620px">'+ttHead+rows+'</div></div><button type="button" class="btn btn-xs btn-outline" style="margin-top:4px" onclick="_ssSlotAdd()">+ Add time row</button><p style="font-size:.72rem;color:var(--muted);margin-top:6px">Enter the time once on the left, then type each day’s subject. Blank = no class that period. Rows sort by time; morning/lunch/afternoon set from the time.</p></div>'
-      +'<div style="margin-top:14px"><div class="section-title">School targets (first trial)</div>'+(tgtChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssTargetModal()">+ Add target</button></div>'
+      +'<div style="margin-top:14px"><div class="section-title">School targets (first trial or rating)</div>'+(tgtChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssTargetModal()">+ Add target</button></div>'
       +'<div style="margin-top:14px"><div class="section-title">NET targets (% correct)</div>'+(netChips||'<p style="font-size:.8rem;color:var(--muted);margin-bottom:6px">No NET targets yet.</p>')+'<button type="button" class="btn btn-xs btn-outline" onclick="_ssNetModal()">+ Add NET target</button></div>'
       +'</details>';
   }
@@ -4459,19 +4568,20 @@ function renderSchoolShadowTab(){
   if(!dTargets.length){h+='<p style="color:var(--muted);font-size:.85rem">'+(targets.length?'No active targets — all mastered or on hold.':'No school targets yet.'+(canSetup?' Add them in setup above.':''))+'</p>';}
   else if(!periods.length){h+='<p style="color:var(--muted);font-size:.85rem">No timetable for '+(_SS_DAYLABEL[wd]||wd)+' yet.'+(canSetup?' Add it in setup above.':'')+'</p>';}
   else{
-    const gtc='1.5fr repeat('+dTargets.length+',minmax(150px,1fr))';
-    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+dTargets.map(function(t){return '<span style="text-align:center;white-space:normal;word-break:break-word;line-height:1.2" title="'+esc(t.name)+'">'+esc(t.name)+'</span>';}).join('')+'</div>';
+    const gtc='1.5fr repeat('+dTargets.length+',minmax(125px,1fr))';
+    var head='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#eef6fb;padding:7px 8px;font-size:.72rem;font-weight:700;color:#234b63;border-radius:6px 6px 0 0"><span>Period</span>'+dTargets.map(_ssHeadCell).join('')+'</div>';
     var lastB='';var body='';
-    periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=dTargets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong style="color:#1f2733">'+esc(pp.time||'')+'</strong> <span style="color:#4b5563">'+esc(pp.subject||'')+'</span></span>'+cc+'</div>';});
-    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem" title="Independent (C) ÷ opportunities (C + P + −). N/A is not counted.">Daily % <span style="color:#94a0ae;font-weight:400">ⓘ</span></span>'+dTargets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t.id,periods)+'</span>';}).join('')+'</div>';
-    h+='<div style="overflow-x:auto"><div id="ss-grid" style="min-width:'+(170+dTargets.length*155)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
+    periods.forEach(function(pp){var b=_ssBucket(pp.time);if(b!==lastB){body+='<div style="background:#fafbfc;padding:3px 8px;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#94a0ae;border-top:1px solid #eef1f4;border-bottom:1px solid #eef1f4">'+b+'</div>';lastB=b;}var cc=dTargets.map(function(t){return _ssCellHtml(t.id,pp.id,cells[t.id+'_'+pp.id]||'',active,t);}).join('');body+='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;align-items:center;padding:4px 8px;border-bottom:1px solid #f2f4f6"><span style="font-size:.78rem"><strong style="color:#1f2733">'+esc(pp.time||'')+'</strong> <span style="color:#4b5563">'+esc(pp.subject||'')+'</span></span>'+cc+'</div>';});
+    var pctRow='<div style="display:grid;grid-template-columns:'+gtc+';gap:5px;background:#f5f6f8;padding:7px 8px;font-weight:700;border-radius:0 0 6px 6px"><span style="font-size:.78rem" title="Independent (C) ÷ opportunities (C + P + −). N/A is not counted.">Daily % <span style="color:#94a0ae;font-weight:400">ⓘ</span></span>'+dTargets.map(function(t){return '<span class="ss-pct" data-t="'+t.id+'" style="text-align:center;font-size:.82rem;color:#1f8ec4">'+_ssPct(cells,t,periods)+'</span>';}).join('')+'</div>';
+    h+='<div style="overflow-x:auto"><div id="ss-grid" style="min-width:'+(170+dTargets.length*130)+'px;border:1px solid #e6e9ee;border-radius:8px;overflow:hidden">'+head+body+pctRow+'</div></div>'
       +'<div style="margin-top:8px"><div style="display:flex;gap:12px 18px;font-size:.74rem;color:#4b5563;flex-wrap:wrap;align-items:center">'
         +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#e2f2df;color:#2f6b2c;border:1px solid #9fce97">C</span>independent</span>'
         +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#fbeecb;color:#8a6410;border:1px solid #e8c14e">P</span>shadow support</span>'
         +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:20px;border-radius:4px;font-weight:700;font-size:.72rem;background:#fbe0da;color:#b23a2a;border:1px solid #e6b3aa">−</span>did not perform</span>'
         +'<span style="display:inline-flex;align-items:center;gap:6px"><span style="display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:20px;border-radius:4px;font-weight:700;font-size:.66rem;background:#eef1f4;color:#6b7280;border:1px solid #d5dae1">N/A</span>no opportunity</span>'
       +'</div>'
-      +'<div style="font-size:.72rem;color:#6b7280;margin-top:6px"><b style="color:#1f8ec4">Daily %</b> = independent (C) ÷ opportunities (C + P + −). N/A doesn’t count.</div></div>';
+      +_ssRtLegend(dTargets)
+      +'<div style="font-size:.72rem;color:#6b7280;margin-top:6px"><b style="color:#1f8ec4">Daily %</b> = independent (C) ÷ opportunities (C + P + −). N/A doesn’t count. Rating targets show the average rating instead (blank and N/A don’t count).</div>'+(active?'<div class="no-print" style="font-size:.72rem;color:#6b7280;margin-top:4px">Tap a box to change it, and keep tapping to go round: blank → C → P → − → N/A → blank. Rating boxes go blank → numbers → N/A → blank.</div>':'')+'</div>';
     if(active)h+='<button type="button" class="btn btn-primary" style="margin-top:10px" onclick="_ssSaveAll()">Save day</button>';
   }
   h+='</div>';
