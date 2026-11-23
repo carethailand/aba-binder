@@ -191,3 +191,16 @@ Build plan: allow `_ssCanRecord` for supervisor/director when a session on this 
 - [x] Smaller session banner + phone top bar (v2026-11-22-CT): compact sizes, supervisor banner one row on wide screens, logo no longer covers the Clients button on phone (Admin/Password/Update shown as icons).
 - [ ] Open (Songg 22 Nov): (1) client list on phone/PC feels busy - redesign proposal pending (compact cards, fewer details); (2) 'hide target edit for School Shadow when logged in as supervisor' - clarify where it still shows (in a therapist-style session all target edit controls are already hidden).
 - [x] Calmer client list + client page (v2026-11-22-CU): one-line rows with search, grouped by supervisor (side by side on wide screens); client page header = name + diagnosis + a ⋯ menu (Change supervisor / Give cover / Archive), quiet info line, compact graph-month control, repeated yellow notice removed. DOB no longer shown on the list.
+
+## Notes: edit / delete audit (23 Nov 2026 - requested by Songg, not built yet)
+Where notes live and what can be done today (all edit/delete need an active session or supervision visit via `requireActiveSession`):
+- Sup Notes tab (`c.notes`): add yes, edit yes (supervisor/director), DELETE MISSING.
+- Lesson general notes (`l.supNotes`, saved by position, no ids): add yes, edit yes (supervisor/director), DELETE MISSING.
+- Target-set notes (`sd.notes`): add yes (one per person per day, re-saving overwrites), edit no, delete yes (supervisor/director).
+- Behavior notes (`c.behaviorNotes`): add (sup), edit MISSING, delete yes (sup).
+- Team notes (`c.commNotes`): add (therapists), edit MISSING, delete yes (author, supervisor/director/admin).
+- School Shadow observation notes (`ss.notes`): add (sup/director/admin), edit MISSING, delete yes (asks first).
+- School Shadow target notes, subject notes, recommendations: edit + delete exist.
+- Session notes / parent note: editable via Edit last session.
+Plan: add the missing delete/edit, confirm before every delete (shows the note), saves confirmed with plain failure messages, allow tidy-up without starting a visit for people allowed to edit that case, give lesson/target-set notes ids (delete by id, never by position). Awaiting Songg's answers on who may edit/delete.
+- [x] Notes edit/delete built (v2026-11-23-CV) per Songg's answers (supervisors/directors any note on cases they can edit, therapists own; no visit needed for edit/delete; confirm before delete, permanent). Added: delete for Sup Notes + lesson General Notes; edit for behavior notes, team notes, target-set notes, School Shadow observation notes; behavior/team delete buttons now work without a running session.

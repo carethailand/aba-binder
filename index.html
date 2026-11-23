@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-22-CU -->
+<!-- BUILD v2026-11-23-CV -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-22-CU</title>
+<title>CARE Client Binder v2026-11-23-CV</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -454,6 +454,12 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 .ch-pop button:first-child{border-top:none;}
 .ch-pop button:hover{background:#f5f6f8;}
 .ch-n{font-size:.7rem;background:#e3f3df;color:#2f6b2c;border-radius:6px;padding:1px 7px;margin-left:6px;}
+
+/* ── Note edit / delete buttons (v-CV) ── */
+.note-btns{float:right;white-space:nowrap;}
+.nb{background:none;border:none;cursor:pointer;font-size:.8rem;padding:0 4px;line-height:1;}
+.nb-del{color:#a3392b;}
+.note-ed{font-size:.68rem;color:var(--muted);}
 </style>
 </head>
 <body>
@@ -490,10 +496,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-22-CU';
+const APP_VERSION='v2026-11-23-CV';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-23-CV',date:'23 Nov 2026',added:'Edit and delete for notes everywhere they were missing. Sup Notes and lesson General Notes can now be deleted; behavior notes, team notes, target-set notes and School Shadow observation notes can now be edited. Every delete first shows the note and asks. Supervisors and directors can tidy any note on the cases they can edit, and therapists their own notes, without starting a visit or session first.',improved:'Changing or removing a note now works on the latest saved copy, so it can no longer wipe out a note someone else added at the same time, and it only changes the screen after it is saved. If it cannot save, a plain message says nothing was changed.',fixed:'The delete buttons on behavior notes and team notes did nothing unless a session was running.'},
   {version:'v2026-11-22-CU',date:'22 Nov 2026',added:'A search box on the client list.',improved:'A calmer client list: one tidy line per case (name, diagnosis, flags, last session) grouped by supervisor, with two supervisors side by side on a wide screen. A calmer client page: the header is one line with a small menu (Change supervisor, Give cover, Archive), a quiet info line (supervisor and last session), a smaller graph-month control, and the repeated yellow notice is gone.',fixed:''},
   {version:'v2026-11-22-CT',date:'22 Nov 2026',added:'',improved:'The session banner is smaller and tidier (on a wide screen the supervisor banner now fits in one row). On a phone the top bar no longer lets the logo cover the Clients button: the logo is smaller and Admin, Password and Update show as icons.',fixed:''},
   {version:'v2026-11-22-CS',date:'22 Nov 2026',added:'',improved:'The session banner (not started / in progress, for therapists and supervisors) has a new tidy layout: equal-sized blocks that fill the width, the same order everywhere, one setting badge, and a clear phone and iPad layout. For supervisors, the banner now has two clear groups: Supervise, and Cover as therapist (with its 1:1 | Shadow switch). While a supervisor is acting as a therapist, the School Shadow timetable and targets setup and the observation-note box are hidden, so they see what a therapist sees.',fixed:'The in-progress banner no longer wraps awkwardly on PC, iPad and phone, and no longer shows the School Shadow badge twice.'},
@@ -3236,6 +3243,7 @@ function setTab(t){
   selectedTab=t;render();
 }
 function render(){
+  _nreg=[]; // v-CV: note edit/delete buttons are registered while drawing
   // B2: Capture which lesson cards are open before re-render
   const _openLids=new Set();
   document.querySelectorAll('details.lesson-card[open]').forEach(d=>{if(d.dataset.lid)_openLids.add(d.dataset.lid);});
@@ -4409,7 +4417,7 @@ function renderSchoolShadowTab(){
   let h='<div class="ss-tab"><h3 style="margin-bottom:12px">🏫 School Shadow — '+esc(c.name)+'</h3>';
   var _canSSNote=['admin','supervisor','director'].includes(currentUser.role)&&!_ssTxMode();
   var _ssNotes=(ss.notes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  var _ssNoteCards=_ssNotes.length?_ssScrollBox(_ssNotes.map(function(nn){return '<div style="border-bottom:1px solid #eef1f4;padding:8px 0 6px;font-size:.83rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="flex:1;font-size:.74rem;color:#6b7280"><strong style="color:#1f2733">'+_drFmtD(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+'</span>'+(_canSSNote?'<button type="button" class="no-print" title="Delete note" data-id="'+nn.id+'" onclick="_ssDelNoteAsk(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#a3392b">🗑</button>':'')+'</div><div style="line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join('')):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
+  var _ssNoteCards=_ssNotes.length?_ssScrollBox(_ssNotes.map(function(nn){return '<div style="border-bottom:1px solid #eef1f4;padding:8px 0 6px;font-size:.83rem"><div style="display:flex;align-items:center;gap:6px;margin-bottom:3px"><span style="flex:1;font-size:.74rem;color:#6b7280"><strong style="color:#1f2733">'+_drFmtD(nn.date)+'</strong> · '+esc((nn.author||'').split(' ')[0])+(nn.role?' ('+esc(nn.role)+')':'')+'</span>'+(_canSSNote?'<button type="button" class="no-print" title="Edit note" data-id="'+nn.id+'" onclick="_ssNoteEdit(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.8rem">✏</button><button type="button" class="no-print" title="Delete note" data-id="'+nn.id+'" onclick="_ssDelNoteAsk(this.dataset.id)" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:#a3392b">🗑</button>':'')+'</div><div style="line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join('')):'<p style="font-size:.8rem;color:var(--muted);margin:0 0 6px">No observation notes yet.</p>';
   var _ssNoteAdd=_canSSNote?'<div style="display:flex;gap:6px;align-items:flex-start;margin-top:6px"><textarea id="ssn-note-in" rows="2" placeholder="Overlap overview / recommendations for the team..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="_ssAddNote()">Add</button></div>':'';
   h+='<div class="card"><div class="section-title">📝 Supervisor observation notes</div>'+_ssNoteCards+_ssNoteAdd+'</div>';
   h+=_ssRecsCard(ss)+_ssSubjCard(ss);
@@ -5534,7 +5542,7 @@ function renderLessonCard(lesson){
   const _lstar=_isStarred(lesson.id);const _canStar=['supervisor','director'].includes(currentUser.role);
   const _starBtn=_canStar?('<button class="btn btn-xs no-print unlock-exempt" title="'+(_lstar?'Remove priority':'Mark as priority for TX')+'" style="background:none;border:none;font-size:1.15rem;line-height:1;cursor:pointer;padding:0 2px;color:'+(_lstar?'#e6a71f':'#c8cfd6')+'" onclick="event.stopPropagation();toggleStarLesson(\''+lesson.id+'\')">'+(_lstar?'★':'☆')+'</button>'):(_lstar?'<span style="font-size:1.1rem;color:#e6a71f;padding:0 2px">★</span>':'');
   const phaseBannerHtml='<div class="phase-banner phase-'+phase+'">'+(phase==='acquisition'?'📖 ACQUISITION':phase==='dt'?'🔀 DT — '+(lesson.dtType||'').toUpperCase()+(lesson.dtStepIndex!=null?' | Step '+((lesson.dtStepIndex||0)+1)+': '+((lesson.dtType==='successive'?DT_SUCCESSIVE:DT_SIMULTANEOUS)[lesson.dtStepIndex||0]||''):''):phase==='archived'?'🗄 ARCHIVED':'✅ MAINTENANCE — '+esc(lesson.maintenanceSchedule||''))+'</div>';
-  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+(['supervisor','director'].includes(currentUser.role)?'<button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editLessonSupNote(\''+lesson.id+'\','+ni+')">\u270F edit</button>':'')+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
+  const supNotesHtml=lesson.supNotes&&lesson.supNotes.length?lesson.supNotes.map((n,ni)=>'<div class="note-entry sup-note"><div class="note-meta" style="display:flex;justify-content:space-between;align-items:center;gap:8px"><span>'+n.date+'</span>'+_noteBtns('lsn',n,{lid:lesson.id,idx:ni})+'</div><div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join(''):'<p style="font-size:.82rem;color:var(--muted)">No notes.</p>';
 
 
   const sdsHtml=_orderedSDs(lesson.sds).map(function(_p){const sd=_sdSess(_p[0]),si=_p[1]; // Stimuli checklist targets live in the Stimuli Checklist tab
@@ -5615,7 +5623,7 @@ function renderLessonCard(lesson){
     if(_sdNotes.length){
       sdNotesHtml+=_sdNotes.slice().reverse().map(function(n,ni){
         const _realIdx=_sdNotes.length-1-ni;
-        const _delBtn=_isSup?'<button class="btn btn-xs no-print" style="padding:0 5px;font-size:.68rem;background:#fbe0da;color:#a3392b;border:none;border-radius:3px;cursor:pointer" onclick="deleteSDNote(\''+lesson.id+'\',\''+sd.id+'\','+_realIdx+')">&#x2715;</button>':'';
+        const _delBtn=_noteBtns('sd',n,{lid:lesson.id,sid:sd.id,idx:_realIdx});
         return '<div style="margin-bottom:6px;padding:6px 10px;background:#fdf8ee;border-left:3px solid #e8c14e;border-radius:0 6px 6px 0">'
           +'<div style="font-size:.7rem;color:#8a6410;font-weight:600;margin-bottom:3px;display:flex;justify-content:space-between">'
           +'<span>'+esc(n.date)+(n.authorName?' &middot; '+esc(n.authorName.split(' ')[0]):'')+'</span>'+_delBtn
@@ -5679,6 +5687,116 @@ function toggleStarLesson(lid){
   if(c.starred[lid]){delete c.starred[lid];}else{c.starred[lid]=true;}
   sbSaveClient(c);render();
 }
+// ── NOTES: edit / delete everywhere (v-CV) ──
+// Notes are changed on the LATEST saved copy (re-read first), so another person's new note is never lost, and the screen changes only after the save worked.
+var _nreg=[],_nx=null;
+function _noteOwn(n){var u=currentUser;if(!u||!n)return false;return !!((n.authorId&&n.authorId===u.id)||(n.author&&(n.author===u.id||n.author===u.name))||(n.authorName&&n.authorName===u.name));}
+// supervisors/directors: any note on a case they can edit; therapists: their own notes; admin may also delete team notes (as before)
+function _noteCan(n,kind,action){
+  var r=currentUser&&currentUser.role;if(!r)return false;
+  if(kind==='comm'&&action==='del'&&r==='admin')return true;
+  if(['supervisor','director'].includes(r))return !_coverSupLimited()&&!isViewOnly();
+  if(['junior','senior','qcd'].includes(r))return !isViewOnly()&&_noteOwn(n);
+  return false;
+}
+function _nFind(list,r){
+  if(r.id){var i=list.findIndex(function(x){return x&&x.id===r.id;});if(i>=0)return i;}
+  var best=-1,bd=1e9;
+  list.forEach(function(x,k){if(x&&(x.date||'')===r.d&&((x.text||'').trim())===r.t){var dd=Math.abs(k-(r.idx==null?0:r.idx));if(dd<bd){bd=dd;best=k;}}});
+  return best;
+}
+function _noteList(r){
+  var c=DB.clients.find(function(x){return x.id===(r.ctx&&r.ctx.cid);})||{};
+  if(r.kind==='gen')return c.notes||[];
+  if(r.kind==='beh')return c.behaviorNotes||[];
+  if(r.kind==='comm')return c.commNotes||[];
+  var l=DB.lessons.find(function(x){return x.id===(r.ctx&&r.ctx.lid);});if(!l)return [];
+  if(r.kind==='lsn')return l.supNotes||[];
+  if(r.kind==='sd'){var sd=(l.sds||[]).find(function(x){return x.id===r.ctx.sid;});return sd?(sd.notes||[]):[];}
+  return [];
+}
+function _noteCur(r){var l=_noteList(r),i=_nFind(l,r);return i<0?null:(l[i].text||'');}
+function _noteBtns(kind,n,ctx){
+  var ce=_noteCan(n,kind,'edit'),cd=_noteCan(n,kind,'del');if(!ce&&!cd)return '';
+  ctx=ctx||{};if(!ctx.cid)ctx.cid=selectedClientId;
+  var i=_nreg.push({kind:kind,ctx:ctx,id:n.id||'',d:n.date||'',t:(n.text||'').trim(),idx:ctx.idx,own:{authorId:n.authorId,author:n.author,authorName:n.authorName}})-1;
+  return '<span class="note-btns no-print">'+(ce?'<button type="button" class="nb unlock-exempt" title="Edit note" onclick="_noteEdit('+i+')">✏</button>':'')+(cd?'<button type="button" class="nb nb-del unlock-exempt" title="Delete note" onclick="_noteDel('+i+')">🗑</button>':'')+'</span>';
+}
+function _noteEdit(i){
+  var r=_nreg[i];if(!r)return;var cur=_noteCur(r);
+  if(cur===null){toast('That note is no longer here.','error');render();return;}
+  _nx={r:r};
+  modal('<div style="width:100%;max-width:460px"><h3 style="margin-bottom:10px">Edit note</h3><textarea id="nx-t" rows="5" style="width:100%">'+esc(cur)+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="_noteSaveEdit()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+async function _noteSaveEdit(){
+  var r=_nx&&_nx.r;if(!r)return;var el=document.getElementById('nx-t');var txt=el?el.value.trim():'';
+  if(!txt){toast("A note can't be empty. Use Delete to remove it.",'error');return;}
+  _noteDone(await _noteApply(r,'edit',txt),'Note updated ✓','save the change');
+}
+function _noteDel(i){
+  var r=_nreg[i];if(!r)return;var cur=_noteCur(r);
+  if(cur===null){toast('That note is no longer here.','error');render();return;}
+  _nx={r:r};
+  var shown=cur.length>300?cur.slice(0,300)+'…':cur;
+  modal('<div style="width:100%;max-width:460px"><h3 style="margin-bottom:8px">Delete this note?</h3><div style="background:#f5f6f8;border-radius:8px;padding:8px 10px;font-size:.85rem;max-height:30vh;overflow-y:auto;white-space:pre-wrap">'+esc(shown)+'</div><p style="font-size:.82rem;color:var(--muted);margin:10px 0 0">This can\'t be undone.</p><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-danger" onclick="_noteDoDel()">Delete</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+async function _noteDoDel(){var r=_nx&&_nx.r;if(!r)return;_noteDone(await _noteApply(r,'del'),'Note deleted ✓','delete the note');}
+function _noteDone(res,okMsg,what){
+  if(res==='ok'){closeModal();toast(okMsg);render();return;}
+  if(res==='gone'){closeModal();toast('That note was already changed or removed. The list has been refreshed.','error',6000);render();return;}
+  if(res==='denied'){closeModal();toast("You can't change this note.",'error');return;}
+  toast('⚠ Could not '+what+'. Nothing was changed — please check your connection and try again.','error',6000);
+}
+async function _noteApply(r,mode,newText){
+  if(!_noteCan(r.own||{},r.kind,mode==='del'?'del':'edit'))return 'denied';
+  var fn=function(list){var i=_nFind(list,r);if(i<0)return false;
+    if(mode==='del')list.splice(i,1);
+    else{list[i].text=newText;list[i].editedBy=currentUser.name;list[i].editedDate=_todayLocal();}
+    return true;};
+  if(r.kind==='gen'||r.kind==='beh'||r.kind==='comm')return await _clientListEdit(r.ctx.cid,{gen:'notes',beh:'behaviorNotes',comm:'commNotes'}[r.kind],fn);
+  return await _lessonNoteEdit(r,fn);
+}
+async function _clientListEdit(cid,key,fn){
+  var c=DB.clients.find(function(x){return x.id===cid;});if(!c)return 'gone';
+  try{
+    var rows=await sbFetch('clients','GET',null,'select=*&id=eq.'+encodeURIComponent(cid));
+    if(!Array.isArray(rows)||rows.length!==1)return 'fail';
+    var srv=rowToClient(rows[0]);
+    var list=JSON.parse(JSON.stringify(srv[key]||[]));
+    if(fn(list)===false){c[key]=list;return 'gone';}
+    var old=c[key];c[key]=list;
+    var res=await sbSaveClient(c);
+    if(res===null){c[key]=old;return 'fail';}
+    return 'ok';
+  }catch(e){return 'fail';}
+}
+async function _lessonNoteEdit(r,fn){
+  var l=DB.lessons.find(function(x){return x.id===r.ctx.lid;});if(!l)return 'gone';
+  var adopt=function(srv){var k=DB.lessons.findIndex(function(x){return x.id===srv.id;});if(k>=0)DB.lessons[k]=srv;_recBaseline['lessons:'+srv.id]=JSON.stringify(lessonToRow(srv));};
+  try{
+    // save any unsaved local change first, so nothing is lost when we continue from the saved copy
+    if(_recBaseline['lessons:'+l.id]!==JSON.stringify(lessonToRow(l))){var f=await sbSaveLesson(l);if(f===null)return 'fail';}
+    var rows=await sbFetch('lessons','GET',null,'select=*&id=eq.'+encodeURIComponent(l.id));
+    if(!Array.isArray(rows)||rows.length!==1)return 'fail';
+    var srv=rowToLesson(rows[0]),list;
+    if(r.kind==='lsn'){if(!srv.supNotes)srv.supNotes=[];list=srv.supNotes;}
+    else{var sd=(srv.sds||[]).find(function(x){return x.id===r.ctx.sid;});if(!sd)return 'gone';if(!sd.notes)sd.notes=[];list=sd.notes;}
+    if(fn(list)===false){adopt(srv);return 'gone';}
+    var res=await sbSaveLesson(srv);if(res===null)return 'fail';
+    adopt(srv);return 'ok';
+  }catch(e){return 'fail';}
+}
+// School Shadow observation notes: edit (delete already exists and asks first)
+function _ssNoteEdit(id){
+  if(!_ssCanSetup())return;var ss=_ssGet();var n=(ss.notes||[]).find(function(x){return x.id===id;});if(!n)return;
+  _nx={ss:id};
+  modal('<div style="width:100%;max-width:460px"><h3 style="margin-bottom:10px">Edit note</h3><textarea id="nx-t" rows="5" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="_ssNoteSaveEdit()">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div></div>');
+}
+function _ssNoteSaveEdit(){
+  if(!_ssCanSetup())return;var id=_nx&&_nx.ss;var ss=_ssGet();var n=(ss.notes||[]).find(function(x){return x.id===id;});if(!n){closeModal();return;}
+  var el=document.getElementById('nx-t');var txt=el?el.value.trim():'';if(!txt){toast("A note can't be empty. Use Delete to remove it.",'error');return;}
+  n.text=txt;n.editedBy=currentUser.name;n.editedDate=_todayLocal();_ssSave();closeModal();toast('Note updated ✓');render();
+}
 function addBehaviorNote(){
   if(!['supervisor','director'].includes(currentUser.role)){toast('Only supervisors can add behavior notes.');return;}
   var el=document.getElementById('beh-note-in');var txt=el?el.value.trim():'';if(!txt){toast('Type a note first');return;}
@@ -5686,15 +5804,11 @@ function addBehaviorNote(){
   c.behaviorNotes.push({id:uid(),kind:_workKind(),date:_workDate(),authorId:currentUser.id,authorName:currentUser.name,text:txt});
   sbSaveClient(c);_clearFieldDraft('beh-note-in');render();
 }
-function delBehaviorNote(nid){
-  if(!['supervisor','director'].includes(currentUser.role))return;
-  var c=DB.clients.find(function(x){return x.id===selectedClientId;});c.behaviorNotes=(c.behaviorNotes||[]).filter(function(nn){return nn.id!==nid;});sbSaveClient(c);render();
-}
 function _behaviorNotesCard(){
   var c=DB.clients.find(function(x){return x.id===selectedClientId;});
   var isSup=['supervisor','director'].includes(currentUser.role);
   var notes=(c.behaviorNotes||[]).slice().sort(function(a,b){return b.date.localeCompare(a.date);});
-  var list=notes.length?notes.map(function(nn){return '<div style="border-left:3px solid #d84a3a;background:#fdf1ef;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#8a3a2e;font-weight:600;margin-bottom:2px">'+esc(nn.date)+' · '+esc((nn.authorName||'').split(' ')[0])+(isSup?' <button class="btn btn-xs no-print" style="color:#a3392b;background:none;border:none;cursor:pointer;padding:0 4px" onclick="delBehaviorNote(\''+nn.id+'\')">✕</button>':'')+'</div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No behavior notes yet.</p>';
+  var list=notes.length?notes.map(function(nn){return '<div style="border-left:3px solid #d84a3a;background:#fdf1ef;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#8a3a2e;font-weight:600;margin-bottom:2px">'+esc(nn.date)+' · '+esc((nn.authorName||'').split(' ')[0])+' '+_noteBtns('beh',nn,{cid:c.id})+'</div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(nn.text)+'</div></div>';}).join(''):'<p style="font-size:.8rem;color:var(--muted);margin:0">No behavior notes yet.</p>';
   var addBox=isSup?'<div style="margin-top:8px;display:flex;gap:6px;align-items:flex-start"><textarea id="beh-note-in" rows="2" placeholder="Unexpected behavior a sup noticed — no formal BIP needed..." style="flex:1;font-size:.83rem"></textarea><button class="btn btn-sm btn-primary no-print" onclick="addBehaviorNote()">Add</button></div>':'';
   return '<div class="card"><div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><h2 style="flex:1;margin:0;font-size:1.05rem">🗒 Behavior Notes</h2><span style="font-size:.74rem;color:var(--muted)">informal · '+(isSup?'you can add':'read only')+'</span></div><p style="font-size:.76rem;color:var(--muted);margin:0 0 8px">For unexpected behavior worth noting that doesn’t need a full BIP. Visible to the whole team.</p>'+list+addBox+'</div>';
 }
@@ -5861,28 +5975,6 @@ function setSDStatus(lId,sId,status){if(!requireActiveSession())return;
     toast('\u25B6 '+aff.length+' target(s) resumed');
   }
   saveData();render();
-}
-function editGeneralNote(noteId){if(!requireActiveSession())return;
-  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
-  const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
-  modal('<h3 style="margin-bottom:10px">Edit note</h3><textarea id="egn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveGeneralNote(\''+noteId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
-}
-function saveGeneralNote(noteId){if(!requireActiveSession())return;
-  const c=DB.clients.find(function(x){return x.id===selectedClientId;});if(!c||!c.notes)return;
-  const n=c.notes.find(function(x){return x.id===noteId;});if(!n)return;
-  const el=document.getElementById('egn-t');if(!el)return;
-  n.text=(el.value||'').trim();n.editedBy=currentUser.name;n.editedDate=_todayLocal();
-  sbSaveClient(c);closeModal();toast('Note updated \u2713');render();
-}
-function editLessonSupNote(lId,idx){if(!requireActiveSession())return;
-  const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
-  const n=l.supNotes[idx];
-  modal('<h3 style="margin-bottom:10px">Edit lesson note</h3><textarea id="elsn-t" rows="4" style="width:100%">'+esc(n.text||'')+'</textarea><div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveLessonSupNote(\''+lId+'\','+idx+')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
-}
-function saveLessonSupNote(lId,idx){if(!requireActiveSession())return;
-  const l=DB.lessons.find(function(x){return x.id===lId;});if(!l||!l.supNotes||!l.supNotes[idx])return;
-  const el=document.getElementById('elsn-t');if(!el)return;
-  l.supNotes[idx].text=(el.value||'').trim();saveData();closeModal();toast('Note updated \u2713');render();
 }
 function confirmMastery(lId,sId,tId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId),t=sd.targets.find(x=>x.id===tId);
@@ -6171,14 +6263,8 @@ function saveSDNote(lId,sId,val){if(!requireActiveSession())return;
   // update existing entry for today from same author, otherwise push new
   const _existing=sd.notes.find(function(n){return n.date===_today&&n.authorId===currentUser.id;});
   if(_existing){_existing.text=_txt;}
-  else{sd.notes.push({kind:_workKind(),date:_today,authorId:currentUser.id,authorName:currentUser.name,text:_txt});}
+  else{sd.notes.push({id:uid(),kind:_workKind(),date:_today,authorId:currentUser.id,authorName:currentUser.name,text:_txt});}
   saveData();
-}
-function deleteSDNote(lId,sId,idx){if(!requireActiveSession())return;
-  const l=DB.lessons.find(x=>x.id===lId);if(!l)return;
-  const sd=l.sds.find(x=>x.id===sId);if(!sd||!sd.notes)return;
-  sd.notes.splice(idx,1);
-  saveData();render();
 }
 function saveEditSD(lId,sId){if(!requireActiveSession())return;
   const l=DB.lessons.find(x=>x.id===lId),sd=l.sds.find(x=>x.id===sId);
@@ -6371,7 +6457,7 @@ function deleteTarget(lId,sId,tId){
 function addLessonNote(lId){
   modal('<h3 style="margin-bottom:12px">General Notes</h3><label><textarea id="sn-t" rows="4" placeholder="Update, change in procedure..."></textarea></label><div style="display:flex;gap:8px;margin-top:14px"><button class="btn btn-green" onclick="saveLessonNote(\''+lId+'\')">Save</button><button class="btn btn-outline" onclick="closeModal()">Cancel</button></div>');
 }
-function saveLessonNote(lId){if(!requireActiveSession())return;const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({kind:_workKind(),date:_workDate(),author:currentUser.id,text});saveData();render();}
+function saveLessonNote(lId){if(!requireActiveSession())return;const text=document.getElementById('sn-t').value.trim();if(!text)return;const l=DB.lessons.find(x=>x.id===lId);if(!l.supNotes)l.supNotes=[];l.supNotes.push({id:uid(),kind:_workKind(),date:_workDate(),author:currentUser.id,authorName:currentUser.name,text});saveData();render();}
 
 // ════════════════════════════════════════════════
 // MAINTENANCE TAB
@@ -7170,19 +7256,13 @@ function addCommNote(){
   c.commNotes.push({id:uid(),kind:_workKind(),date:_workDate(),author:currentUser.name,role:currentUser.role,text:t});
   sbSaveClient(c);_clearFieldDraft('comm-note-in');render();
 }
-function delCommNote(btn){
-  var c=DB.clients.find(function(x){return x.id===selectedClientId;});var n=(c.commNotes||[]).find(function(x){return x.id===btn.dataset.id;});
-  if(!n)return;
-  if(!(['admin','supervisor','director'].includes(currentUser.role)||n.author===currentUser.name)){toast('You can only delete your own note.');return;}
-  c.commNotes=(c.commNotes||[]).filter(function(x){return x.id!==btn.dataset.id;});sbSaveClient(c);render();
-}
 function renderCommLog(){
   const c=DB.clients.find(function(x){return x.id===selectedClientId;});
   const ss=c.schoolShadow||{};
   let h='<div class="ss-tab"><h3 style="margin-bottom:4px">🗨 Team Notes — '+esc(c.name)+'</h3><p style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Notes from therapists to the team; session and school-shadow notes gather here automatically.</p>';
   if(["junior","senior"].includes(currentUser.role))h+='<div class="card"><div class="section-title">Post a note to the team</div><div style="display:flex;gap:6px;align-items:flex-start"><textarea id="comm-note-in" rows="2" placeholder="A heads-up, question, or concern for the team / supervisor..." style="flex:1;font-size:.84rem"></textarea><button class="btn btn-primary no-print" onclick="addCommNote()">Post</button></div>';
   var team=(c.commNotes||[]).slice().sort(function(a,b){return (''+(b.date||'')).localeCompare(''+(a.date||''));});
-  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(_fmtWhen(n.date))+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' <button class="btn btn-xs no-print" style="float:right;color:#a3392b;background:none;border:none;cursor:pointer" data-id="'+n.id+'" onclick="delCommNote(this)">✕</button></div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No notes posted here yet \u2014 session and school-shadow notes appear below.</p>';
+  h+=team.length?('<div style="margin-top:10px">'+team.map(function(n){return '<div style="border-left:3px solid #1f8ec4;background:#eef6fb;border-radius:0 6px 6px 0;padding:6px 10px;margin-bottom:6px"><div style="font-size:.72rem;color:#1a6f94;font-weight:600;margin-bottom:2px">'+esc(_fmtWhen(n.date))+' · '+esc((n.author||'').split(' ')[0])+(n.role?' ('+esc(n.role)+')':'')+' '+_noteBtns('comm',n,{cid:c.id})+'</div><div style="font-size:.83rem;line-height:1.5">'+formatNoteText(n.text)+'</div></div>';}).join('')+'</div>'):'<p style="font-size:.8rem;color:var(--muted);margin-top:8px">No notes posted here yet \u2014 session and school-shadow notes appear below.</p>';
   h+='</div>';
   var sess=DB.sessions.filter(function(s){if((s.setting||'therapy')==='shadow'||s.clientId!==selectedClientId)return false;var hasN=s.notes&&(''+s.notes).trim();var hasLn=(s.lessonData||[]).some(function(ld){return ld.note&&(''+ld.note).trim();});return hasN||hasLn;}).slice().sort(function(a,b){return (''+(b.createdAt||b.date)).localeCompare(''+(a.createdAt||a.date));});
   h+='<div class="card"><div class="section-title">📝 1:1 session notes ('+sess.length+')</div>';
@@ -7230,10 +7310,10 @@ function renderNotesTab(){
     +'</div>';
 
   // ── Notes feed — supervisor notes only (therapist session notes live with their sessions / Team Notes) ──
-  const supNotes=(c.notes||[]).filter(n=>n.type!=='therapist').map(n=>({id:n.id,date:n.date,label:'<span class="sup-badge">SUP</span> '+esc(n.authorName||''),text:n.text,type:'supervisor'}));
+  const supNotes=(c.notes||[]).map(function(n,i){return {id:n.id,idx:i,date:n.date,label:'<span class="sup-badge">SUP</span> '+esc(n.authorName||''),text:n.text,type:n.type==='therapist'?'therapist':'supervisor',authorId:n.authorId,authorName:n.authorName,edited:n.editedDate};}).filter(function(n){return n.type!=='therapist';});
   const allNotes=supNotes.sort((a,b)=>b.date.localeCompare(a.date));
   const feed=allNotes.map(n=>'<div class="note-entry '+(n.type==='supervisor'?'sup-note':'')+'">'
-    +'<div class="note-meta">'+n.label+' \u00b7 '+n.date+(isSup&&n.type==='supervisor'&&n.id?' <button class="btn btn-xs btn-outline no-print" style="padding:0 6px;font-size:.7rem" onclick="editGeneralNote(\''+n.id+'\')">\u270F edit</button>':'')+'</div>'
+    +'<div class="note-meta">'+n.label+' \u00b7 '+n.date+' '+_noteBtns('gen',n,{cid:c.id,idx:n.idx})+(n.edited?' <span class="note-ed">(edited)</span>':'')+'</div>'
     +'<div class="note-text" style="white-space:normal">'+formatNoteText(n.text)+'</div></div>').join('')||'<div class="empty-state">No notes yet.</div>';
   const addForm=isSup
     ?'<div class="card no-print"><h2>Add General Note</h2><div class="form-row"><div class="fg"><textarea id="note-t" rows="3" placeholder="Write note..."></textarea></div></div><button class="btn btn-primary" onclick="saveNote()">Save</button></div>'
