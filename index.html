@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-23-CV -->
+<!-- BUILD v2026-11-23-CW -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-23-CV</title>
+<title>CARE Client Binder v2026-11-23-CW</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
@@ -496,10 +496,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-23-CV';
+const APP_VERSION='v2026-11-23-CW';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-23-CW',date:'23 Nov 2026',added:'When you log out and there is note text you typed but did not save, the pop-up now lists each one: the client, which note box it is, and the start of the text, with a Go to this note button. Then you can choose Log out and erase, or Cancel.',improved:'',fixed:'The \u201cunsaved note\u201d warning on logout could appear even though everything was saved (for example after editing a note or saving Case Info). Only the real note boxes keep a typed-text copy now, it is cleared when the note is saved, and old leftovers are removed.'},
   {version:'v2026-11-23-CV',date:'23 Nov 2026',added:'Edit and delete for notes everywhere they were missing. Sup Notes and lesson General Notes can now be deleted; behavior notes, team notes, target-set notes and School Shadow observation notes can now be edited. Every delete first shows the note and asks. Supervisors and directors can tidy any note on the cases they can edit, and therapists their own notes, without starting a visit or session first.',improved:'Changing or removing a note now works on the latest saved copy, so it can no longer wipe out a note someone else added at the same time, and it only changes the screen after it is saved. If it cannot save, a plain message says nothing was changed.',fixed:'The delete buttons on behavior notes and team notes did nothing unless a session was running.'},
   {version:'v2026-11-22-CU',date:'22 Nov 2026',added:'A search box on the client list.',improved:'A calmer client list: one tidy line per case (name, diagnosis, flags, last session) grouped by supervisor, with two supervisors side by side on a wide screen. A calmer client page: the header is one line with a small menu (Change supervisor, Give cover, Archive), a quiet info line (supervisor and last session), a smaller graph-month control, and the repeated yellow notice is gone.',fixed:''},
   {version:'v2026-11-22-CT',date:'22 Nov 2026',added:'',improved:'The session banner is smaller and tidier (on a wide screen the supervisor banner now fits in one row). On a phone the top bar no longer lets the logo cover the Clients button: the logo is smaller and Admin, Password and Update show as icons.',fixed:''},
@@ -688,24 +689,34 @@ document.addEventListener('visibilitychange',function(){if(!document.hidden)chec
 setInterval(_checkDailyLogout,60000);
 document.addEventListener('visibilitychange',function(){if(!document.hidden)_checkDailyLogout();});
 // ---- Local field drafts: keep free-text notes safe across reload/logout. LOCAL ONLY - never writes to the database. ----
-function _fdSkip(el){try{if(!el||!el.id)return true;if((el.tagName||'').toUpperCase()!=='TEXTAREA')return true;if(el.id==='tx-sess-notes'||el.id==='ss-sess-notes'||el.id==='parent-note-input')return true;if(el.id.indexOf('sdnadd_')===0)return true;if(el.closest&&el.closest('#login-screen'))return true;return false;}catch(e){return true;}}
+function _fdSkip(el){try{if(!el||!el.id)return true;if((el.tagName||'').toUpperCase()!=='TEXTAREA')return true;if(el.id==='tx-sess-notes'||el.id==='ss-sess-notes'||el.id==='parent-note-input')return true;if(el.id.indexOf('sdnadd_')===0)return true;if(!_FD_INFO[el.id])return true;if(el.closest&&el.closest('#login-screen'))return true;return false;}catch(e){return true;}}
 function _fdKey(el){return 'care_fd:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+el.id;}
 function _restoreFieldDrafts(){try{document.querySelectorAll('textarea[id]').forEach(function(el){if(_fdSkip(el))return;var d=null;try{d=localStorage.getItem(_fdKey(el));}catch(e){}if(d!=null&&d!==''&&(''+(el.value||'')).trim()===''){el.value=d;}});}catch(e){}}
 function _clearFieldDraft(id){try{localStorage.removeItem('care_fd:'+(typeof selectedClientId!=='undefined'&&selectedClientId||'')+':'+id);}catch(e){}}
 document.addEventListener('input',function(ev){try{var el=ev.target;if(_fdSkip(el))return;var v=el.value;if(v&&(''+v).trim()!==''){try{localStorage.setItem(_fdKey(el),v);_fdTouch(_fdKey(el));}catch(e){}}else{try{localStorage.removeItem(_fdKey(el));}catch(e){}}}catch(e){}},true);
 // v-CL: note-text drafts (care_fd:*) are cleared after 3 days and on a MANUAL logout (never on the automatic end-of-day sign-out).
 // Unsaved SESSION / BIP / School Shadow / stimuli drafts are real data and are never cleared here.
+// v-CW: the note boxes that keep a typed-text copy (label + tab are used by the logout pop-up). Pop-up/edit boxes are NOT kept: they are short-lived and caused false "unsaved" warnings.
+var _FD_INFO={'note-t':{l:'General note',tab:'notes'},'comm-note-in':{l:'Team note',tab:'commlog'},'beh-note-in':{l:'Behavior note',tab:'behavior'},'ssn-note-in':{l:'School Shadow observation note',tab:'schoolshadow'},'ss-rec-in':{l:'School Shadow recommendation',tab:'schoolshadow'},'abc-narrative':{l:'ABC narrative',tab:'abc'},'si-notes':{l:'Case Info notes',tab:'schoolinfo'}};
 function _fdTsGet(){try{return JSON.parse(localStorage.getItem('care_fd_ts'))||{};}catch(e){return {};}}
 function _fdTsSet(m){try{localStorage.setItem('care_fd_ts',JSON.stringify(m));}catch(e){}}
 function _fdTouch(k){var m=_fdTsGet();m[k]=Date.now();_fdTsSet(m);}
 function _fdKeys(){var out=[];try{for(var i=0;i<localStorage.length;i++){var k=localStorage.key(i);if(k&&k.indexOf('care_fd:')===0)out.push(k);}}catch(e){}return out;}
 function _fdSweep(){try{var m=_fdTsGet(),now=Date.now(),lim=3*24*60*60*1000,keys=_fdKeys(),ch=false;
-  keys.forEach(function(k){if(!m[k]){m[k]=now;ch=true;}else if(now-m[k]>lim){try{localStorage.removeItem(k);}catch(e){}delete m[k];ch=true;}});
+  keys.forEach(function(k){var id=k.split(':').slice(2).join(':');if(!_FD_INFO[id]){try{localStorage.removeItem(k);}catch(e){}delete m[k];ch=true;return;}if(!m[k]){m[k]=now;ch=true;}else if(now-m[k]>lim){try{localStorage.removeItem(k);}catch(e){}delete m[k];ch=true;}});
   Object.keys(m).forEach(function(k){if(keys.indexOf(k)<0||!localStorage.getItem(k)){delete m[k];ch=true;}});
   if(ch)_fdTsSet(m);}catch(e){}}
 function _hasNoteDrafts(){try{return _fdKeys().some(function(k){var v=localStorage.getItem(k);return v&&(''+v).trim()!=='';});}catch(e){return false;}}
 function _clearAllNoteDrafts(){try{_fdKeys().forEach(function(k){localStorage.removeItem(k);});localStorage.removeItem('care_fd_ts');}catch(e){}}
-function _logoutClick(){try{if(_hasNoteDrafts()&&!confirm('You have note text that is not saved yet. Logging out will erase it from this device.\n\nLog out anyway?'))return;}catch(e){}doLogout(false);}
+function _fdItems(){var out=[];_fdKeys().forEach(function(k){var v=localStorage.getItem(k);if(!v||!(''+v).trim())return;var p=k.split(':'),cid=p[1]||'',id=p.slice(2).join(':'),inf=_FD_INFO[id]||{l:'A note',tab:''};var c=(DB.clients||[]).find(function(x){return x.id===cid;});out.push({key:k,cid:cid,id:id,label:inf.l,tab:inf.tab,client:c?c.name:'this screen',text:(''+v).trim()});});return out;}
+function _logoutClick(){
+  var items=[];try{items=_fdItems();}catch(e){}
+  if(!items.length){doLogout(false);return;}
+  window._lgItems=items;
+  var rows=items.map(function(it,i){return '<div style="border:1px solid var(--border);border-radius:9px;padding:8px 10px;margin-bottom:8px"><div style="font-size:.78rem;color:var(--muted)">'+esc(it.client)+' · '+esc(it.label)+'</div><div style="font-size:.84rem;margin:3px 0 6px;white-space:pre-wrap">'+esc(it.text.length>120?it.text.slice(0,120)+'…':it.text)+'</div><button class="btn btn-outline btn-sm" onclick="_logoutGo('+i+')">Go to this note</button></div>';}).join('');
+  modal('<div style="width:100%;max-width:460px"><h3 style="margin-bottom:6px">Unsaved note text</h3><p style="font-size:.84rem;color:var(--muted);margin-bottom:10px">You typed this but did not press Save. Logging out will erase it from this device.</p><div style="max-height:44vh;overflow-y:auto">'+rows+'</div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button class="btn btn-outline" onclick="closeModal()">Cancel</button><button class="btn btn-danger" onclick="closeModal();doLogout(false)">Log out and erase</button></div></div>');
+}
+function _logoutGo(i){var it=(window._lgItems||[])[i];if(!it)return;closeModal();try{if(it.cid)selectClient(it.cid);if(it.tab)setTab(it.tab);}catch(e){}setTimeout(function(){var el=document.getElementById(it.id);if(el){try{el.scrollIntoView({block:'center'});}catch(e){}el.focus();}},150);}
 _fdSweep();setInterval(_fdSweep,60*60*1000);
 // ---- Wide date grids (Program Checklist, First Trial strips) open at the NEWEST (right-hand) end; scroll left for older. DISPLAY ONLY. ----
 (function(){
@@ -4521,7 +4532,7 @@ function saveSchoolInfo(){
   const meds=[];document.querySelectorAll('#meds-container .med-row').forEach(function(r){var n=r.querySelector('.med-name').value.trim(),d=r.querySelector('.med-dose').value.trim(),t=r.querySelector('.med-time').value.trim();if(n||d||t)meds.push({name:n,dose:d,time:t});});
   const svcs=[];document.querySelectorAll('#svcs-container .svc-row').forEach(function(r){var n=r.querySelector('.svc-name').value.trim(),pr=r.querySelector('.svc-provider').value.trim(),f=r.querySelector('.svc-freq').value.trim();if(n||pr||f)svcs.push({name:n,provider:pr,freq:f});});
   c.schoolInfo=Object.assign({},c.schoolInfo||{},{schoolName:gv('si-school'),className:gv('si-class'),grade:gv('ci-grade'),teacher:gv('si-teacher'),ta:gv('ci-ta'),shadow:gv('ci-shadow'),daysHours:gv('ci-dayshours'),breakTime:gv('ci-break'),academicYear:gv('si-year'),language:gv('ci-language'),guardian:gv('ci-guardian'),homeAddr:gv('ci-homeaddr'),schoolAddr:gv('ci-schooladdr'),notes:gv('si-notes'),meds:meds,services:svcs});
-  sbSaveClient(c);toast('Case info saved ✓');render();
+  sbSaveClient(c);_clearFieldDraft('si-notes');toast('Case info saved ✓');render();
 }
 function renderSessionEntry(){
   const ss_check=getSessState();
@@ -7240,7 +7251,7 @@ function logABC(){
     narrative:document.getElementById('abc-narrative').value.trim()};
   if(freq!=='')entry.frequency=parseInt(freq);
   if(dur!=='')entry.duration=Math.round(parseFloat(dur));
-  DB.abcData.push(entry);sbSaveABC(entry);toast('ABC entry saved ✓');render();
+  DB.abcData.push(entry);sbSaveABC(entry);_clearFieldDraft('abc-narrative');toast('ABC entry saved ✓');render();
 }
 async function deleteABCEntry(id){
   if(!['supervisor','director'].includes(currentUser.role)){toast('⚠ No permission');return;}
