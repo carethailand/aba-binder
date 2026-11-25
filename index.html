@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD v2026-11-25-CY -->
+<!-- BUILD v2026-11-25-CZ -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<title>CARE Client Binder v2026-11-25-CY</title>
+<title>CARE Client Binder v2026-11-25-CZ</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -501,10 +501,11 @@ hr{border:none;border-top:1px solid var(--border);margin:14px 0;}
 
 <script>
 const STORE_KEY='aba_v4';
-const APP_VERSION='v2026-11-25-CY';
+const APP_VERSION='v2026-11-25-CZ';
 var _latestVersion=null,_autoUpdating=false;
 const APP_UPDATED='23 Sep 2026';
 const CHANGELOG=[
+  {version:'v2026-11-25-CZ',date:'25 Nov 2026',added:'Breaks (sick / absent / holiday / other): when a session starts 7 or more days after the last one, a pop-up asks whether to mark a break. One break per client draws a dashed, labelled line on every graph (1:1 targets, first-trial strip, behavior plans, School Shadow, printed reports), for example Sick \u00b7 7 days, and the data line stops at the break like the paper graph. Anyone working on the case can add one; once it is added nobody else is asked. Client menu (\u22EF) \u2192 Breaks lists them, lets you add one for any date, and lets a supervisor or director delete one (asks first).',improved:'',fixed:''},
   {version:'v2026-11-25-CY',date:'25 Nov 2026',added:'',improved:'New look to match the Portal: headings use the same serif font and everything else uses the same clean font (Thai text too); cards, buttons and boxes have softer, rounder corners. Nothing about how the binder works has changed.',fixed:''},
   {version:'v2026-11-23-CX',date:'23 Nov 2026',added:'School Shadow rating targets: when adding a school target, a supervisor can choose Rating. The scale starts at 0 or 1, the top number goes up to 5 (at most 5 numbers), and each number gets a label that shows under the daily grid. Therapists record a rating for each period; the daily average, School checklist, monthly overview, Day report and graphs show the average rating. 0 counts as a real rating; blank means not recorded; N/A is left out of the average. A target\u2019s type and scale are fixed once it is created (labels can still be edited).',improved:'School Shadow daily grid: every box is now one button \u2014 tap it and keep tapping to go round (blank, C, P, \u2212, N/A; for ratings: blank, the numbers, N/A). Bigger to tap and takes less space, especially on a phone. Saved data and percentages are unchanged.',fixed:''},
   {version:'v2026-11-23-CW',date:'23 Nov 2026',added:'When you log out and there is note text you typed but did not save, the pop-up now lists each one: the client, which note box it is, and the start of the text, with a Go to this note button. Then you can choose Log out and erase, or Cancel.',improved:'',fixed:'The \u201cunsaved note\u201d warning on logout could appear even though everything was saved (for example after editing a note or saving Case Info). Only the real note boxes keep a typed-text copy now, it is cleared when the note is saved, and old leftovers are removed.'},
@@ -815,8 +816,8 @@ const DT_SIMULTANEOUS=[
   'Generalization (New contexts)'
 ];
 
-function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;if(c.behaviorNotes&&c.behaviorNotes.length)o._behaviorNotes=c.behaviorNotes;if(c.driveLinks&&Object.keys(c.driveLinks).length)o._driveLinks=c.driveLinks;if(c.starred&&Object.keys(c.starred).length)o._starred=c.starred;if(c.commNotes&&c.commNotes.length)o._commNotes=c.commNotes;return Object.keys(o).length?o:null;})()};}
-function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _bn=_sn&&_sn._behaviorNotes?_sn._behaviorNotes:[];const _dl=_sn&&_sn._driveLinks?_sn._driveLinks:{};const _st=_sn&&_sn._starred?_sn._starred:{};const _cn=_sn&&_sn._commNotes?_sn._commNotes:[];const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh,behaviorNotes:_bn,driveLinks:_dl,starred:_st,commNotes:_cn};}
+function clientToRow(c){return{id:c.id,name:c.name,dob:c.dob||null,diagnosis:c.diagnosis||null,supervisor:c.supervisor||null,notes:c.notes||[],reinforcers:c.reinforcers||[],sup_notif:(function(){var o=Object.assign({},c.supNotif||{});if(c.schoolInfo)o._schoolInfo=c.schoolInfo;if(c.schoolShadow)o._schoolShadow=c.schoolShadow;if(c.behaviorNotes&&c.behaviorNotes.length)o._behaviorNotes=c.behaviorNotes;if(c.driveLinks&&Object.keys(c.driveLinks).length)o._driveLinks=c.driveLinks;if(c.starred&&Object.keys(c.starred).length)o._starred=c.starred;if(c.commNotes&&c.commNotes.length)o._commNotes=c.commNotes;if(c.breaks&&Object.keys(c.breaks).length)o._breaks=c.breaks;return Object.keys(o).length?o:null;})()};}
+function rowToClient(r){const _sn=r.sup_notif||null;const _si=_sn&&_sn._schoolInfo?_sn._schoolInfo:null;const _ssh=_sn&&_sn._schoolShadow?_sn._schoolShadow:null;const _bn=_sn&&_sn._behaviorNotes?_sn._behaviorNotes:[];const _dl=_sn&&_sn._driveLinks?_sn._driveLinks:{};const _st=_sn&&_sn._starred?_sn._starred:{};const _cn=_sn&&_sn._commNotes?_sn._commNotes:[];const _bk=_sn&&_sn._breaks&&typeof _sn._breaks==='object'?_sn._breaks:{};const _supNotif=_sn&&(_sn.date||_sn.count)?{date:_sn.date,count:_sn.count,supType:_sn.supType}:null;return{id:r.id,name:r.name,dob:r.dob||'',diagnosis:r.diagnosis||'',supervisor:r.supervisor||'',notes:r.notes||[],reinforcers:r.reinforcers||[],supNotif:_supNotif,schoolInfo:_si,schoolShadow:_ssh,behaviorNotes:_bn,driveLinks:_dl,starred:_st,commNotes:_cn,breaks:_bk};}
 
 function lessonToRow(l){return{id:l.id,client_id:l.clientId,name:l.name,teaching_style:l.teachingStyle||'DTT',phase:l.phase||'acquisition',purpose:l.purpose||null,maintenance_schedule:l.maintenanceSchedule||null,dt_step_index:l.dtStepIndex||0,mastery_rule:l.masteryRule||{pct:80,sessions:3,therapists:2},sds:l.sds||[],sup_notes:l.supNotes||[],...(Array.isArray(l.phaseLog)&&l.phaseLog.length?{phase_log:l.phaseLog}:{})};}
 function rowToLesson(r){return{id:r.id,clientId:r.client_id,name:r.name,teachingStyle:r.teaching_style||'DTT',phase:r.phase||'acquisition',purpose:r.purpose||'',maintenanceSchedule:r.maintenance_schedule||'',dtStepIndex:r.dt_step_index||0,masteryRule:r.mastery_rule||{pct:80,sessions:3,therapists:2},sds:r.sds||[],supNotes:r.sup_notes||[],phaseLog:Array.isArray(r.phase_log)?r.phase_log:[]};}
@@ -1064,7 +1065,7 @@ function _mergeClientRow(dev,srv,base){
   var msn={},keys={};
   [dsn,ssn,bsn].forEach(function(o){Object.keys(o).forEach(function(k){keys[k]=1;});});
   Object.keys(keys).forEach(function(k){
-    var v=(k==='_schoolShadow')?_mergeSS(dsn[k],ssn[k],bsn[k]):_mergeField(dsn[k],ssn[k],bsn[k]); // School Shadow: piece by piece (v-BL)
+    var v=(k==='_schoolShadow')?_mergeSS(dsn[k],ssn[k],bsn[k]):(k==='_breaks'?_ssMergeMap(dsn[k],ssn[k],bsn[k]):_mergeField(dsn[k],ssn[k],bsn[k])); // School Shadow: piece by piece (v-BL); breaks: one by one (v-CZ)
     if(v!==undefined&&v!==null)msn[k]=v;
   });
   out.sup_notif=Object.keys(msn).length?msn:null;
@@ -1584,7 +1585,7 @@ function startSession(){
   const t=parseFloat((document.getElementById('pre-time')||{}).value)||2;
   const ty=(document.getElementById('pre-type')||{}).value||'overlap';
   const _set=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set,started:true});if(_set==='shadow')selectedTab='schoolshadow';
-  render();
+  render();setTimeout(function(){_brkAfterStart(d);},50);
 }
 function startSessionFromBar(){
   hideUnsavedBanner();
@@ -1592,7 +1593,7 @@ function startSessionFromBar(){
   const t=parseFloat((document.getElementById('ss-time')||{}).value)||2;
   const ty=(document.getElementById('ss-type')||{}).value||'individual';
   const _set2=(document.getElementById('ss-setting')||{}).value||'therapy';_ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:t,sessType:ty,setting:_set2,started:true});if(_set2==='shadow')selectedTab='schoolshadow';
-  render();
+  render();setTimeout(function(){_brkAfterStart(d);},50);
 }
 function confirmEndSession(){
   var _es=getSessState();
@@ -2279,7 +2280,7 @@ function startSessionAsSup(){
   const _set=_supSessSetting==='shadow'?'shadow':'therapy';
   _ssViewDate='';_behViewCtx=null;setSessState({clientId:selectedClientId,date:d,sessTime:2,sessType:'individual',setting:_set,started:true});
   selectedTab=_set==='shadow'?'schoolshadow':'session';
-  render();
+  render();setTimeout(function(){_brkAfterStart(d);},50);
 }
 
 
@@ -2540,8 +2541,95 @@ async function printSupPDF(){
 
 // ── Report builder (print anytime, no supervision needed) ──
 function _mmmD(d){var pp=(d||'').split('-');if(pp.length<3)return d;return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][(+pp[1]-1)]+' '+(+pp[2]);}
+// ── v-CZ: breaks (sick / absent / holiday / other) ──────────────────────────────────────────
+// One entry per client, stored in sup_notif._breaks as {'bk-<date back>':{id,date,label,days,prev,by,byId,ts}}.
+// `date` = the first session back. A break draws a dashed, labelled line on every graph between the last session before
+// and the session back, and the data line stops there (like the paper graph). A break needs a point before AND a point
+// on/after its date to be drawn. Merged one by one (_ssMergeMap), so two people adding at once keep both.
+function _brkClient(cid){return (DB.clients||[]).find(function(x){return x.id===(cid||selectedClientId);});}
+function _brkList(cid){var c=_brkClient(cid);var m=(c&&c.breaks)||{};return Object.keys(m).map(function(k){return m[k];}).filter(function(b){return b&&b.date;}).sort(function(a,b){return a.date.localeCompare(b.date);});}
+function _brkTxt(b){var d=+b.days;return (b.label||'Break')+(d>0?' · '+d+' day'+(d===1?'':'s'):'');}
+function _brkApply(points){
+  var L=_brkList();if(!L.length||!points||!points.length)return points;
+  if(!points.some(function(p){return p&&!p.brk&&typeof p.date==='string';}))return points;
+  var out=points.slice();
+  L.forEach(function(b){
+    var idx=-1;for(var i=0;i<out.length;i++){var p=out[i];if(p&&!p.brk&&typeof p.date==='string'&&p.date>=b.date){idx=i;break;}}
+    if(idx<1)return;
+    var hasBefore=false;for(var j=0;j<idx;j++){if(out[j]&&!out[j].brk){hasBefore=true;break;}}
+    if(!hasBefore)return;
+    if(out[idx-1]&&out[idx-1].brk){out[idx-1]=Object.assign({},out[idx-1],{label:_brkTxt(b)});return;}
+    out.splice(idx,0,{brk:true,label:_brkTxt(b)});
+  });
+  return out;
+}
+function _brkChartLines(dates){var out=[];_brkList().forEach(function(b){var idx=-1;for(var i=0;i<dates.length;i++){if(dates[i]>=b.date){idx=i;break;}}if(idx>=1)out.push({idx:idx,label:_brkTxt(b)});});return out.filter(function(v,i,a){return a.findIndex(function(x){return x.idx===v.idx;})===i;});}
+function _makeClientBreakPlugin(pid,lines){
+  return {id:pid,afterDraw:function(chart){
+    if(!lines||!lines.length)return;var c2=chart.ctx,xA=chart.scales.x,yA=chart.scales.y;
+    lines.forEach(function(bk){if(bk.idx>=xA.ticks.length)return;
+      var x=(xA.getPixelForTick(bk.idx-1)+xA.getPixelForTick(bk.idx))/2;
+      c2.save();c2.strokeStyle='#64748b';c2.lineWidth=1.5;c2.setLineDash([4,3]);c2.beginPath();c2.moveTo(x,yA.top);c2.lineTo(x,yA.bottom);c2.stroke();c2.setLineDash([]);
+      c2.font='bold 9px sans-serif';c2.fillStyle='#475569';c2.textAlign='center';c2.fillText(bk.label,x,yA.top-4);c2.restore();});
+  }};
+}
+function _brkSegment(lines){var skip={};(lines||[]).forEach(function(l){skip[l.idx]=1;});return {borderColor:function(c){return skip[c.p1DataIndex]?'rgba(0,0,0,0)':undefined;},backgroundColor:function(c){return skip[c.p1DataIndex]?'rgba(0,0,0,0)':undefined;}};}
+function _brkDays(a,b){return Math.round((new Date(b+'T00:00')-new Date(a+'T00:00'))/864e5);}
+function _brkPrev(date){var best='';(DB.sessions||[]).forEach(function(x){if(x.clientId===selectedClientId&&x.sessType!=='maintenance'&&x.date&&x.date<date&&x.date>best)best=x.date;});return best;}
+function _brkCanAdd(){var r=currentUser&&currentUser.role;return !!(r&&['junior','senior','qcd','supervisor','director'].includes(r)&&selectedClientId&&!isViewOnly()&&!_coverSupLimited());}
+function _brkCanDel(){var r=currentUser&&currentUser.role;return !!(r&&['supervisor','director'].includes(r)&&selectedClientId&&!isViewOnly()&&!_coverSupLimited());}
+var _brkSel='Sick';
+async function _brkAdd(date,label){
+  var c=_brkClient();if(!c)return false;
+  if(!_brkCanAdd()){toast('You can mark a break on cases you work on.','error');return false;}
+  label=String(label||'').trim().slice(0,40);if(!label){toast('Choose what the break was.','error');return false;}
+  if(!date||date>_todayLocal()){toast('Pick the date of the first session back (not in the future).','error');return false;}
+  var prev=_brkPrev(date),id='bk-'+date;
+  var old=(c.breaks&&c.breaks[id])?JSON.parse(JSON.stringify(c.breaks[id])):null;
+  c.breaks=Object.assign({},c.breaks||{});
+  c.breaks[id]={id:id,date:date,label:label,days:prev?_brkDays(prev,date):0,prev:prev||'',by:currentUser.name,byId:currentUser.id,ts:new Date().toISOString()};
+  var ok=false;try{ok=await sbSaveClient(c);}catch(e){}
+  if(!ok){var m=Object.assign({},c.breaks);if(old)m[id]=old;else delete m[id];c.breaks=m;toast('Couldn’t save the break. Nothing has been changed. Check the connection and try again.','error',6000);return false;}
+  toast('Break added ✓');return true;
+}
+async function _brkDel(id){
+  if(!_brkCanDel())return;var c=_brkClient();var old=c&&c.breaks&&c.breaks[id];if(!old){closeModal();return;}
+  var m=Object.assign({},c.breaks);delete m[id];c.breaks=m;
+  var ok=false;try{ok=await sbSaveClient(c);}catch(e){}
+  if(!ok){c.breaks=Object.assign({},c.breaks,{[id]:old});toast('Couldn’t delete the break. Nothing has been changed. Check the connection and try again.','error',6000);return;}
+  closeModal();toast('Break deleted');render();
+}
+function _brkChipsHtml(){return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">'+['Sick','Absent','Holiday','Other'].map(function(l){return '<button type="button" class="btn btn-sm brk-chip '+(l===_brkSel?'btn-primary':'btn-outline')+'" data-l="'+l+'" onclick="_brkPick(this)" style="border-radius:999px">'+l+'</button>';}).join('')+'</div><div id="brk-oth" style="display:'+(_brkSel==='Other'?'block':'none')+';margin-bottom:8px"><input id="brk-oth-in" type="text" maxlength="40" placeholder="What was it? (short)"></div>';}
+function _brkPick(btn){_brkSel=btn.dataset.l;document.querySelectorAll('.brk-chip').forEach(function(b){b.className='btn btn-sm brk-chip '+(b===btn?'btn-primary':'btn-outline');});var o=document.getElementById('brk-oth');if(o)o.style.display=_brkSel==='Other'?'block':'none';}
+function _brkLabelNow(){if(_brkSel==='Other'){var i=document.getElementById('brk-oth-in');return i?i.value.trim():'';}return _brkSel;}
+// pop-up on the first session back after 7+ days (asked once; once a break exists for that stretch nobody is asked again)
+function _brkAfterStart(d){
+  try{
+    if(!_brkCanAdd()||!d)return;
+    var prev=_brkPrev(d);if(!prev)return;var gap=_brkDays(prev,d);if(gap<7)return;
+    if(_brkList().some(function(b){return b.date>prev&&b.date<=d;}))return;
+    try{if(localStorage.getItem('care_bkno:'+selectedClientId+':'+prev+':'+d))return;}catch(e){}
+    _brkSel='Sick';
+    modal('<h3 style="margin-bottom:4px">It has been '+gap+' days since the last session</h3><p style="font-size:.85rem;color:var(--muted);margin-bottom:2px">Last session '+_drFmtD(prev)+'. This session '+_drFmtD(d)+'. Mark a break so every graph shows a line here?</p>'+_brkChipsHtml()+'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="_brkPromptAdd(\''+d+'\')">Add the line</button><button class="btn btn-outline" onclick="_brkPromptNo(\''+d+'\',\''+prev+'\')">No break, carry on</button></div><p style="font-size:.76rem;color:var(--muted);margin-top:10px">Anyone on the case can add it. Once it is added, nobody else is asked.</p>');
+  }catch(e){}
+}
+async function _brkPromptAdd(d){var l=_brkLabelNow();if(!l){toast('Choose what the break was.','error');return;}if(await _brkAdd(d,l)){closeModal();render();}}
+function _brkPromptNo(d,prev){try{localStorage.setItem('care_bkno:'+selectedClientId+':'+prev+':'+d,'1');}catch(e){}closeModal();}
+function _brkOpen(){
+  var c=_brkClient();if(!c)return;_brkSel='Sick';
+  var L=_brkList().slice().reverse();
+  var rows=L.length?L.map(function(b){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);font-size:.86rem"><span style="flex:1"><b>'+esc(_brkTxt(b))+'</b> <span style="color:var(--muted)">back '+_drFmtD(b.date)+(b.by?' · added by '+esc(String(b.by).split(' ')[0]):'')+'</span></span>'+(_brkCanDel()?'<button type="button" class="btn btn-outline btn-xs" style="color:#a3392b;border-color:#e6b3aa" data-id="'+esc(b.id)+'" onclick="_brkDelAsk(this.dataset.id)">Delete</button>':'')+'</div>';}).join(''):'<p style="font-size:.84rem;color:var(--muted)">No breaks marked yet.</p>';
+  var add=_brkCanAdd()?('<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px"><div style="font-weight:600;font-size:.86rem">Mark a break</div><label style="margin:8px 0 0">Date of the first session back<input id="brk-date" type="date" value="'+_todayLocal()+'" max="'+_todayLocal()+'"></label>'+_brkChipsHtml()+'<button type="button" class="btn btn-primary" onclick="_brkMenuAdd()">Add the line</button></div>'):'';
+  modal('<h3 style="margin-bottom:6px">Breaks</h3><p style="font-size:.82rem;color:var(--muted);margin-bottom:8px">A break draws a dashed line on every graph, between the last session and the session back.</p>'+rows+add+'<div style="text-align:right;margin-top:12px"><button class="btn btn-outline" onclick="closeModal()">Close</button></div>',{tall:true});
+}
+async function _brkMenuAdd(){var d=(document.getElementById('brk-date')||{}).value;var l=_brkLabelNow();if(!l){toast('Choose what the break was.','error');return;}if(await _brkAdd(d,l)){closeModal();render();}}
+function _brkDelAsk(id){
+  var c=_brkClient();var b=c&&c.breaks&&c.breaks[id];if(!b)return;
+  modal('<h3 style="margin-bottom:6px">Delete this break?</h3><p style="font-size:.9rem;margin-bottom:4px"><b>'+esc(_brkTxt(b))+'</b> · back '+_drFmtD(b.date)+'</p><p style="font-size:.82rem;color:var(--muted);margin-bottom:12px">The line disappears from every graph. This can’t be undone.</p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn btn-outline" onclick="_brkOpen()">Cancel</button><button class="btn btn-danger" data-id="'+esc(id)+'" onclick="_brkDel(this.dataset.id)">Delete</button></div>');
+}
 function _svgChart(points,opts){
   if(!points||!points.length)return'';
+  points=_brkApply(points);
   opts=opts||{};
   const W=680,H=130,pad=36;
   const min=opts.min!=null?opts.min:0,max=(opts.max!=null?opts.max:100);
@@ -3560,6 +3648,7 @@ function _chMenuHtml(c){
   if(['director','admin'].includes(r))items.push('<button type="button" onclick="_chPopClose();_chSupModal(\''+c.id+'\')">Change supervisor…</button>');
   if(_cvCanManage(c)){var n=(DB.cover||[]).filter(function(x){return x.clientId===c.id&&x.date>=_todayLocal();}).length;items.push('<button type="button" onclick="_chPopClose();_cvOpen(\''+c.id+'\')">Give cover…'+(n?' <span class="ch-n">'+n+' day'+(n>1?'s':'')+'</span>':'')+'</button>');}
   if(['supervisor','director','admin'].includes(r))items.push('<button type="button" onclick="_chPopClose();showArchiveModal()">Archive old data…</button>');
+  var _nb=_brkList(c.id).length;items.push('<button type="button" onclick="_chPopClose();_brkOpen()">Breaks…'+(_nb?' <span class="ch-n">'+_nb+'</span>':'')+'</button>');
   if(!items.length)return '';
   return '<div class="ch-menu-wrap no-print unlock-exempt"><button type="button" class="btn btn-outline btn-sm unlock-exempt ch-menu" aria-label="More actions" title="More actions" onclick="_chPopToggle(event)">⋯</button><div id="ch-pop" class="ch-pop" style="display:none">'+items.join('')+'</div></div>';
 }
@@ -4733,6 +4822,7 @@ function _ftStrip(lesson,target,points,label,sd){
   (target.dtStepChanges||[]).filter(function(c){return c.date;}).forEach(function(c){var st=(target.teachingSteps&&target.teachingSteps.length)?target.teachingSteps:((sd&&sd.teachingSteps)||[]);var nm=st[c.to||0];marks.push({date:c.date,color:'#EF9F27',label:'S'+((c.to||0)+1),text:'Step '+((c.to||0)+1)+(nm?': '+nm:'')});});
   if(target.masteredDate)marks.push({date:target.masteredDate,color:'#4fa14a',label:'M',text:'Mastered'});
   if(sd&&sd.modHistory)sd.modHistory.forEach(function(m){if(m.date)marks.push({date:m.date,color:'#8b5cf6',label:'✎',text:m.label||'Plan change'});});
+  _brkList().forEach(function(b){if(points.some(function(p){return p.date<b.date;})&&points.some(function(p){return p.date>=b.date;}))marks.push({date:b.date,color:'#64748b',label:'\u23F8',text:_brkTxt(b)});}); // v-CZ breaks
   const byGap={};
   marks.forEach(function(m){
     var idx=points.findIndex(function(p){return p.date>=m.date;});
@@ -4746,7 +4836,7 @@ function _ftStrip(lesson,target,points,label,sd){
   });
   if(byGap[points.length])byGap[points.length].forEach(function(m){cells+=_ftMarkerCell(m.color,m.label,_drFmtD(m.date)+' \u2014 '+m.text);});
   // What each marker means, always visible (hover isn't possible on iPad / phone)
-  var legend=marks.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(m){return '<div><span style="font-weight:700;color:'+(m.color==='#4fa14a'?'#2f6b2c':m.color==='#8b5cf6'?'#6d28d9':'#a35f0a')+'">'+esc(m.label)+'</span> '+_drFmtD(m.date)+' \u2014 '+esc(m.text)+'</div>';}).join('');
+  var legend=marks.slice().sort(function(a,b){return a.date.localeCompare(b.date);}).map(function(m){return '<div><span style="font-weight:700;color:'+(m.color==='#4fa14a'?'#2f6b2c':m.color==='#8b5cf6'?'#6d28d9':m.color==='#64748b'?'#475569':'#a35f0a')+'">'+esc(m.label)+'</span> '+_drFmtD(m.date)+' \u2014 '+esc(m.text)+'</div>';}).join('');
   return '<div style="font-size:.72rem;color:var(--muted);margin:6px 0 3px">'+label+'</div>'
     +'<div class="scroll-newest" style="overflow-x:auto;padding-bottom:2px"><div style="display:inline-flex;align-items:flex-start;gap:2px">'+cells+'</div></div>'
     +(legend?'<div style="font-size:.74rem;color:#4b5563;line-height:1.5;margin:3px 0 4px">'+legend+'</div>':'');
@@ -5009,9 +5099,9 @@ function drawSessionGraph(lesson,sd,target,canvasId){
     });
   }};
   new Chart(canvas,{type:'line',data:{labels,datasets:[
-    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7},
+    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7,segment:_brkSegment(_brkChartLines(rawDates))},
     {label:'Mastery',data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,fill:false}
-  ]},plugins:[sgPhasePlugin,sgSdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:20,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[sgPhasePlugin,sgSdModPlugin,_makeClientBreakPlugin('clBrkSg',_brkChartLines(rawDates))],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'%'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?1:20,callback:v=>isRating?v:isTally?v:''+v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate/hr':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── DT Session Entry ──
@@ -6039,9 +6129,9 @@ const v=t.pct!=null?t.pct:(t.rating!=null?t.rating:(t.count!=null?(target.dataTy
     });
   }};
   new Chart(canvas,{type:'line',data:{labels,datasets:[
-    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7},
+    {label:'Score',data:vals,borderColor:'#1f8ec4',backgroundColor:'rgba(41,171,226,.1)',tension:0,fill:true,pointRadius:5,pointHoverRadius:7,segment:_brkSegment(_brkChartLines(sessionDates))},
     {label:'Mastery '+masteryLine+(isRating?'':isTally?'/hr':'%'),data:labels.map(()=>masteryLine),borderColor:'#4fa14a',borderDash:[4,4],pointRadius:0,borderWidth:1.5,fill:false}
-  ]},plugins:[phaseLinePlugin,sdModPlugin],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:20,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
+  ]},plugins:[phaseLinePlugin,sdModPlugin,_makeClientBreakPlugin('clBrk',_brkChartLines(sessionDates))],options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:18}},plugins:{legend:{display:false},tooltip:{callbacks:{title:ctx=>ctx[0].label.replace('\n',' — '),label:ctx=>isRating?'Rating: '+ctx.parsed.y:isTally?(Math.round(ctx.parsed.y*10)/10)+'/hr':ctx.parsed.y+'% correct'}}},scales:{y:{beginAtZero:true,min:0,max:maxY,ticks:{stepSize:isRating?1:isTally?undefined:20,callback:v=>isRating?v:isTally?(Math.round(v*10)/10)+'/hr':v+'%'},title:{display:true,text:isRating?'Rating':isTally?'Rate (/hr)':'% Correct',font:{size:10}}},x:{ticks:{font:{size:9},maxRotation:45,minRotation:30},title:{display:false}}}}});
 }
 
 // ── Mastery actions ──
@@ -7133,6 +7223,7 @@ function drawBIPChart(bip,_cxOv,_idSfx){
   const _daysBetween=function(d1,d2){return Math.round((new Date(d2+'T00:00')-new Date(d1+'T00:00'))/86400000);};
   var _events=_sessKeys.map(function(k){return {type:'session',key:k,date:_sessMeta[k].date};});
   (Array.isArray(bip.breaks)?bip.breaks:[]).forEach(function(bk){if(bk.date)_events.push({type:'break',date:bk.date,label:bk.reason||'break',manual:true});});
+  _brkList().forEach(function(bk){if(_logDates.length&&bk.date>_logDates[0]&&bk.date<=_logDates[_logDates.length-1])_events.push({type:'break',date:bk.date,label:_brkTxt(bk),manual:true});}); // v-CZ client-level breaks
   _events.sort(function(a,b){if(a.date!==b.date)return a.date<b.date?-1:1;return (a.type==='break'?0:1)-(b.type==='break'?0:1);});
   var _cols=[];
   _events.forEach(function(ev){
